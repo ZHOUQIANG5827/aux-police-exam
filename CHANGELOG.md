@@ -2,6 +2,15 @@
 
 所有值得关注的变化都会被记录在这个文件中。
 
+## [1.6.0] - 2026-07-08
+
+### ⚡ 加载速度优化（核心）
+- **题库外置**：将内联在 HTML 中的完整题库拆分为独立 JS 文件，由 `<script src>` 异步加载，`<head>` 中加 `rel="preload"` 提前拉取。
+  - `written.html`：1.16MB → **57KB** 外壳；题库移入 `data-written.js`（1.1MB，900 题）。
+  - `index.html`：304KB → **59KB** 外壳；题库移入 `data-interview.js`（253KB，138 题）。
+- **首屏即时渲染**：HTML 外壳（页头 / 筛选 / 骨架）秒开，题目列表先显示「题库加载中…」旋转动画，数据到位后流式渲染。
+- **长效缓存**：`_headers` 中 `data-written.js` / `data-interview.js` 设为 `Cache-Control: public, max-age=31536000, immutable`；HTML 保持 `max-age=300` 便于迭代。二次访问数据直接命中本地缓存（配合 Cloudflare 自动 Brotli 压缩，传输体积进一步大幅缩小）。
+
 ## [1.5.1] - 2026-07-08
 - **精简趣味化**：经反馈移除打卡等级、挑战模式、战绩卡 / 掌握度卡（被认为价值有限），仅保留「答对撒花 + 音效」。
 

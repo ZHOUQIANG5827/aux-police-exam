@@ -2,5 +2,13 @@
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
-  Cache-Control: public, max-age=300
   Permissions-Policy: microphone=(self)
+
+/*.html
+  Cache-Control: public, max-age=300
+
+/data-written.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/data-interview.js
+  Cache-Control: public, max-age=31536000, immutable
