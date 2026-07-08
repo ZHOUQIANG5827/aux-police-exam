@@ -390,19 +390,20 @@ body {
 .load-more-btn { font-size: 14px; padding: 11px 26px; box-shadow: var(--shadow); }
 
 /* 顶部宣传 banner */
-.promo-banner { position: relative; display: flex; gap: 14px; align-items: flex-start; margin: 14px 16px 0; padding: 14px 16px; border-radius: var(--radius); background: linear-gradient(120deg, #fff4e6, #ffe9f0); border: 1px solid #ffd8b0; color: #5b3a1a; box-shadow: var(--shadow); }
-[data-theme="dark"] .promo-banner { background: linear-gradient(120deg, #3a2c1e, #3a2433); border-color: #5c4326; color: #f0d9c0; }
-.promo-close { position: absolute; top: 8px; right: 10px; width: 24px; height: 24px; border: none; background: rgba(0,0,0,0.06); color: inherit; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; }
-.promo-close:hover { background: rgba(0,0,0,0.12); }
-.promo-icon { font-size: 30px; line-height: 1.2; }
-.promo-body { flex: 1; }
-.promo-title { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
-.promo-text { font-size: 13px; line-height: 1.7; }
-.promo-text b { color: #d9480f; }
-[data-theme="dark"] .promo-text b { color: #ffb37a; }
-.promo-xianyu { background: #ff5a1f; color: #fff; padding: 1px 8px; border-radius: 6px; font-weight: 800; }
-.promo-actions { margin-top: 8px; }
-.promo-btn { border: none; background: linear-gradient(120deg, #ff7a18, #ff5a1f); color: #fff; font-weight: 700; font-size: 13px; padding: 8px 16px; border-radius: 999px; cursor: pointer; box-shadow: 0 4px 12px rgba(255,90,31,0.3); }
+.promo-banner { position: relative; display: flex; gap: 14px; align-items: center; margin: 0 16px 10px; padding: 12px 18px; border-radius: var(--radius); background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(59,130,246,0.04)); border: 1px solid rgba(59,130,246,0.15); color: var(--text); box-shadow: none; }
+[data-theme="dark"] .promo-banner { background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(37,99,235,0.05)); border-color: rgba(59,130,246,0.2); }
+.promo-close { position: absolute; top: 8px; right: 10px; width: 22px; height: 22px; border: none; background: transparent; color: var(--text-muted); border-radius: 50%; font-size: 15px; line-height: 1; cursor: pointer; transition: background 0.15s; }
+.promo-close:hover { background: rgba(0,0,0,0.06); color: var(--text); }
+[data-theme="dark"] .promo-close:hover { background: rgba(255,255,255,0.08); }
+.promo-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.promo-body { flex: 1; min-width: 0; }
+.promo-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; color: var(--primary-dark); }
+[data-theme="dark"] .promo-title { color: #93c5fd; }
+.promo-text { font-size: 12.5px; line-height: 1.65; color: var(--text-secondary); }
+.promo-text b { color: var(--primary); font-weight: 600; }
+.promo-actions { margin-top: 7px; }
+.promo-btn { display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(59,130,246,0.35); background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; font-weight: 600; font-size: 12px; padding: 5px 14px; border-radius: 999px; cursor: pointer; box-shadow: 0 2px 8px rgba(37,99,235,0.2); transition: transform 0.12s, box-shadow 0.12s; }
+.promo-btn:hover { box-shadow: 0 4px 14px rgba(37,99,235,0.32); }
 .promo-btn:active { transform: translateY(1px); }
 
 </style>
@@ -462,14 +463,14 @@ body {
 </div>
 <div class="promo-banner" id="promoBanner">
   <button class="promo-close" id="promoClose" title="收起">×</button>
-  <div class="promo-icon">🚒</div>
+  <div class="promo-icon">✏️</div>
   <div class="promo-body">
-    <div class="promo-title">📚 辅警备考资料 · 作者自营</div>
+    <div class="promo-title">作者 · rcj9527</div>
     <div class="promo-text">
-      主业：<b>消防员体能培训</b> / 大学生军事夏令营 / 辅警体测指导。本刷题系统提供 <b>离线完整版</b> 与 <b>私人定制</b>（按你报考岗位定制题库）。闲鱼搜 <b class="promo-xianyu">rcj9527</b> 联系作者 👇
+      消防员体能培训 / 大学生军事夏令营 / 辅警体测指导。提供<b>离线完整版</b>与<b>私人定制题库</b>。
     </div>
     <div class="promo-actions">
-      <button class="promo-btn" id="promoXianyu">🔗 复制闲鱼账号 rcj9527</button>
+      <button class="promo-btn" id="promoXianyu">📋 复制闲鱼号：rcj9527</button>
     </div>
   </div>
 </div>
