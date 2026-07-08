@@ -386,6 +386,8 @@ body {
       <button class="action-btn" id="expandAll">⏬ 展开全部</button>
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
       <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
+      <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
+      <button class="action-btn" id="exportBtn">📄 导出题目</button>
       <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
       <span class="result-count" id="resultCount"></span>
     </div>
@@ -2115,6 +2117,8 @@ var filterYear = "all";
 var filterType = "all";
 var filterTag = "all";
 
+var filterMark = false;
+
 function escapeHtml(text) {
   var d = document.createElement("div"); d.textContent = text; return d.innerHTML;
 }
@@ -2142,9 +2146,10 @@ function render() {
     var yearMatch = filterYear === "all" || q.year === filterYear;
     var typeMatch = filterType === "all" || q.type === filterType;
     var tagMatch = filterTag === "all" || (q.tags && q.tags.indexOf(filterTag) !== -1);
+    var markMatch = !filterMark || (statusDB[q._idx] === 'not-mastered');
     var searchText = (q.title + " " + q.answer + " " + q.session + " " + (q.tags || []).join(" ")).toLowerCase();
     var searchMatch = !search || searchText.indexOf(search) !== -1;
-    if (yearMatch && typeMatch && tagMatch && searchMatch) {
+    if (yearMatch && typeMatch && tagMatch && markMatch && searchMatch) {
       if (!byYear[q.year]) byYear[q.year] = [];
       byYear[q.year].push(q); totalShown++;
     }
@@ -2505,6 +2510,82 @@ window.addEventListener("DOMContentLoaded", function() {
   initAudioRecorderSystem();
   render();
 });
+</script>
+<style id="fjPrintStyle">
+@media print {
+  body * { visibility: hidden !important; }
+  #printReport, #printReport * { visibility: visible !important; }
+  #printReport { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; color: #000; background: #fff; font-size: 14px; line-height: 1.7; }
+  #printReport h1 { font-size: 22px; margin: 0 0 8px; }
+  #printReport h2 { font-size: 17px; margin: 18px 0 8px; }
+  #printReport hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+  #printReport p { margin: 4px 0; }
+  .fj-avoid-break { page-break-inside: avoid; }
+}
+#printReport { display: none; }
+.action-btn.active { background: #e63946 !important; color: #fff !important; border-color: #e63946 !important; }
+</style>
+<script>
+// ===== 只看未掌握 / 快捷键 / 导出题目（v1.3 功能增强）=====
+(function () {
+  var markModeBtn = document.getElementById("markModeBtn");
+  if (markModeBtn) markModeBtn.addEventListener("click", function () {
+    filterMark = !filterMark;
+    markModeBtn.classList.toggle("active", filterMark);
+    render();
+  });
+
+  function currentQuestions() {
+    var search = document.getElementById("searchInput").value.trim().toLowerCase();
+    var statusDB = StorageCtrl.get();
+    var list = [];
+    DATA.forEach(function (q) {
+      var yearMatch = filterYear === "all" || q.year === filterYear;
+      var typeMatch = filterType === "all" || q.type === filterType;
+      var tagMatch = filterTag === "all" || (q.tags && q.tags.indexOf(filterTag) !== -1);
+      var searchText = (q.title + " " + q.answer + " " + q.session + " " + (q.tags || []).join(" ")).toLowerCase();
+      var searchMatch = !search || searchText.indexOf(search) !== -1;
+      var markMatch = !filterMark || (statusDB[q._idx] === 'not-mastered');
+      if (yearMatch && typeMatch && tagMatch && markMatch && searchMatch) list.push(q);
+    });
+    return list;
+  }
+
+  function buildExport() {
+    var list = currentQuestions();
+    if (!list.length) { alert("当前筛选没有可导出的题目"); return; }
+    var typeInfo = TYPE_MAP || {};
+    var html = '<h1>深圳辅警面试真题 · 导出（' + list.length + ' 道）</h1>';
+    html += '<p>生成时间：' + new Date().toLocaleString() + ' ｜ 当前筛选条件下导出</p><hr>';
+    list.forEach(function (q, n) {
+      var t = typeInfo[q.type];
+      var label = t ? t.label : q.type;
+      html += '<div class="fj-avoid-break" style="margin-bottom:16px;">';
+      html += '<p><b>' + (n + 1) + '. [' + escapeHtml(label) + '·' + escapeHtml(q.year) + '] ' + escapeHtml(q.title) + '</b></p>';
+      html += '<p>参考答案：' + formatAnswer(q.answer, "") + '</p></div>';
+    });
+    var box = document.getElementById("printReport");
+    if (!box) { box = document.createElement("div"); box.id = "printReport"; document.body.appendChild(box); }
+    box.innerHTML = html;
+    window.print();
+  }
+
+  var exportBtn = document.getElementById("exportBtn");
+  if (exportBtn) exportBtn.addEventListener("click", buildExport);
+
+  // 快捷键：R 随机抽题 / N 换一题，Esc 关闭模态
+  document.addEventListener("keydown", function (e) {
+    var k = (e.key || "").toLowerCase();
+    if (k === "escape") { if (randomModal.classList.contains("show")) closeRandomModal(); return; }
+    var tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (k === "r" || k === "n") {
+      e.preventDefault();
+      if (randomModal.classList.contains("show")) showRandomQuestion();
+      else document.getElementById("randomBtn").click();
+    }
+  });
+})();
 </script>
 </body>
 </html>
