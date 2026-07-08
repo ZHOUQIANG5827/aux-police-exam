@@ -406,47 +406,13 @@ body {
 .promo-btn:hover { box-shadow: 0 4px 14px rgba(37,99,235,0.32); }
 .promo-btn:active { transform: translateY(1px); }
 
-/* ===== 趣味化：打卡/等级/静音/撒花/挑战/分享 (v1.5) ===== */
-.streak-bar { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.streak-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; padding: 4px 11px; border-radius: 999px; background: rgba(255,255,255,0.16); color: #fff; border: 1px solid rgba(255,255,255,0.22); }
-.streak-pill .lv { background: rgba(255,255,255,0.22); border-radius: 999px; padding: 1px 7px; font-size: 11.5px; }
+/* ===== 趣味化：静音 / 撒花 (v1.5) ===== */
 .mute-toggle { margin-left: auto; width: 30px; height: 30px; border: none; background: rgba(255,255,255,0.16); color: #fff; border-radius: 50%; font-size: 14px; cursor: pointer; transition: background 0.15s; }
 .mute-toggle:hover { background: rgba(255,255,255,0.28); }
 
 /* 撒花特效 */
 .fx-confetti { position: fixed; top: -10px; font-size: 18px; pointer-events: none; z-index: 9999; animation: fx-fall linear forwards; }
 @keyframes fx-fall { 0% { transform: translateY(-10px) rotate(0); opacity: 1; } 100% { transform: translateY(105vh) rotate(540deg); opacity: 0; } }
-
-/* 通用模态 */
-.fj-modal-mask { position: fixed; inset: 0; background: rgba(15,23,42,0.55); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
-.fj-modal-mask.show { display: flex; }
-.fj-modal { background: var(--bg); color: var(--text); border-radius: 16px; width: 100%; max-width: 460px; max-height: 88vh; overflow: auto; box-shadow: 0 24px 60px rgba(0,0,0,0.3); }
-.fj-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
-.fj-modal-head h3 { margin: 0; font-size: 16px; }
-.fj-modal-body { padding: 18px; }
-.fj-modal-close { border: none; background: transparent; font-size: 20px; cursor: pointer; color: var(--text-muted); line-height: 1; }
-.fj-btn-primary { border: none; background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; font-weight: 600; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px; }
-.fj-btn-ghost { border: 1px solid var(--border); background: transparent; color: var(--text); padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px; }
-
-/* 挑战模式 */
-.ch-timer { font-size: 28px; font-weight: 800; text-align: center; color: var(--primary); }
-.ch-combo { text-align: center; font-size: 14px; color: var(--text-secondary); margin: 4px 0 12px; min-height: 20px; }
-.ch-combo b { color: #f59e0b; font-size: 18px; }
-.ch-q { font-size: 15px; line-height: 1.6; margin-bottom: 12px; }
-.ch-opts { display: flex; flex-direction: column; gap: 8px; }
-.ch-opt { text-align: left; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); cursor: pointer; font-size: 14px; }
-.ch-opt.correct { background: #dcfce7; border-color: #16a34a; color: #166534; }
-.ch-opt.wrong { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
-.ch-opt:disabled { cursor: default; }
-.ch-score-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 14px 0; }
-.ch-score-grid .cell { background: var(--bg-soft); border-radius: 10px; padding: 12px; text-align: center; }
-.ch-score-grid .cell .n { font-size: 22px; font-weight: 800; color: var(--primary); }
-.ch-score-grid .cell .l { font-size: 12px; color: var(--text-secondary); }
-
-/* 分享卡 */
-.share-canvas-wrap { text-align: center; }
-.share-canvas-wrap canvas { max-width: 100%; border-radius: 12px; box-shadow: var(--shadow); }
-.share-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
 
 </style>
 </head>
@@ -465,7 +431,6 @@ body {
     <div class="nav-link-wrap" style="margin-top:14px;">
       <a href="index.html" style="display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;text-decoration:none;">🚔 去刷面试真题 →</a>
     </div>
-    <div class="streak-bar" id="streakBar"></div>
   </div>
 </header>
 <div class="toolbar">
@@ -500,8 +465,6 @@ body {
       <button class="action-btn" id="wrongModeBtn">📕 错题本 (0)</button>
       <button class="action-btn" id="clearWrongBtn">🗑 清空错题</button>
       <button class="action-btn" id="reportBtn">📊 学习报告</button>
-      <button class="action-btn" id="challengeBtn">⚡ 挑战模式</button>
-      <button class="action-btn" id="shareCardBtn">🖼 战绩卡</button>
       <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
       <span class="result-count" id="resultCount"></span>
     </div>
@@ -1076,37 +1039,7 @@ render();
     }
   });
 
-  // ============ 趣味化系统 (v1.5) ============
-  var LV_NAMES = ["萌新","入门","进阶","熟练","高手","学霸","题王","大师","宗师","扫地僧"];
-  var LV_TH = [0,20,50,100,200,350,550,800,1100,1500];
-  function calcLevel(c) {
-    var lv = 0;
-    for (var i = 0; i < LV_TH.length; i++) { if (c >= LV_TH[i]) lv = i; }
-    var next = (lv + 1 < LV_TH.length) ? LV_TH[lv + 1] : null;
-    return { lv: lv + 1, name: LV_NAMES[lv], next: next, cur: c };
-  }
-  function fmtDate(d) { return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2); }
-  function loadCheckin() { try { return JSON.parse(localStorage.getItem("fj_checkin_v1") || '{"last":"","streak":0,"best":0}'); } catch (e) { return {last:"",streak:0,best:0}; } }
-  function saveCheckin(o) { try { localStorage.setItem("fj_checkin_v1", JSON.stringify(o)); } catch (e) {} }
-  function loadPractice() { try { return JSON.parse(localStorage.getItem("fj_practice_v1") || '{"count":0}'); } catch (e) { return {count:0}; } }
-  function addPractice(n) { var p = loadPractice(); p.count += n; try { localStorage.setItem("fj_practice_v1", JSON.stringify(p)); } catch (e) {} renderStreakBar(); }
-  function doCheckin() {
-    var c = loadCheckin(); var today = fmtDate(new Date());
-    if (c.last === today) return c;
-    var y = new Date(); y.setDate(y.getDate() - 1); var yest = fmtDate(y);
-    c.streak = (c.last === yest) ? (c.streak + 1) : 1;
-    c.last = today; if (c.streak > c.best) c.best = c.streak;
-    saveCheckin(c); return c;
-  }
-  function renderStreakBar() {
-    var bar = document.getElementById("streakBar"); if (!bar) return;
-    var c = loadCheckin(); var lv = calcLevel(loadPractice().count);
-    var fire = c.streak >= 3 ? "🔥" : "✅";
-    bar.innerHTML = '<span class="streak-pill">' + fire + ' 连续 ' + c.streak + ' 天</span>' +
-      '<span class="streak-pill">Lv.' + lv.lv + ' <span class="lv">' + lv.name + '</span></span>' +
-      '<span class="streak-pill">📚 已练 ' + lv.cur + ' 题</span>';
-  }
-  doCheckin(); renderStreakBar();
+  // ============ 趣味化：静音 + 撒花 (v1.5) ============
 
   // 静音
   function isMuted() { try { return localStorage.getItem("fj_muted_v1") === "1"; } catch (e) { return false; } }
@@ -1147,123 +1080,12 @@ render();
   var _showResult = showResult;
   showResult = function (idx, isRight) {
     _showResult(idx, isRight);
-    if (isRight === true) { addPractice(1); celebrate(); }
-    else if (isRight === false) { addPractice(1); }
+    if (isRight === true) { celebrate(); }
   };
 
-  // ===== 挑战模式 =====
-  var chModal = document.getElementById("challengeModal");
-  var chBody = document.getElementById("chBody");
-  var chTimer = null, chTime = 60, chQueue = [], chIdx = 0, chScore = 0, chCombo = 0, chMax = 0, chAns = 0, chCorrect = 0, chActive = false;
-  function chShuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  function chOpen() { chModal.classList.add("show"); chBody.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;margin-top:0;">60 秒内连答，答对连击得分翻倍，看看你能拿多少分！</p><button class="fj-btn-primary" id="chStart" style="width:100%;">🚀 开始挑战</button>'; document.getElementById("chStart").addEventListener("click", chStart); }
-  function chClose() { chActive = false; if (chTimer) clearInterval(chTimer); chModal.classList.remove("show"); }
-  function chStart() {
-    chActive = true; chTime = 60; chQueue = chShuffle(DATA).slice(0, 30); chIdx = 0; chScore = 0; chCombo = 0; chMax = 0; chAns = 0; chCorrect = 0;
-    chRenderTimer(); chRender();
-    chTimer = setInterval(function () { chTime--; chRenderTimer(); if (chTime <= 0) chEnd(); }, 1000);
-  }
-  function chRenderTimer() { var t = document.getElementById("chTimer"); if (t) t.textContent = chTime + "s"; }
-  function chRender() {
-    if (chIdx >= chQueue.length) { chEnd(); return; }
-    var q = chQueue[chIdx]; var opts = q.options.map(function (o, i) { return '<button class="ch-opt" data-i="' + i + '">' + String.fromCharCode(65 + i) + '. ' + escapeHtml(o.text) + '</button>'; }).join("");
-    chBody.innerHTML = '<div class="ch-timer" id="chTimer">' + chTime + 's</div>' +
-      '<div class="ch-combo">连击 <b id="chCombo">' + chCombo + '</b> ｜ 得分 ' + chScore + '</div>' +
-      '<div class="ch-q">' + escapeHtml(q.stem) + '</div>' +
-      '<div class="ch-opts" id="chOpts">' + opts + '</div>';
-    document.getElementById("chOpts").addEventListener("click", function (e) {
-      var b = e.target.closest(".ch-opt"); if (!b || !chActive) return;
-      chGrade(q, parseInt(b.dataset.i, 10), this);
-    });
-  }
-  function chGrade(q, picked, optsEl) {
-    chAns++;
-    var correctLetters = q.options.map(function (o, i) { return o.correct ? String.fromCharCode(65 + i) : null; }).filter(Boolean);
-    var pickedLetter = String.fromCharCode(65 + picked);
-    var right = (correctLetters.length === 1 && correctLetters[0] === pickedLetter);
-    optsEl.querySelectorAll(".ch-opt").forEach(function (b, i) {
-      b.disabled = true;
-      var L = String.fromCharCode(65 + i);
-      if (correctLetters.indexOf(L) !== -1) b.classList.add("correct");
-      else if (L === pickedLetter) b.classList.add("wrong");
-    });
-    if (right) { chCorrect++; chCombo++; if (chCombo > chMax) chMax = chCombo; chScore += 10 * Math.min(chCombo, 5); celebrate(); }
-    else { chCombo = 0; }
-    setTimeout(function () { chIdx++; if (chActive) chRender(); }, 700);
-  }
-  function chEnd() {
-    chActive = false; if (chTimer) clearInterval(chTimer);
-    var rate = chAns ? Math.round(chCorrect / chAns * 100) : 0;
-    chBody.innerHTML = '<h3 style="text-align:center;margin-top:0;">🏁 挑战结束</h3>' +
-      '<div class="ch-score-grid"><div class="cell"><div class="n">' + chScore + '</div><div class="l">总得分</div></div>' +
-      '<div class="cell"><div class="n">' + chMax + '</div><div class="l">最高连击</div></div>' +
-      '<div class="cell"><div class="n">' + rate + '%</div><div class="l">正确率</div></div></div>' +
-      '<button class="fj-btn-primary" id="chRetry" style="width:100%;">🔄 再来一局</button>';
-    var rb = document.getElementById("chRetry"); if (rb) rb.addEventListener("click", chStart);
-    addPractice(chAns);
-  }
-  var chBtn = document.getElementById("challengeBtn"); if (chBtn) chBtn.addEventListener("click", chOpen);
-  document.getElementById("chClose").addEventListener("click", chClose);
-  chModal.addEventListener("click", function (e) { if (e.target === chModal) chClose(); });
-
-  // ===== 战绩卡 =====
-  function drawShareCard() {
-    var c = document.getElementById("shareCanvas"); if (!c) return;
-    var ctx = c.getContext("2d");
-    var W = c.width, H = c.height;
-    var g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#1e3a8a"); g.addColorStop(1, "#3b82f6");
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#fff"; ctx.textAlign = "center";
-    ctx.font = "bold 34px sans-serif"; ctx.fillText("辅警笔试 · 我的战绩", W / 2, 90);
-    var attempted = fjStats.attempted, correct = fjStats.correct;
-    var rate = attempted ? Math.round(correct / attempted * 100) : 0;
-    var chk = loadCheckin(); var lv = calcLevel(loadPractice().count);
-    var cards = [["已答题", attempted], ["正确率", rate + "%"], ["连续打卡", chk.streak + "天"], ["等级", "Lv." + lv.lv + " " + lv.name]];
-    var bx = 60, by = 180, bw = (W - 160) / 2, bh = 130, gap = 20;
-    for (var i = 0; i < cards.length; i++) {
-      var x = bx + (i % 2) * (bw + gap), y = by + Math.floor(i / 2) * (bh + gap);
-      ctx.fillStyle = "rgba(255,255,255,0.15)"; roundRect(ctx, x, y, bw, bh, 16); ctx.fill();
-      ctx.fillStyle = "#fff"; ctx.font = "bold 40px sans-serif"; ctx.fillText(String(cards[i][1]), x + bw / 2, y + 70);
-      ctx.font = "16px sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.fillText(cards[i][0], x + bw / 2, y + 105);
-    }
-    ctx.fillStyle = "#fff"; ctx.font = "bold 20px sans-serif";
-    ctx.fillText("🎯 错题收藏 " + wrongSet.length + " 道", W / 2, by + 2 * (bh + gap) + 60);
-    ctx.font = "16px sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.fillText("rcj9527 · 闲鱼搜我获取离线完整版 / 私人定制", W / 2, H - 50);
-    var url = c.toDataURL("image/png");
-    var dl = document.getElementById("shareDownload"); if (dl) dl.href = url;
-  }
-  function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
-  var shareModal = document.getElementById("shareModal");
-  var shareBtn = document.getElementById("shareCardBtn");
-  if (shareBtn) shareBtn.addEventListener("click", function () { drawShareCard(); shareModal.classList.add("show"); });
-  document.getElementById("shareClose").addEventListener("click", function () { shareModal.classList.remove("show"); });
-  document.getElementById("shareClose2").addEventListener("click", function () { shareModal.classList.remove("show"); });
-  shareModal.addEventListener("click", function (e) { if (e.target === shareModal) shareModal.classList.remove("show"); });
+  // ===== 挑战模式 / 战绩卡 已移除 (v1.5.1) =====
 })();
 </script>
-<!-- 挑战模式模态 -->
-<div class="fj-modal-mask" id="challengeModal">
-  <div class="fj-modal">
-    <div class="fj-modal-head"><h3>⚡ 挑战模式</h3><button class="fj-modal-close" id="chClose">✕</button></div>
-    <div class="fj-modal-body" id="chBody">
-      <p style="color:var(--text-secondary);font-size:13px;margin-top:0;">60 秒内连答，答对连击得分翻倍，看看你能拿多少分！</p>
-      <button class="fj-btn-primary" id="chStart" style="width:100%;">🚀 开始挑战</button>
-    </div>
-  </div>
-</div>
-<!-- 战绩卡模态 -->
-<div class="fj-modal-mask" id="shareModal">
-  <div class="fj-modal">
-    <div class="fj-modal-head"><h3>🖼 我的战绩卡</h3><button class="fj-modal-close" id="shareClose">✕</button></div>
-    <div class="fj-modal-body share-canvas-wrap">
-      <canvas id="shareCanvas" width="640" height="800"></canvas>
-      <div class="share-actions">
-        <a class="fj-btn-primary" id="shareDownload" download="辅警战绩卡.png">⬇️ 保存图片</a>
-        <button class="fj-btn-ghost" id="shareClose2">关闭</button>
-      </div>
-    </div>
-  </div>
-</div>
+
 </body>
 </html>
