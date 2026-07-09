@@ -304,6 +304,7 @@ body {
 .xianyu-toast-overlay.show { display: flex; }
 .xianyu-toast { background: var(--surface); border-radius: var(--radius); max-width: 340px; width: 100%; padding: 28px 24px 22px; text-align: center; box-shadow: var(--shadow-lg); animation: fadeIn 0.25s ease; }
 .xianyu-toast .xt-icon { font-size: 40px; margin-bottom: 10px; }
+.xianyu-toast .xt-qr { width: 190px; max-width: 72%; border-radius: 10px; margin: 6px auto 14px; display: block; box-shadow: var(--shadow); }
 .xianyu-toast .xt-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
 .xianyu-toast .xt-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.7; }
 .xianyu-toast .xt-code { display: inline-block; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #fff; background: var(--header-grad); padding: 8px 22px; border-radius: 999px; margin-bottom: 16px; }
@@ -426,7 +427,7 @@ body {
       <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
       <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
       <button class="action-btn" id="exportBtn">📄 导出题目</button>
-      <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
+      <button class="action-btn download-offline-btn" id="downloadOfflineBtn">💝 打赏作者</button>
       <span class="result-count" id="resultCount"></span>
     </div>
   </div>
@@ -453,13 +454,11 @@ body {
 
 <div class="xianyu-toast-overlay" id="xianyuToastOverlay">
   <div class="xianyu-toast">
-    <div class="xt-icon">🔑</div>
-    <div class="xt-title">完整版 · 含解析 · 持续更新</div>
-    <div class="xt-desc">口令已复制 ✅ 打开闲鱼 App 粘贴搜索「RCJ9527」，即可找到店铺——<b>完整版含逐题解析与最新真题</b>，已助多人一战成警。</div>
-    <div class="xt-code" id="xtCode">RCJ9527</div>
-    <div class="xt-copied" id="xtCopied">✅ 口令已复制到剪贴板</div>
-    <button class="xt-btn" id="xtOpenBtn">🐟 打开闲鱼 App</button>
-    <button class="xt-btn secondary" id="xtCloseBtn">我知道了</button>
+    <div class="xt-icon">💝</div>
+    <div class="xt-title">打赏作者 · 支持开源</div>
+    <div class="xt-desc">如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕</div>
+    <img class="xt-qr" src="wechat-reward.png" alt="微信收款码">
+        <button class="xt-btn secondary" id="xtCloseBtn">已打赏 / 关闭</button>
   </div>
 </div>
 
@@ -956,8 +955,7 @@ document.getElementById("randomModalClose").addEventListener("click", closeRando
 document.getElementById("randomModalDone").addEventListener("click", closeRandomModal);
 randomModal.addEventListener("click", function(e) { if (e.target === randomModal) closeRandomModal(); });
 
-// 闲鱼获取口令逻辑（替代原单文件下载）
-var XIANYU_CODE = "RCJ9527";
+// 打赏弹层逻辑
 
 function copyToClipboard(text) {
   return new Promise(function(resolve) {
@@ -983,16 +981,7 @@ function fallbackCopy(text) {
 
 var xianyuOverlay = document.getElementById("xianyuToastOverlay");
 document.getElementById("downloadOfflineBtn").addEventListener("click", function() {
-  copyToClipboard(XIANYU_CODE).then(function(ok) {
-    var copiedEl = document.getElementById("xtCopied");
-    if (ok) copiedEl.classList.add("show"); else copiedEl.classList.remove("show");
-    xianyuOverlay.classList.add("show");
-  });
-});
-document.getElementById("xtOpenBtn").addEventListener("click", function() {
-  copyToClipboard(XIANYU_CODE);
-  // 尝试唤起闲鱼 App（仅移动端有效，失败不影响使用，用户仍可手动打开 App 粘贴搜索）
-  try { window.location.href = "fleamarket://searchresult?q=" + encodeURIComponent(XIANYU_CODE); } catch (e) {}
+  xianyuOverlay.classList.add("show");
 });
 document.getElementById("xtCloseBtn").addEventListener("click", function() {
   xianyuOverlay.classList.remove("show");
