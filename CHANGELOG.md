@@ -2,6 +2,14 @@
 
 所有值得关注的变化都会被记录在这个文件中。
 
+## [1.6.1] - 2026-07-09
+
+### 🗂️ 题库可维护性（data.json 源文件化）
+- **分离可编辑源**：新增 `data-written.json`（900 题）/ `data-interview.json`（138 题）作为题库**源文件**，`data-*.js` 改为由 `build_data.py` 从 JSON 构建的产物。
+- **后续增改只动 JSON**：加题 / 改答案 / 改解析，只需编辑 `data-*.json`，然后 `python build_data.py data-*.json -o data-*.js` 重生运行时，HTML 无需改动。
+- **上传即拆分**：新题可用 `ingest.py` 从 CSV / Excel / JSON / TXT 自动规整为 `data-*.json`（题型归一、多选答案转数组、自动补 `_idx`）。
+- **回生成已验证无损**：从新 JSON 重建的 `data-*.js` 与线上数据语义完全一致；`node --check` 通过。
+
 ## [1.6.0] - 2026-07-08
 
 ### ⚡ 加载速度优化（核心）
