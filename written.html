@@ -41,6 +41,12 @@ body {
 .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: 1px; }
 .header h1 .emoji { font-size: 30px; }
 .header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 20px; }
+.cover-avatar {
+  width: 100px; height: 100px; border-radius: 50%; object-fit: cover; object-position: 50% 10%;
+  border: 3px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  margin-top: 14px; margin-bottom: 14px;
+}
 .stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; align-items: center; }
 .stat-card {
   background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
@@ -224,6 +230,7 @@ body {
   .header { padding: 30px 16px 24px; }
   .header h1 { font-size: 20px; }
   .header h1 .emoji { font-size: 24px; }
+  .cover-avatar { width: 64px; height: 64px; }
   .stats { flex-direction: column; gap: 8px; width: 100%; }
   .stat-card, .progress-container { width: 100%; min-width: 0; }
   .stat-num { font-size: 22px; }
@@ -422,6 +429,7 @@ body {
   <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙</button>
   <button class="mute-toggle" id="muteToggle" title="音效开关">🔊</button>
   <div class="header-content">
+    <img src="cover.png?v=2" class="cover-avatar" alt="封面头像">
     <h1><span class="emoji">📖</span> 辅警笔试刷题库</h1>
     <p class="subtitle">法律法规 · 公安基础理论 · 历年真题实战</p>
     <div class="stats">
