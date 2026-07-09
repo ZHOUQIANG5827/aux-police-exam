@@ -12,3 +12,13 @@
 
 /data-interview.js
   Cache-Control: public, max-age=31536000, immutable
+
+# 图片：每次使用前用 ETag 向服务器校验，换图 push 后自动更新，无需改文件名或强刷
+/*.png
+  Cache-Control: no-cache
+/*.jpg
+  Cache-Control: no-cache
+/*.jpeg
+  Cache-Control: no-cache
+/*.webp
+  Cache-Control: no-cache
