@@ -1,0 +1,43 @@
+# GitHub Actions 自动构建（可选）
+# 作用：push 改动 data-*.json / template-config.json 后，自动重新生成
+#       data-*.js + config.js + VERSION.json 并 commit，触发 Cloudflare Pages 重新部署。
+# 注意：推送含此文件的 commit 需要 GitHub Token 带 workflow scope（仅 repo scope 会报 403）。
+# 依赖：仓库根目录需有 build_data.py。
+name: auto-build
+
+on:
+  push:
+    paths:
+      - 'data-written.json'
+      - 'data-interview.json'
+      - 'template-config.json'
+      - 'build_data.py'
+      - 'VERSION.json'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 重建 data-*.js / config.js / VERSION.json
+        run: |
+          python build_data.py data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify --config template-config.json --emit-config config.js --emit-version --template-version 1.0.0
+          python build_data.py data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
+
+      - name: 提交构建产物
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data-written.js data-interview.js config.js VERSION.json
+          git commit -m "auto-build: 由源 JSON 重建运行时与版本信息" || echo "no changes"
+          git push

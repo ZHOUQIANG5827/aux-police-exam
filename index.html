@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preload" as="script" href="data-interview.js">
-<title>辅警面试真题卡组</title>
+<title>辅警真题卡组 · 笔试+面试</title>
 <style>
 /* === Reset & Base === */
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -40,13 +39,10 @@ body {
 .header-content { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; }
 .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: 1px; }
 .header h1 .emoji { font-size: 30px; }
-.header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 20px; }
-.cover-avatar {
-  width: 100px; height: 100px; border-radius: 50%; object-fit: cover; object-position: 50% 10%;
-  border: 3px solid rgba(255,255,255,0.3);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  margin-top: 14px; margin-bottom: 14px;
-}
+.header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 16px; }
+.cover-avatar { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; object-position: 50% 10%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.25); margin-bottom: 12px; }
+.footer-logo { height: 22px; vertical-align: middle; margin: 0 6px 4px; border-radius: 4px; }
+.footer-version { font-size: 11px; opacity: 0.7; margin-top: 4px; }
 .stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; align-items: center; }
 .stat-card {
   background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
@@ -74,6 +70,13 @@ body {
   transition: background 0.2s, transform 0.2s;
 }
 .theme-toggle:hover { background: rgba(255,255,255,0.25); transform: scale(1.1); }
+
+/* 模式切换 tab */
+.mode-tabs { display: inline-flex; gap: 8px; margin-bottom: 14px; background: rgba(255,255,255,0.12); padding: 4px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.2); }
+.mode-tab { padding: 7px 22px; border-radius: 999px; border: none; background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
+.mode-tab.active { background: #fff; color: var(--primary); }
+[data-theme="dark"] .mode-tab.active { color: var(--bg); }
+
 /* === Toolbar === */
 .toolbar {
   position: sticky; top: 0; z-index: 100;
@@ -209,6 +212,14 @@ body {
 .answer-content { font-size: 13.5px; line-height: 1.85; color: var(--text); }
 .answer-content mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 [data-theme="dark"] .answer-content mark { background: #854d0e; color: #fef9c3; }
+
+/* 笔试选项 */
+.opt-row { display: flex; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; background: var(--surface-2); font-size: 14px; align-items: flex-start; }
+.opt-row .opt-letter { font-weight: 700; color: var(--primary); min-width: 18px; }
+[data-theme="dark"] .opt-row { background: var(--surface); }
+.answer-correct-tag { display: inline-block; font-size: 12px; font-weight: 700; color: #16a34a; margin-left: 4px; }
+[data-theme="dark"] .answer-correct-tag { color: #4ade80; }
+
 .no-result { text-align: center; color: var(--text-muted); padding: 60px 20px; font-size: 15px; }
 /* === Back to Top === */
 .back-to-top {
@@ -230,7 +241,6 @@ body {
   .header { padding: 30px 16px 24px; }
   .header h1 { font-size: 20px; }
   .header h1 .emoji { font-size: 24px; }
-  .cover-avatar { width: 64px; height: 64px; }
   .stats { flex-direction: column; gap: 8px; width: 100%; }
   .stat-card, .progress-container { width: 100%; min-width: 0; }
   .stat-num { font-size: 22px; }
@@ -304,7 +314,6 @@ body {
 .xianyu-toast-overlay.show { display: flex; }
 .xianyu-toast { background: var(--surface); border-radius: var(--radius); max-width: 340px; width: 100%; padding: 28px 24px 22px; text-align: center; box-shadow: var(--shadow-lg); animation: fadeIn 0.25s ease; }
 .xianyu-toast .xt-icon { font-size: 40px; margin-bottom: 10px; }
-.xianyu-toast .xt-qr { width: 190px; max-width: 72%; border-radius: 10px; margin: 6px auto 14px; display: block; box-shadow: var(--shadow); }
 .xianyu-toast .xt-title { font-size: 17px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
 .xianyu-toast .xt-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.7; }
 .xianyu-toast .xt-code { display: inline-block; font-size: 20px; font-weight: 800; letter-spacing: 2px; color: #fff; background: var(--header-grad); padding: 8px 22px; border-radius: 999px; margin-bottom: 16px; }
@@ -312,6 +321,7 @@ body {
 .xianyu-toast .xt-btn.secondary { background: var(--surface-2); color: var(--text-secondary); }
 .xianyu-toast .xt-copied { font-size: 12px; color: #16a34a; margin-bottom: 10px; display: none; }
 .xianyu-toast .xt-copied.show { display: block; }
+.xianyu-toast .xt-qr { width: 190px; max-width: 72%; border-radius: 10px; margin: 6px auto 14px; display: block; box-shadow: var(--shadow); }
 
 .random-modal-hint {
   text-align: center; padding: 14px; background: var(--surface-2); border-radius: var(--radius-sm);
@@ -352,7 +362,7 @@ body {
 [data-theme="dark"] .promo-close:hover { background: rgba(255,255,255,0.08); }
 .promo-icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
 .promo-body { flex: 1; min-width: 0; }
-.promo-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; color: var(--primary-dark); }
+.promo-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; color: #1e3a5f; }
 [data-theme="dark"] .promo-title { color: #93c5fd; }
 .promo-text { font-size: 12.5px; line-height: 1.65; color: var(--text-secondary); }
 .promo-text b { color: var(--primary); font-weight: 600; }
@@ -374,20 +384,17 @@ body {
   <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙</button>
   <button class="mute-toggle" id="muteToggle" title="音效开关">🔊</button>
   <div class="header-content">
-    <img src="cover.png?v=2" class="cover-avatar" alt="封面头像">
-    <h1><span class="emoji">🚔</span> 辅警面试真题卡组</h1>
-    <p class="subtitle">结构化面试 · 历年真题 · 优质解析</p>
+    <h1><span class="emoji" id="siteEmoji">📚</span> <span id="siteTitle">招考题库 · 离线卡组</span></h1>
+    <p class="subtitle" id="siteSubtitle">历年真题 · 优质解析 · 离线可用</p>
+    <div class="mode-tabs" id="modeTabs"></div>
     <div class="stats">
-      <div class="stat-card"><div class="stat-num">138</div><div class="stat-label">总题数</div></div>
-      <div class="stat-card"><div class="stat-num">6</div><div class="stat-label">覆盖年份</div></div>
-      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">题型分类</div></div>
+      <div class="stat-card"><div class="stat-num" id="statNum0">0</div><div class="stat-label" id="statLabel0">总题数</div></div>
+      <div class="stat-card"><div class="stat-num" id="statNum1">0</div><div class="stat-label" id="statLabel1">覆盖年份</div></div>
+      <div class="stat-card"><div class="stat-num" id="statNum2">0</div><div class="stat-label" id="statLabel2">题型分类</div></div>
       <div class="progress-container">
         <div class="progress-text"><span id="progressLabel">📊 离线刷题进度</span><span id="progressPercent">0%</span></div>
         <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
       </div>
-    </div>
-    <div class="nav-link-wrap" style="margin-top:14px;">
-      <a href="written.html" style="display:inline-block;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;text-decoration:none;">📖 去刷笔试真题 →</a>
     </div>
   </div>
 </header>
@@ -395,39 +402,17 @@ body {
   <div class="toolbar-inner">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="searchInput" placeholder="搜索题目关键词、答案内容、场次...">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索题目关键词、答案内容…">
     </div>
-    <div class="filter-row"><span class="filter-label">年份</span>
-      <button class="btn active" data-filter="year" data-value="all">全部</button>
-      <button class="btn" data-filter="year" data-value="2025">2025</button>
-      <button class="btn" data-filter="year" data-value="2024">2024</button>
-      <button class="btn" data-filter="year" data-value="2023">2023</button>
-      <button class="btn" data-filter="year" data-value="2022">2022</button>
-      <button class="btn" data-filter="year" data-value="2021">2021</button>
-      <button class="btn" data-filter="year" data-value="2020">2020</button>
-    </div>
-    <div class="filter-row"><span class="filter-label">题型</span>
-      <button class="btn active" data-filter="type" data-value="all">全部</button>
-      <button class="btn" data-filter="type" data-value="综合分析">综合分析</button>
-      <button class="btn" data-filter="type" data-value="应急应变">应急应变</button>
-      <button class="btn" data-filter="type" data-value="组织管理">组织管理</button>
-      <button class="btn" data-filter="type" data-value="自我认知与职位匹配">自我认知</button>
-      <button class="btn" data-filter="type" data-value="人际沟通">人际沟通</button>
-    </div>
-    <div class="filter-row"><span class="filter-label">标签</span>
-      <button class="btn active" data-filter="tag" data-value="all">全部</button>
-      <button class="btn" data-filter="tag" data-value="高频">🔥 高频</button>
-      <button class="btn" data-filter="tag" data-value="深圳特色">🏙️ 深圳特色</button>
-      <button class="btn" data-filter="tag" data-value="热点">📌 热点</button>
-      <button class="btn" data-filter="tag" data-value="必刷">⭐ 必刷</button>
-    </div>
+    <div id="filterRows"></div>
     <div class="action-row">
       <button class="action-btn" id="expandAll">⏬ 展开全部</button>
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
       <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
       <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
       <button class="action-btn" id="exportBtn">📄 导出题目</button>
-      <button class="action-btn download-offline-btn" id="downloadOfflineBtn">💝 打赏作者</button>
+      <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
+      <button class="action-btn reward-btn" id="rewardBtn">💝 打赏作者</button>
       <span class="result-count" id="resultCount"></span>
     </div>
   </div>
@@ -436,12 +421,10 @@ body {
   <button class="promo-close" id="promoClose" title="收起">×</button>
   <div class="promo-icon">✏️</div>
   <div class="promo-body">
-    <div class="promo-title">作者 · rcj9527</div>
-    <div class="promo-text">
-      本页题库为开源项目，提供<b>离线版本</b>：可自由修改、自带 <b>Anki 记忆卡组</b> 离线背诵。需要完整题库或私人定制，去闲鱼搜 <b>RCJ9527</b>。
-    </div>
+    <div class="promo-title" id="promoTitle">作者</div>
+    <div class="promo-text" id="promoText"></div>
     <div class="promo-actions">
-      <button class="promo-btn" id="promoXianyu">🐟 闲鱼搜 RCJ9527 · 领完整版</button>
+      <button class="promo-btn" id="promoXianyu">📋 复制闲鱼号</button>
     </div>
   </div>
 </div>
@@ -450,15 +433,27 @@ body {
   <button class="action-btn load-more-btn" id="loadMoreBtn">⬇️ 加载更多题目</button>
 </div>
 <button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
-<footer class="footer"><p>© 闲鱼搜 RCJ9527 · 完整版含解析+持续更新，助你一战成警</p></footer>
+<footer class="footer"><p id="footerText">© 离线题库卡组 · 双击即可使用</p></footer>
 
 <div class="xianyu-toast-overlay" id="xianyuToastOverlay">
   <div class="xianyu-toast">
+    <div class="xt-icon">🔑</div>
+    <div class="xt-title">获取完整版 / 更多真题</div>
+    <div class="xt-desc">口令已自动复制，请打开「闲鱼」App，粘贴口令搜索，即可找到店铺获取完整版内容与持续更新～</div>
+    <div class="xt-code" id="xtCode">RCJ9527</div>
+    <div class="xt-copied" id="xtCopied">✅ 口令已复制到剪贴板</div>
+    <button class="xt-btn" id="xtOpenBtn">🐟 打开闲鱼 App</button>
+    <button class="xt-btn secondary" id="xtCloseBtn">我知道了</button>
+  </div>
+</div>
+
+<div class="xianyu-toast-overlay" id="rewardToastOverlay">
+  <div class="xianyu-toast">
     <div class="xt-icon">💝</div>
-    <div class="xt-title">打赏作者 · 支持开源</div>
-    <div class="xt-desc">如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕</div>
-    <img class="xt-qr" src="wechat-reward.png?v=2" alt="微信赞赏码">
-        <button class="xt-btn secondary" id="xtCloseBtn">已打赏 / 关闭</button>
+    <div class="xt-title" id="rewardTitle">打赏作者 · 支持开源</div>
+    <div class="xt-desc" id="rewardDesc">如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕</div>
+    <img class="xt-qr" id="rewardQr" src="" alt="赞赏码">
+    <button class="xt-btn secondary" id="rewardCloseBtn">已打赏 / 关闭</button>
   </div>
 </div>
 
@@ -500,33 +495,52 @@ body {
 </div>
 
 <style>.loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 20px;color:var(--text-secondary);font-size:15px}.spinner{width:34px;height:34px;border:4px solid var(--border);border-top-color:var(--primary-light);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style>
+<script src="data-written.js"></script>
 <script src="data-interview.js"></script>
+<script src="config.js"></script>
 <script>
-// 题库数据已外置到 data-interview.js（独立 JS 文件，可长期缓存，离线可用）
-
-
-// 本地离线学习状态数据库控制器
-var StorageCtrl = {
-  get: function() {
-    var val = localStorage.getItem("rcj_study_status");
-    return val ? JSON.parse(val) : {};
-  },
-  save: function(status) {
-    localStorage.setItem("rcj_study_status", JSON.stringify(status));
-    this.updateUI();
-  },
-  updateUI: function() {
-    var status = this.get();
-    var masteredCount = 0;
-    DATA.forEach(function(q) {
-      if(status[q._idx] === 'mastered') masteredCount++;
-    });
-    var percent = DATA.length ? Math.round((masteredCount / DATA.length) * 100) : 0;
-    document.getElementById("progressPercent").textContent = percent + "%";
-    document.getElementById("progressBar").style.width = percent + "%";
-    document.getElementById("progressLabel").innerHTML = "📊 已掌握 <strong>" + masteredCount + "</strong> / " + DATA.length + " 道题";
-  }
+// ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
+var CONFIG = window.SITE_CONFIG || {
+  siteTitle: "考试题库",
+  siteEmoji: "📚",
+  subtitle: "历年真题 · 优质解析 · 离线可用",
+  logo: "",
+  cover: "",
+  themeColor: "#1e3a5f",
+  contact: "",
+  xianyuCode: "",
+  promoTitle: "",
+  promoText: "",
+  rewardImage: "",
+  rewardTitle: "打赏作者 · 支持开源",
+  rewardDesc: "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
+  footerText: "Powered by RCJ Exam Template",
+  timerSeconds: 180,
+  enabledModules: { promo: true, xianyu: false, reward: false, progress: true, themeToggle: true, record: false },
+  defaultPage: "written"
 };
+
+// 数据来源：笔试 = window.DATA_WRITTEN，面试 = window.DATA_INTERVIEW；兜底 window.DATA（单文件模式）
+var W_DATA = window.DATA_WRITTEN || [];
+var I_DATA = window.DATA_INTERVIEW || [];
+var G_DATA = window.DATA || [];
+
+var hasW = W_DATA.length > 0, hasI = I_DATA.length > 0;
+var singleMode = null;
+if (!hasW && !hasI && G_DATA.length) {
+  var _s = G_DATA[0];
+  singleMode = (_s && (_s.title !== undefined || _s.session !== undefined) && !_s.options) ? "interview" : "written";
+}
+
+function dataset() {
+  if (MODE === "written") return hasW ? W_DATA : G_DATA;
+  return hasI ? I_DATA : G_DATA;
+}
+
+// 默认模式：两库都在时，题量大的优先展示；否则展示存在的那个
+var MODE = (hasW && hasI)
+  ? (CONFIG.defaultPage === "interview" ? "interview" : "written")
+  : (hasW ? "written" : (hasI ? "interview" : singleMode));
 
 var TYPE_MAP = {
   "综合分析": { cls: "zhfx", label: "综合分析" },
@@ -535,253 +549,350 @@ var TYPE_MAP = {
   "自我认知与职位匹配": { cls: "zwrz", label: "自我认知" },
   "人际沟通": { cls: "rjgt", label: "人际沟通" }
 };
+var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题" };
 var TAG_MAP = {
   "高频": { cls: "gp", icon: "🔥" },
   "深圳特色": { cls: "sz", icon: "🏙️" },
   "热点": { cls: "rd", icon: "📌" },
   "必刷": { cls: "bs", icon: "⭐" }
 };
-var filterYear = "all";
-var filterType = "all";
-var filterTag = "all";
 
-var filterMark = false;
+// 标签统一成数组：面试 tags 是数组，笔试 tags 是空格分隔字符串
+function normTags(q) {
+  var t = q.tags;
+  if (!t) return [];
+  if (Array.isArray(t)) return t;
+  return String(t).split(/\s+/).filter(Boolean);
+}
+
+// 掌握度存储：按 mode 隔离
+var StorageCtrl = {
+  key: function () { return "sso_status_" + MODE; },
+  get: function () {
+    try { return JSON.parse(localStorage.getItem(this.key())) || {}; } catch (e) { return {}; }
+  },
+  set: function (db) { try { localStorage.setItem(this.key(), JSON.stringify(db)); } catch (e) {} this.updateUI(); },
+  updateUI: function () {
+    var db = this.get();
+    var data = dataset();
+    var mc = 0;
+    data.forEach(function (q) { if (db[q._idx] === "mastered") mc++; });
+    var pct = data.length ? Math.round((mc / data.length) * 100) : 0;
+    var pl = document.getElementById("progressLabel");
+    var pp = document.getElementById("progressPercent");
+    var pb = document.getElementById("progressBar");
+    if (pl) pl.innerHTML = "📊 已掌握 <strong>" + mc + "</strong> / " + data.length + " 道题";
+    if (pp) pp.textContent = pct + "%";
+    if (pb) pb.style.width = pct + "%";
+  }
+};
 
 function escapeHtml(text) {
-  var d = document.createElement("div"); d.textContent = text; return d.innerHTML;
+  var d = document.createElement("div"); d.textContent = text == null ? "" : text; return d.innerHTML;
 }
 function escapeRegex(text) { return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 function highlight(text, keyword) {
   var escaped = escapeHtml(text);
   if (!keyword) return escaped;
   try { var re = new RegExp("(" + escapeRegex(keyword) + ")", "gi"); return escaped.replace(re, "<mark>$1</mark>"); }
-  catch(e) { return escaped; }
+  catch (e) { return escaped; }
 }
 function formatAnswer(text, keyword) {
-  var html = escapeHtml(text);
-  if (keyword) { try { var re = new RegExp("(" + escapeRegex(keyword) + ")", "gi"); html = html.replace(re, "<mark>$1</mark>"); } catch(e) {} }
+  var html = escapeHtml(text == null ? "" : text);
+  if (keyword) { try { var re = new RegExp("(" + escapeRegex(keyword) + ")", "gi"); html = html.replace(re, "<mark>$1</mark>"); } catch (e) {} }
   return html.replace(/\n/g, "<br>");
 }
 
-var PAGE_SIZE_I = 40;
-var flatItemsI = [];
-var renderedCountI = 0;
-var currentOpenYear = null;
-var yearCountsI = {};
-var totalShownI = 0;
-var currentStatusDB = {};
-
-function cardHtmlI(q, search, statusDB) {
-  var typeInfo = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
-  var tagBadges = "";
-  if (q.tags && q.tags.length > 0) {
-    q.tags.forEach(function(t) {
-      var ti = TAG_MAP[t];
-      if (ti) { tagBadges += "<span class=\"tag-badge tag-" + ti.cls + "\"><span class=\"tag-icon\">" + ti.icon + "</span> " + t + "</span>"; }
-    });
-  }
-  var titleHtml = highlight(q.title, search);
-  var answerHtml = formatAnswer(q.answer, search);
-  var currentStatus = statusDB[q._idx] || 'not-mastered';
-  var actNotMaster = (currentStatus === 'not-mastered') ? 'active' : '';
-  var actMaster = (currentStatus === 'mastered') ? 'active' : '';
-  return "<div class=\"card\" id=\"q" + q._idx + "\"><div class=\"card-header\"><div class=\"card-left\"><div class=\"card-badges\"><span class=\"badge badge-type-" + typeInfo.cls + "\"><span class=\"tag-icon\">📝</span> " + typeInfo.label + "</span><span class=\"badge badge-year\">" + q.year + "</span>" + (q.session ? "<span class=\"badge badge-session\">" + escapeHtml(q.session) + "</span>" : "") + tagBadges + "</div><div class=\"card-title\">" + titleHtml + "</div></div><span class=\"arrow\">▼</span></div><div class=\"card-body\"><div class=\"card-body-inner\"><div class=\"hint-bar\"><span>💡 请先独立思考，展开查看解析。</span><div class=\"study-actions\"><button class=\"study-btn not-mastered " + actNotMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'not-mastered')\">❌ 仍需练习</button><button class=\"study-btn mastered " + actMaster + "\" onclick=\"changeTrack(event, " + q._idx + ", 'mastered')\">🟢 已掌握</button></div></div><div class=\"answer-section\"><div class=\"answer-title\">📝 参考答案</div><div class=\"answer-content\">" + answerHtml + "</div></div></div></div></div>";
+// 题库维度（按 mode）
+function activeDimensions() {
+  return MODE === "interview"
+    ? [{ key: "year", label: "年份" }, { key: "type", label: "题型" }, { key: "tag", label: "标签" }]
+    : [{ key: "batch", label: "批次" }, { key: "type", label: "题型" }];
 }
-
-function computeFilteredI() {
-  var search = document.getElementById("searchInput").value.trim().toLowerCase();
-  var byYear = {};
-  var statusDB = StorageCtrl.get();
-  DATA.forEach(function(q) {
-    var yearMatch = filterYear === "all" || q.year === filterYear;
-    var typeMatch = filterType === "all" || q.type === filterType;
-    var tagMatch = filterTag === "all" || (q.tags && q.tags.indexOf(filterTag) !== -1);
-    var markMatch = !filterMark || (statusDB[q._idx] === 'not-mastered');
-    var searchText = (q.title + " " + q.answer + " " + q.session + " " + (q.tags || []).join(" ")).toLowerCase();
-    var searchMatch = !search || searchText.indexOf(search) !== -1;
-    if (yearMatch && typeMatch && tagMatch && markMatch && searchMatch) {
-      if (!byYear[q.year]) byYear[q.year] = [];
-      byYear[q.year].push(q);
-    }
+function deriveValues(dim) {
+  var set = {}, data = dataset();
+  data.forEach(function (q) {
+    if (dim === "tag") { normTags(q).forEach(function (t) { if (TAG_MAP[t]) set[t] = 1; }); }
+    else if (dim === "year") { if (q.year) set[q.year] = 1; }
+    else if (dim === "batch") { if (q.batch) set[q.batch] = 1; }
+    else if (dim === "type") { if (q.type) set[q.type] = 1; }
   });
-  var years = Object.keys(byYear).sort(function(a, b) { return b - a; });
-  var flat = [];
-  years.forEach(function(year) { byYear[year].forEach(function(q) { flat.push(q); }); });
-  return { flat: flat, statusDB: statusDB };
+  return Object.keys(set);
+}
+function dimLabel(dim, val) {
+  if (dim === "type") return MODE === "interview" ? (TYPE_MAP[val] ? TYPE_MAP[val].label : val) : (WRITTEN_TYPE_LABEL[val] || val);
+  return val;
 }
 
-function updateCountI() {
-  var countEl = document.getElementById("resultCount");
-  if (!countEl) return;
-  var tail = totalShownI < DATA.length ? "（筛选后 " + totalShownI + "）" : "";
-  countEl.innerHTML = "显示 <strong>" + renderedCountI + "</strong>/" + DATA.length + " 道" + tail;
+var filterState = {};
+var filterMark = false;
+var PAGE_SIZE = 40;
+var flatItems = [], renderedCount = 0, currentGroup = null, groupCounts = {}, totalShown = 0, currentSearch = "";
+var PAGE_SIZE_I = PAGE_SIZE;
+
+function groupKey(q) { return MODE === "interview" ? (q.year || "未注明年份") : (q.batch || "未注明批次"); }
+
+function searchText(q) {
+  if (MODE === "interview") return (q.title + " " + (q.answer || "") + " " + (q.session || "") + " " + normTags(q).join(" "));
+  var opts = (q.options || []).map(function (o) { return o.text; }).join(" ");
+  return (q.stem + " " + opts + " " + (q.answer || "") + " " + (q.explanation || "") + " " + (q.batch || "") + " " + normTags(q).join(" "));
 }
 
-function showLoadMoreI() { var w = document.getElementById("loadMoreWrap"); if (w) w.style.display = "block"; }
-function hideLoadMoreI() { var w = document.getElementById("loadMoreWrap"); if (w) w.style.display = "none"; }
+function buildFilterRows() {
+  var wrap = document.getElementById("filterRows");
+  wrap.innerHTML = "";
+  activeDimensions().forEach(function (d) {
+    var row = document.createElement("div");
+    row.className = "filter-row";
+    var lab = document.createElement("span");
+    lab.className = "filter-label"; lab.textContent = d.label;
+    row.appendChild(lab);
+    var all = document.createElement("button");
+    all.className = "btn active"; all.dataset.dim = d.key; all.dataset.value = "all"; all.textContent = "全部";
+    row.appendChild(all);
+    deriveValues(d.key).forEach(function (v) {
+      var b = document.createElement("button");
+      b.className = "btn"; b.dataset.dim = d.key; b.dataset.value = v; b.textContent = dimLabel(d.key, v);
+      row.appendChild(b);
+    });
+    wrap.appendChild(row);
+  });
+}
 
-function appendBatchI() {
-  var container = document.getElementById("questionsList");
+function computeFiltered() {
   var search = document.getElementById("searchInput").value.trim().toLowerCase();
-  if (renderedCountI === 0) {
-    currentOpenYear = null;
-    if (flatItemsI.length === 0) {
-      container.innerHTML = "<div class=\"no-result\">🔍 未找到匹配的题目，请调整筛选条件</div>";
-      hideLoadMoreI();
-      updateCountI();
-      return;
+  currentSearch = search;
+  var data = dataset();
+  var statusDB = StorageCtrl.get();
+  var dims = activeDimensions();
+  return data.filter(function (q) {
+    for (var i = 0; i < dims.length; i++) {
+      var d = dims[i], val = filterState[d.key] || "all";
+      if (val === "all") continue;
+      var ok;
+      if (d.key === "tag") ok = normTags(q).indexOf(val) !== -1;
+      else ok = (q[d.key] === val);
+      if (!ok) return false;
     }
-    container.innerHTML = "";
-  }
-  var end = Math.min(renderedCountI + PAGE_SIZE_I, flatItemsI.length);
-  var html = "";
-  for (var i = renderedCountI; i < end; i++) {
-    var q = flatItemsI[i];
-    if (q.year !== currentOpenYear) {
-      if (currentOpenYear !== null) html += "</div>";
-      currentOpenYear = q.year;
-      html += "<div class=\"year-section\"><h2 class=\"year-title\">" + q.year + "年 <span class=\"year-count\">" + (yearCountsI[q.year] || 0) + "道</span></h2>";
-    }
-    html += cardHtmlI(q, search, currentStatusDB);
-  }
-  container.insertAdjacentHTML("beforeend", html);
-  renderedCountI = end;
-  if (renderedCountI >= flatItemsI.length) {
-    if (currentOpenYear !== null) {
-      container.insertAdjacentHTML("beforeend", "</div>");
-      currentOpenYear = null;
-    }
-    hideLoadMoreI();
-  } else {
-    showLoadMoreI();
-  }
-  updateCountI();
+    if (filterMark && statusDB[q._idx] !== "not-mastered") return false;
+    if (search && searchText(q).toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
 }
 
-function loadAllI() {
-  while (renderedCountI < flatItemsI.length) appendBatchI();
+function tagBadgesHtml(q) {
+  var h = "";
+  normTags(q).forEach(function (t) {
+    var ti = TAG_MAP[t];
+    if (ti) h += '<span class="tag-badge tag-' + ti.cls + '">' + ti.icon + " " + escapeHtml(t) + "</span>";
+  });
+  return h;
+}
+function answerSection(html) {
+  return '<div class="answer-section"><div class="answer-title">📝 ' + (MODE === "interview" ? "参考答案" : "答案与解析") + '</div><div class="answer-content">' + html + "</div></div>";
+}
+
+function cardHtml(q) {
+  var badges, titleHtml, bodyInner;
+  if (MODE === "interview") {
+    var ti = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
+    badges = '<span class="badge badge-type-' + ti.cls + '">📝 ' + escapeHtml(ti.label) + "</span>"
+      + (q.year ? '<span class="badge badge-year">' + escapeHtml(q.year) + "</span>" : "")
+      + (q.session ? '<span class="badge badge-session">' + escapeHtml(q.session) + "</span>" : "")
+      + tagBadgesHtml(q);
+    titleHtml = highlight(q.title || "", currentSearch);
+    bodyInner = answerSection(formatAnswer(q.answer || "（暂无参考答案）", currentSearch));
+  } else {
+    var wl = WRITTEN_TYPE_LABEL[q.type] || q.type;
+    badges = (q.num != null ? '<span class="badge badge-year">#' + q.num + "</span>" : "")
+      + (q.batch ? '<span class="badge badge-session">' + escapeHtml(q.batch) + "</span>" : "")
+      + '<span class="badge badge-type-zhfx">📝 ' + escapeHtml(wl) + "</span>"
+      + tagBadgesHtml(q);
+    titleHtml = highlight(q.stem || "", currentSearch);
+    var optsHtml = "";
+    if (q.options && q.options.length) {
+      q.options.forEach(function (o) {
+        var corr = (q.answer != null && String(q.answer).indexOf(o.letter) !== -1) ? " correct" : "";
+        optsHtml += '<div class="opt-row' + corr + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+      });
+    }
+    var ansHtml = "<div>答案：<b>" + escapeHtml(q.answer == null ? "" : q.answer) + "</b></div>";
+    if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
+    bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "") + answerSection(ansHtml);
+  }
+  var statusDB = StorageCtrl.get();
+  var cur = statusDB[q._idx] || "not-mastered";
+  var actNM = cur === "not-mastered" ? "active" : "";
+  var actM = cur === "mastered" ? "active" : "";
+  return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
+    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>💡 请先独立思考，展开查看' + (MODE === "interview" ? "解析" : "答案与解析") + '。</span>'
+    + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
+    + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
+    + bodyInner + "</div></div></div>";
 }
 
 function render() {
-  var res = computeFilteredI();
-  flatItemsI = res.flat;
-  currentStatusDB = res.statusDB;
-  totalShownI = flatItemsI.length;
-  renderedCountI = 0;
-  currentOpenYear = null;
-  yearCountsI = {};
-  flatItemsI.forEach(function(q) { yearCountsI[q.year] = (yearCountsI[q.year] || 0) + 1; });
-  appendBatchI();
+  var list = computeFiltered();
+  flatItems = list; totalShown = list.length; renderedCount = 0; currentGroup = null; groupCounts = {};
+  if (MODE === "interview") flatItems.sort(function (a, b) { return String(b.year || "").localeCompare(String(a.year || "")); });
+  flatItems.forEach(function (q) { var g = groupKey(q); groupCounts[g] = (groupCounts[g] || 0) + 1; });
+  var container = document.getElementById("questionsList");
+  if (flatItems.length === 0) { container.innerHTML = '<div class="no-result">🔍 未找到匹配的题目，请调整筛选条件</div>'; hideLoadMore(); updateCount(); return; }
+  container.innerHTML = "";
+  appendBatch();
 }
+
+function appendBatch() {
+  var container = document.getElementById("questionsList");
+  var end = Math.min(renderedCount + PAGE_SIZE, flatItems.length);
+  var html = "";
+  for (var i = renderedCount; i < end; i++) {
+    var q = flatItems[i], g = groupKey(q);
+    if (g !== currentGroup) {
+      if (currentGroup !== null) html += "</div>";
+      currentGroup = g;
+      html += '<div class="year-section"><h2 class="year-title">' + escapeHtml(g) + ' <span class="year-count">' + (groupCounts[g] || 0) + "道</span></h2>";
+    }
+    html += cardHtml(q);
+  }
+  container.insertAdjacentHTML("beforeend", html);
+  renderedCount = end;
+  if (renderedCount >= flatItems.length) {
+    if (currentGroup !== null) { container.insertAdjacentHTML("beforeend", "</div>"); currentGroup = null; }
+    hideLoadMore();
+  } else showLoadMore();
+  updateCount();
+}
+function loadAll() { while (renderedCount < flatItems.length) appendBatch(); }
+
+function updateCount() {
+  var el = document.getElementById("resultCount");
+  if (!el) return;
+  var tail = totalShown < dataset().length ? "（筛选后 " + totalShown + "）" : "";
+  el.innerHTML = "显示 <strong>" + renderedCount + "</strong>/" + dataset().length + " 道" + tail;
+}
+function showLoadMore() { document.getElementById("loadMoreWrap").style.display = "block"; }
+function hideLoadMore() { document.getElementById("loadMoreWrap").style.display = "none"; }
 
 function changeTrack(e, idx, status) {
   e.stopPropagation();
   var db = StorageCtrl.get();
   db[idx] = status;
-  StorageCtrl.save(db);
-  
+  StorageCtrl.set(db);
   var pNode = e.target.parentElement;
-  pNode.querySelectorAll(".study-btn").forEach(function(b) { b.classList.remove("active"); });
+  pNode.querySelectorAll(".study-btn").forEach(function (b) { b.classList.remove("active"); });
   e.target.classList.add("active");
 }
 
-document.getElementById("questionsList").addEventListener("click", function(e) {
+function updateStats() {
+  var data = dataset();
+  var dimKey = MODE === "interview" ? "year" : "batch";
+  var dimSet = {}, typeSet = {};
+  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[q.type] = 1; });
+  document.getElementById("statNum0").textContent = data.length;
+  document.getElementById("statLabel0").textContent = "总题数";
+  document.getElementById("statNum1").textContent = Object.keys(dimSet).length;
+  document.getElementById("statLabel1").textContent = MODE === "interview" ? "覆盖年份" : "覆盖批次";
+  document.getElementById("statNum2").textContent = Object.keys(typeSet).length;
+  document.getElementById("statLabel2").textContent = "题型分类";
+}
+
+function buildModeTabs() {
+  var box = document.getElementById("modeTabs");
+  box.innerHTML = "";
+  var tabs = [];
+  if (hasW || singleMode === "written") tabs.push({ m: "written", label: "📖 笔试" });
+  if (hasI || singleMode === "interview") tabs.push({ m: "interview", label: "🎤 面试" });
+  if (tabs.length <= 1) { box.style.display = "none"; return; }
+  box.style.display = "inline-flex";
+  tabs.forEach(function (t) {
+    var b = document.createElement("button");
+    b.className = "mode-tab" + (t.m === MODE ? " active" : "");
+    b.dataset.mode = t.m; b.textContent = t.label;
+    b.addEventListener("click", function () { switchMode(t.m); });
+    box.appendChild(b);
+  });
+}
+
+function switchMode(m) {
+  if (m === "written" && !hasW && singleMode !== "written") return;
+  if (m === "interview" && !hasI && singleMode !== "interview") return;
+  MODE = m;
+  filterState = {};
+  buildModeTabs();
+  buildFilterRows();
+  updateStats();
+  StorageCtrl.updateUI();
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+document.getElementById("questionsList").addEventListener("click", function (e) {
   var header = e.target.closest(".card-header");
   if (header) header.parentElement.classList.toggle("open");
 });
-
-document.querySelectorAll(".btn[data-filter]").forEach(function(btn) {
-  btn.addEventListener("click", function() {
-    var filter = this.dataset.filter; var value = this.dataset.value;
-    document.querySelectorAll(".btn[data-filter=\"" + filter + "\"]").forEach(function(b) { b.classList.remove("active"); });
-    this.classList.add("active");
-    if (filter === "year") filterYear = value;
-    if (filter === "type") filterType = value;
-    if (filter === "tag") filterTag = value;
-    render();
-  });
+document.getElementById("filterRows").addEventListener("click", function (e) {
+  var btn = e.target.closest(".btn");
+  if (!btn) return;
+  var dim = btn.dataset.dim, val = btn.dataset.value;
+  filterState[dim] = val;
+  this.querySelectorAll('.btn[data-dim="' + dim + '"]').forEach(function (b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  render();
 });
 document.getElementById("searchInput").addEventListener("input", render);
-document.getElementById("loadMoreBtn").addEventListener("click", appendBatchI);
-document.getElementById("expandAll").addEventListener("click", function() {
-  loadAllI();
-  document.querySelectorAll(".card").forEach(function(c) { c.classList.add("open"); });
-});
+document.getElementById("loadMoreBtn").addEventListener("click", appendBatch);
+document.getElementById("expandAll").addEventListener("click", function () { loadAll(); document.querySelectorAll(".card").forEach(function (c) { c.classList.add("open"); }); });
+document.getElementById("collapseAll").addEventListener("click", function () { document.querySelectorAll(".card").forEach(function (c) { c.classList.remove("open"); }); });
 
 // 顶部宣传 banner
 (function () {
   var banner = document.getElementById("promoBanner");
-  var KEY = "fj_promo_closed";
+  var KEY = "sso_promo_closed";
   try { if (localStorage.getItem(KEY) === "1") banner.style.display = "none"; } catch (e) {}
   document.getElementById("promoClose").addEventListener("click", function () {
     banner.style.display = "none";
     try { localStorage.setItem(KEY, "1"); } catch (e) {}
   });
   var xb = document.getElementById("promoXianyu");
-  if (xb) xb.addEventListener("click", function () {
-    var t = "rcj9527";
+  xb.addEventListener("click", function () {
+    var t = CONFIG.xianyuCode;
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(t).then(function () {
-        xb.textContent = "✅ 已复制：rcj9527";
-        setTimeout(function () { xb.textContent = "🐟 闲鱼搜 RCJ9527 · 领完整版"; }, 2000);
+        xb.textContent = "✅ 已复制：" + t;
+        setTimeout(function () { xb.textContent = "📋 复制闲鱼号：" + t; }, 2000);
       });
-    } else {
-      xb.textContent = "闲鱼账号：rcj9527";
-    }
+    } else { xb.textContent = "闲鱼号：" + t; }
   });
 })();
-document.getElementById("collapseAll").addEventListener("click", function() {
-  document.querySelectorAll(".card").forEach(function(c) { c.classList.remove("open"); });
-});
 
-// 全真考场倒计时时钟逻辑
-var testTimer = null;
-var timerLimit = 180; // 3分钟
-var timerRemaining = 180;
-
+// 全真考场倒计时
+var testTimer = null, timerLimit = CONFIG.timerSeconds, timerRemaining = CONFIG.timerSeconds;
 function startTimerCountdown() {
   clearInterval(testTimer);
   timerRemaining = timerLimit;
   var fillEl = document.getElementById("timerBarFill");
   var textEl = document.getElementById("timerDigits");
-  fillEl.classList.remove("warning");
-  fillEl.style.width = "100%";
-  
-  testTimer = setInterval(function() {
+  fillEl.classList.remove("warning"); fillEl.style.width = "100%";
+  testTimer = setInterval(function () {
     timerRemaining--;
-    var m = Math.floor(timerRemaining / 60);
-    var s = timerRemaining % 60;
+    var m = Math.floor(timerRemaining / 60), s = timerRemaining % 60;
     textEl.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
-    
-    var progressRatio = (timerRemaining / timerLimit) * 100;
-    fillEl.style.width = progressRatio + "%";
-    
-    if (timerRemaining <= 30) {
-      fillEl.classList.add("warning");
-    }
-    if (timerRemaining <= 0) {
-      clearInterval(testTimer);
-      textEl.textContent = "00:00 - 时间到！";
-    }
+    fillEl.style.width = (timerRemaining / timerLimit) * 100 + "%";
+    if (timerRemaining <= 30) fillEl.classList.add("warning");
+    if (timerRemaining <= 0) { clearInterval(testTimer); textEl.textContent = "00:00 - 时间到！"; }
   }, 1000);
 }
+function stopTimerCountdown() { clearInterval(testTimer); }
 
-function stopTimerCountdown() {
-  clearInterval(testTimer);
-}
-
-// 原生高级前端麦克风录音核心架构 + 语音转文字实时预览
-var mediaRecorder = null;
-var audioChunks = [];
-var recordBtn = document.getElementById("recordCtrlBtn");
+// 录音（仅面试模式）
+var mediaRecorder = null, audioChunks = [], recordBtn = document.getElementById("recordCtrlBtn");
 var audioPlayer = document.getElementById("localAudioPlayer");
 var transcriptBox = document.getElementById("transcriptBox");
 var transcriptContent = document.getElementById("transcriptContent");
 var transcriptNote = document.getElementById("transcriptNote");
-
 var SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-var speechRecognizer = null;
-var finalTranscript = "";
+var speechRecognizer = null, finalTranscript = "";
 
 function initSpeechRecognizer() {
   if (!SpeechRecognitionImpl) {
@@ -790,311 +901,245 @@ function initSpeechRecognizer() {
     return null;
   }
   var rec = new SpeechRecognitionImpl();
-  rec.lang = "zh-CN";
-  rec.continuous = true;
-  rec.interimResults = true;
-  rec.onresult = function(e) {
+  rec.lang = "zh-CN"; rec.continuous = true; rec.interimResults = true;
+  rec.onresult = function (e) {
     var interim = "";
     for (var i = e.resultIndex; i < e.results.length; i++) {
       var text = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finalTranscript += text;
-      else interim += text;
+      if (e.results[i].isFinal) finalTranscript += text; else interim += text;
     }
-    transcriptContent.innerHTML = escapeHtml(finalTranscript) + "<span class=\"transcript-interim\">" + escapeHtml(interim) + "</span>";
+    transcriptContent.innerHTML = escapeHtml(finalTranscript) + '<span class="transcript-interim">' + escapeHtml(interim) + "</span>";
   };
-  rec.onerror = function(e) {
-    console.warn("语音识别提示：", e.error);
+  rec.onerror = function (e) {
     var msg = "";
-    if (e.error === "network") {
-      msg = "⚠️ 网络无法连接语音识别服务（国内网络常见，需科学上网），文字转写暂不可用，但录音回听不受影响";
-    } else if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-      msg = "⚠️ 麦克风/语音识别权限被拒绝，请检查浏览器权限设置";
-    } else if (e.error === "no-speech") {
-      msg = ""; // 静音超时，属正常现象，不打扰用户
-    } else {
-      msg = "⚠️ 语音转文字暂时出错（" + e.error + "），不影响录音回听";
-    }
-    if (msg) {
-      transcriptNote.textContent = msg;
-      transcriptNote.style.display = "block";
-    }
+    if (e.error === "network") msg = "⚠️ 网络无法连接语音识别服务（国内网络常见，需科学上网），文字转写暂不可用，但录音回听不受影响";
+    else if (e.error === "not-allowed" || e.error === "service-not-allowed") msg = "⚠️ 麦克风/语音识别权限被拒绝，请检查浏览器权限设置";
+    else if (e.error === "no-speech") msg = "";
+    else msg = "⚠️ 语音转文字暂时出错（" + e.error + "），不影响录音回听";
+    if (msg) { transcriptNote.textContent = msg; transcriptNote.style.display = "block"; }
   };
-  rec.onend = function() {
-    // 部分浏览器录音较长时会自动断开识别，若仍在录音则自动重连
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      try { rec.start(); } catch (e) {}
-    }
-  };
+  rec.onend = function () { if (mediaRecorder && mediaRecorder.state === "recording") { try { rec.start(); } catch (e) {} } };
   return rec;
 }
-
 function initAudioRecorderSystem() {
-  recordBtn.onclick = function() {
+  recordBtn.onclick = function () {
     if (!mediaRecorder || mediaRecorder.state === "inactive") {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(function(stream) {
-          audioChunks = [];
-          mediaRecorder = new MediaRecorder(stream);
-          mediaRecorder.ondataavailable = function(e) {
-            audioChunks.push(e.data);
-          };
-          mediaRecorder.onstop = function() {
-            var audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-            var audioUrl = URL.createObjectURL(audioBlob);
-            audioPlayer.src = audioUrl;
-            audioPlayer.style.display = "block";
-          };
-          
-          mediaRecorder.start();
-          recordBtn.textContent = "⏹️ 停止录音并回听";
-          recordBtn.className = "record-ctrl-btn recording";
-
-          // 同步启动语音转文字实时预览
-          finalTranscript = "";
-          transcriptContent.innerHTML = "";
-          transcriptBox.classList.add("show");
-          transcriptNote.style.display = "none";
-          speechRecognizer = initSpeechRecognizer();
-          if (speechRecognizer) {
-            try { speechRecognizer.start(); } catch (e) {}
-          }
-        })
-        .catch(function(err) {
-          alert("麦克风调用失败！请确保已授予麦克风权限，或在 HTTPS 线上安全环境打开网站。本地双击部分浏览器受安全策略限制不可直接调用录音。");
-          console.error(err);
-        });
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = function (e) { audioChunks.push(e.data); };
+        mediaRecorder.onstop = function () {
+          var audioBlob = new Blob(audioChunks, { type: "audio/mp3" });
+          audioPlayer.src = URL.createObjectURL(audioBlob);
+          audioPlayer.style.display = "block";
+        };
+        mediaRecorder.start();
+        recordBtn.textContent = "⏹️ 停止录音并回听"; recordBtn.className = "record-ctrl-btn recording";
+        finalTranscript = ""; transcriptContent.innerHTML = ""; transcriptBox.classList.add("show"); transcriptNote.style.display = "none";
+        speechRecognizer = initSpeechRecognizer();
+        if (speechRecognizer) { try { speechRecognizer.start(); } catch (e) {} }
+      }).catch(function (err) {
+        alert("麦克风调用失败！请确保已授予麦克风权限，或在 HTTPS 线上安全环境打开网站。本地双击部分浏览器受安全策略限制不可直接调用录音。");
+      });
     } else {
       mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(function(track) { track.stop(); }); // 释放硬件指针
-      recordBtn.textContent = "🎙️ 开始录音演练";
-      recordBtn.className = "record-ctrl-btn idle";
-      if (speechRecognizer) {
-        try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {}
-      }
+      mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); });
+      recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
+      if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {} }
     }
   };
 }
-
 function resetAudioRecorderUI() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(function(track) { track.stop(); });
-  }
-  if (speechRecognizer) {
-    try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {}
-  }
-  recordBtn.textContent = "🎙️ 开始录音演练";
-  recordBtn.className = "record-ctrl-btn idle";
-  audioPlayer.src = "";
-  audioPlayer.style.display = "none";
-  transcriptBox.classList.remove("show");
-  transcriptContent.innerHTML = "";
-  finalTranscript = "";
+  if (mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); }); }
+  if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {} }
+  recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
+  audioPlayer.src = ""; audioPlayer.style.display = "none";
+  transcriptBox.classList.remove("show"); transcriptContent.innerHTML = ""; finalTranscript = "";
 }
 
-// 随机出题核心模块
+// 随机抽题
 var randomModal = document.getElementById("randomModal");
 var randomModalReveal = document.getElementById("randomModalReveal");
 var currentRandomQ = null;
 
+function randomBadgesHtml(q) {
+  var html = "";
+  if (MODE === "interview") {
+    var ti = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
+    html += '<span class="badge badge-type-' + ti.cls + '">📝 ' + escapeHtml(ti.label) + "</span>";
+    if (q.year) html += '<span class="badge badge-year">' + escapeHtml(q.year) + "</span>";
+    if (q.session) html += '<span class="badge badge-session">' + escapeHtml(q.session) + "</span>";
+    html += tagBadgesHtml(q);
+  } else {
+    if (q.num != null) html += '<span class="badge badge-year">#' + q.num + "</span>";
+    if (q.batch) html += '<span class="badge badge-session">' + escapeHtml(q.batch) + "</span>";
+    var wl = WRITTEN_TYPE_LABEL[q.type] || q.type;
+    html += '<span class="badge badge-type-zhfx">📝 ' + escapeHtml(wl) + "</span>";
+    html += tagBadgesHtml(q);
+  }
+  return html;
+}
+function randomQuestionHtml(q) {
+  if (MODE === "interview") return escapeHtml(q.title || "");
+  var h = escapeHtml(q.stem || "");
+  if (q.options && q.options.length) {
+    h += '<div style="margin-top:12px">';
+    q.options.forEach(function (o) {
+      var corr = (q.answer != null && String(q.answer).indexOf(o.letter) !== -1) ? " correct" : "";
+      h += '<div class="opt-row' + corr + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+    });
+    h += "</div>";
+  }
+  return h;
+}
+function randomAnswerHtml(q) {
+  if (MODE === "interview") return formatAnswer(q.answer || "（暂无参考答案）", "");
+  var a = q.answer == null ? "" : q.answer;
+  var h = "<div>答案：<b>" + escapeHtml(a) + "</b></div>";
+  if (q.explanation) h += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, "") + "</div>";
+  return h;
+}
 function showRandomQuestion() {
   resetAudioRecorderUI();
   startTimerCountdown();
-  
-  var idx = Math.floor(Math.random() * DATA.length);
-  currentRandomQ = DATA[idx];
-  var q = currentRandomQ;
-  var typeInfo = TYPE_MAP[q.type] || { cls: "zhfx", label: q.type };
-  var tagBadges = "";
-  if (q.tags && q.tags.length > 0) {
-    q.tags.forEach(function(t) {
-      var ti = TAG_MAP[t];
-      if (ti) { tagBadges += "<span class=\"tag-badge tag-" + ti.cls + "\"><span class=\"tag-icon\">" + ti.icon + "</span> " + t + "</span>"; }
-    });
-  }
-  
-  document.getElementById("randomModalBadges").innerHTML = 
-    "<span class=\"badge badge-type-" + typeInfo.cls + "\"><span class=\"tag-icon\">📝</span> " + typeInfo.label + "</span>" +
-    "<span class=\"badge badge-year\">" + q.year + "</span>" +
-    (q.session ? "<span class=\"badge badge-session\">" + escapeHtml(q.session) + "</span>" : "") + tagBadges;
-  
-  document.getElementById("randomModalQuestion").textContent = q.title;
-  document.getElementById("randomModalAnswerContent").innerHTML = formatAnswer(q.answer, "");
-  
+  var data = dataset();
+  if (!data.length) return;
+  var q = data[Math.floor(Math.random() * data.length)];
+  currentRandomQ = q;
+  document.getElementById("audioRecorderZone").style.display = (MODE === "interview") ? "block" : "none";
+  document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
+  document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
+  document.getElementById("randomModalAnswerContent").innerHTML = randomAnswerHtml(q);
   var ansZone = document.getElementById("randomModalAnswer");
   var hintZone = document.getElementById("randomModalHint");
-  ansZone.classList.remove("show");
-  hintZone.style.display = "flex";
-  
+  ansZone.classList.remove("show"); hintZone.style.display = "flex";
   randomModalReveal.textContent = "👀 点击查看答案";
   randomModal.classList.add("show");
 }
-
 document.getElementById("randomBtn").addEventListener("click", showRandomQuestion);
-randomModalReveal.addEventListener("click", function() {
-  var ans = document.getElementById("randomModalAnswer");
-  var hint = document.getElementById("randomModalHint");
-  if (ans.classList.contains("show")) {
-    ans.classList.remove("show");
-    randomModalReveal.textContent = "👀 点击查看答案";
-    hint.style.display = "flex";
-  } else {
-    ans.classList.add("show");
-    randomModalReveal.textContent = "🙈 收起答案";
-    hint.style.display = "none";
-  }
+randomModalReveal.addEventListener("click", function () {
+  var ans = document.getElementById("randomModalAnswer"), hint = document.getElementById("randomModalHint");
+  if (ans.classList.contains("show")) { ans.classList.remove("show"); randomModalReveal.textContent = "👀 点击查看答案"; hint.style.display = "flex"; }
+  else { ans.classList.add("show"); randomModalReveal.textContent = "🙈 收起答案"; hint.style.display = "none"; }
 });
-
 document.getElementById("randomModalNext").addEventListener("click", showRandomQuestion);
-function closeRandomModal() { 
-  randomModal.classList.remove("show"); 
-  stopTimerCountdown();
-  resetAudioRecorderUI();
-}
+function closeRandomModal() { randomModal.classList.remove("show"); stopTimerCountdown(); resetAudioRecorderUI(); }
 document.getElementById("randomModalClose").addEventListener("click", closeRandomModal);
 document.getElementById("randomModalDone").addEventListener("click", closeRandomModal);
-randomModal.addEventListener("click", function(e) { if (e.target === randomModal) closeRandomModal(); });
+randomModal.addEventListener("click", function (e) { if (e.target === randomModal) closeRandomModal(); });
 
-// 打赏弹层逻辑
-
+// 闲鱼口令
+var XIANYU_CODE = CONFIG.xianyuCode;
 function copyToClipboard(text) {
-  return new Promise(function(resolve) {
+  return new Promise(function (resolve) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function() { resolve(true); }).catch(function() { resolve(fallbackCopy(text)); });
-    } else {
-      resolve(fallbackCopy(text));
-    }
+      navigator.clipboard.writeText(text).then(function () { resolve(true); }).catch(function () { resolve(fallbackCopy(text)); });
+    } else resolve(fallbackCopy(text));
   });
 }
 function fallbackCopy(text) {
   try {
     var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.top = "0";
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    var ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
+    ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.top = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = document.execCommand("copy"); document.body.removeChild(ta); return ok;
   } catch (e) { return false; }
 }
-
 var xianyuOverlay = document.getElementById("xianyuToastOverlay");
-document.getElementById("downloadOfflineBtn").addEventListener("click", function() {
-  xianyuOverlay.classList.add("show");
+document.getElementById("downloadOfflineBtn").addEventListener("click", function () {
+  copyToClipboard(XIANYU_CODE).then(function (ok) {
+    var c = document.getElementById("xtCopied");
+    if (ok) c.classList.add("show"); else c.classList.remove("show");
+    xianyuOverlay.classList.add("show");
+  });
 });
-document.getElementById("xtCloseBtn").addEventListener("click", function() {
-  xianyuOverlay.classList.remove("show");
+document.getElementById("xtOpenBtn").addEventListener("click", function () {
+  copyToClipboard(XIANYU_CODE);
+  try { window.location.href = "fleamarket://searchresult?q=" + encodeURIComponent(XIANYU_CODE); } catch (e) {}
 });
-xianyuOverlay.addEventListener("click", function(e) { if (e.target === xianyuOverlay) xianyuOverlay.classList.remove("show"); });
+document.getElementById("xtCloseBtn").addEventListener("click", function () { xianyuOverlay.classList.remove("show"); });
+xianyuOverlay.addEventListener("click", function (e) { if (e.target === xianyuOverlay) xianyuOverlay.classList.remove("show"); });
 
-// 回到顶部与皮肤变换控制
+// 打赏弹层逻辑（reward 模块：显示赞赏码图片）
+var rewardOverlay = document.getElementById("rewardToastOverlay");
+document.getElementById("rewardBtn").addEventListener("click", function () { rewardOverlay.classList.add("show"); });
+document.getElementById("rewardCloseBtn").addEventListener("click", function () { rewardOverlay.classList.remove("show"); });
+rewardOverlay.addEventListener("click", function (e) { if (e.target === rewardOverlay) rewardOverlay.classList.remove("show"); });
+
+// 回到顶部 / 主题
 var backToTop = document.getElementById("backToTop");
-window.addEventListener("scroll", function() {
-  if (window.scrollY > 400) backToTop.classList.add("show"); else backToTop.classList.remove("show");
-});
-backToTop.addEventListener("click", function() { window.scrollTo({ top: 0, behavior: "smooth" }); });
-
+window.addEventListener("scroll", function () { if (window.scrollY > 400) backToTop.classList.add("show"); else backToTop.classList.remove("show"); });
+backToTop.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: "smooth" }); });
 var themeToggle = document.getElementById("themeToggle");
 var savedTheme = localStorage.getItem("theme") || "light";
 if (savedTheme === "dark") { document.documentElement.setAttribute("data-theme", "dark"); themeToggle.textContent = "☀️"; }
-themeToggle.addEventListener("click", function() {
-  var current = document.documentElement.getAttribute("data-theme");
-  if (current === "dark") { document.documentElement.removeAttribute("data-theme"); themeToggle.textContent = "🌙"; localStorage.setItem("theme", "light"); }
+themeToggle.addEventListener("click", function () {
+  var cur = document.documentElement.getAttribute("data-theme");
+  if (cur === "dark") { document.documentElement.removeAttribute("data-theme"); themeToggle.textContent = "🌙"; localStorage.setItem("theme", "light"); }
   else { document.documentElement.setAttribute("data-theme", "dark"); themeToggle.textContent = "☀️"; localStorage.setItem("theme", "dark"); }
 });
 
-// 全局自适应初始化启动
-window.addEventListener("DOMContentLoaded", function() {
-  StorageCtrl.updateUI();
-  initAudioRecorderSystem();
-  render();
-});
-</script>
-<style id="fjPrintStyle">
-@media print {
-  body * { visibility: hidden !important; }
-  #printReport, #printReport * { visibility: visible !important; }
-  #printReport { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; color: #000; background: #fff; font-size: 14px; line-height: 1.7; }
-  #printReport h1 { font-size: 22px; margin: 0 0 8px; }
-  #printReport h2 { font-size: 17px; margin: 18px 0 8px; }
-  #printReport hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
-  #printReport p { margin: 4px 0; }
-  .fj-avoid-break { page-break-inside: avoid; }
-}
-@media screen { #printReport { display: none; } }
-.action-btn.active { background: #e63946 !important; color: #fff !important; border-color: #e63946 !important; }
-</style>
-<script>
-// ===== 只看未掌握 / 快捷键 / 导出题目（v1.3 功能增强）=====
+// 只看未掌握 / 快捷键 / 导出
 (function () {
   var markModeBtn = document.getElementById("markModeBtn");
-  if (markModeBtn) markModeBtn.addEventListener("click", function () {
+  markModeBtn.addEventListener("click", function () {
     filterMark = !filterMark;
     markModeBtn.classList.toggle("active", filterMark);
     render();
   });
-
   function currentQuestions() {
     var search = document.getElementById("searchInput").value.trim().toLowerCase();
     var statusDB = StorageCtrl.get();
-    var list = [];
-    DATA.forEach(function (q) {
-      var yearMatch = filterYear === "all" || q.year === filterYear;
-      var typeMatch = filterType === "all" || q.type === filterType;
-      var tagMatch = filterTag === "all" || (q.tags && q.tags.indexOf(filterTag) !== -1);
-      var searchText = (q.title + " " + q.answer + " " + q.session + " " + (q.tags || []).join(" ")).toLowerCase();
-      var searchMatch = !search || searchText.indexOf(search) !== -1;
-      var markMatch = !filterMark || (statusDB[q._idx] === 'not-mastered');
-      if (yearMatch && typeMatch && tagMatch && markMatch && searchMatch) list.push(q);
+    return dataset().filter(function (q) {
+      var ok = true;
+      activeDimensions().forEach(function (d) {
+        var val = filterState[d.key] || "all";
+        if (val === "all") return;
+        ok = ok && (d.key === "tag" ? normTags(q).indexOf(val) !== -1 : q[d.key] === val);
+      });
+      if (!ok) return false;
+      if (filterMark && statusDB[q._idx] !== "not-mastered") return false;
+      if (search && searchText(q).toLowerCase().indexOf(search) === -1) return false;
+      return true;
     });
-    return list;
   }
-
   function buildExport() {
     var list = currentQuestions();
     if (!list.length) { alert("当前筛选没有可导出的题目"); return; }
-    var typeInfo = TYPE_MAP || {};
-    var html = '<h1>深圳辅警面试真题 · 导出（' + list.length + ' 道）</h1>';
-    html += '<p>生成时间：' + new Date().toLocaleString() + ' ｜ 当前筛选条件下导出</p><hr>';
+    var siteName = (MODE === "interview" ? "面试" : "笔试");
+    var html = "<h1>招考题库 · " + siteName + "导出（" + list.length + " 道）</h1>";
+    html += "<p>生成时间：" + new Date().toLocaleString() + " ｜ 当前筛选条件下导出</p><hr>";
     list.forEach(function (q, n) {
-      var t = typeInfo[q.type];
-      var label = t ? t.label : q.type;
-      html += '<div class="fj-avoid-break" style="margin-bottom:16px;">';
-      html += '<p><b>' + (n + 1) + '. [' + escapeHtml(label) + '·' + escapeHtml(q.year) + '] ' + escapeHtml(q.title) + '</b></p>';
-      html += '<p>参考答案：' + formatAnswer(q.answer, "") + '</p></div>';
+      var title = MODE === "interview" ? (q.title || "") : (q.stem || "");
+      var meta = MODE === "interview" ? (TYPE_MAP[q.type] ? TYPE_MAP[q.type].label : q.type) + "·" + (q.year || "") : (WRITTEN_TYPE_LABEL[q.type] || q.type) + "·" + (q.batch || "");
+      html += '<div class="avoid-break" style="margin-bottom:16px;">';
+      html += "<p><b>" + (n + 1) + ". [" + escapeHtml(meta) + "] " + escapeHtml(title) + "</b></p>";
+      if (MODE !== "interview" && q.options && q.options.length) {
+        q.options.forEach(function (o) { html += "<p>" + escapeHtml(o.letter) + ". " + escapeHtml(o.text) + "</p>"; });
+      }
+      html += "<p>参考答案：" + formatAnswer(MODE === "interview" ? (q.answer || "") : ("答案：" + (q.answer || "") + (q.explanation ? "；解析：" + q.explanation : "")), "") + "</p></div>";
     });
     var box = document.getElementById("printReport");
     if (!box) { box = document.createElement("div"); box.id = "printReport"; document.body.appendChild(box); }
     box.innerHTML = html;
     window.print();
   }
-
-  var exportBtn = document.getElementById("exportBtn");
-  if (exportBtn) exportBtn.addEventListener("click", buildExport);
-
-  // 快捷键：R 随机抽题 / N 换一题，Esc 关闭模态
+  document.getElementById("exportBtn").addEventListener("click", buildExport);
   document.addEventListener("keydown", function (e) {
     var k = (e.key || "").toLowerCase();
     if (k === "escape") { if (randomModal.classList.contains("show")) closeRandomModal(); return; }
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA") return;
-    if (k === "r" || k === "n") {
-      e.preventDefault();
-      if (randomModal.classList.contains("show")) showRandomQuestion();
-      else document.getElementById("randomBtn").click();
-    }
+    if (k === "r" || k === "n") { e.preventDefault(); if (randomModal.classList.contains("show")) showRandomQuestion(); else document.getElementById("randomBtn").click(); }
   });
 })();
 
-// ============ 趣味化：静音 + 撒花 (v1.5) ============
+// 静音 + 撒花
 (function () {
-
-  function isMuted() { try { return localStorage.getItem("fj_muted_v1") === "1"; } catch (e) { return false; } }
-  function setMuted(m) { try { localStorage.setItem("fj_muted_v1", m ? "1" : "0"); } catch (e) {} var b = document.getElementById("muteToggle"); if (b) b.textContent = m ? "🔇" : "🔊"; }
+  function isMuted() { try { return localStorage.getItem("sso_muted") === "1"; } catch (e) { return false; } }
+  function setMuted(m) { try { localStorage.setItem("sso_muted", m ? "1" : "0"); } catch (e) {} var b = document.getElementById("muteToggle"); if (b) b.textContent = m ? "🔇" : "🔊"; }
   var muteBtn = document.getElementById("muteToggle");
-  if (muteBtn) { muteBtn.textContent = isMuted() ? "🔇" : "🔊"; muteBtn.addEventListener("click", function () { setMuted(!isMuted()); }); }
-
+  muteBtn.textContent = isMuted() ? "🔇" : "🔊";
+  muteBtn.addEventListener("click", function () { setMuted(!isMuted()); });
   var audioCtx = null;
   function playDing() {
     if (isMuted()) return;
@@ -1109,7 +1154,7 @@ window.addEventListener("DOMContentLoaded", function() {
     } catch (e) {}
   }
   function playConfetti() {
-    var emojis = ["🎉","⭐","💡","✅","🔥","🏆","💪","🌟"];
+    var emojis = ["🎉", "⭐", "💡", "✅", "🔥", "🏆", "💪", "🌟"];
     for (var i = 0; i < 18; i++) {
       var s = document.createElement("div"); s.className = "fx-confetti";
       s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
@@ -1121,18 +1166,117 @@ window.addEventListener("DOMContentLoaded", function() {
     }
   }
   function celebrate() { playConfetti(); playDing(); }
-
-  // 标记"已掌握"时庆祝
   var _ct = changeTrack;
-  changeTrack = function (e, idx, status) {
-    _ct(e, idx, status);
-    if (status === "mastered") { celebrate(); }
-  };
-
-  // ===== 掌握度卡 已移除 (v1.5.1) =====
+  changeTrack = function (e, idx, status) { _ct(e, idx, status); if (status === "mastered") celebrate(); };
 })();
+
+// 初始化界面
+// 标题 / 副标题
+document.getElementById("siteTitle").textContent = CONFIG.siteTitle;
+document.getElementById("siteEmoji").textContent = CONFIG.siteEmoji;
+document.getElementById("siteSubtitle").textContent = CONFIG.subtitle;
+
+// 主题色注入（themeColor 统一控制主色与圆角按钮）
+if (CONFIG.themeColor) {
+  document.documentElement.style.setProperty('--primary', CONFIG.themeColor);
+  document.documentElement.style.setProperty('--primary-light', CONFIG.themeColor);
+  document.documentElement.style.setProperty('--header-grad', 'linear-gradient(135deg, ' + CONFIG.themeColor + ' 0%, ' + CONFIG.themeColor + ' 100%)');
+}
+
+// 封面头像（可选）
+if (CONFIG.cover) {
+  var _hc = document.querySelector('.header-content');
+  if (_hc) {
+    var _cov = document.createElement('img');
+    _cov.src = CONFIG.cover; _cov.className = 'cover-avatar'; _cov.alt = 'cover';
+    _hc.insertBefore(_cov, _hc.firstChild);
+  }
+}
+
+// 模块开关（默认极简；按需开启）
+// - promo   : 推广横幅（闲鱼 banner）。未显式配置时回退到 xianyu 值，兼容旧配置
+// - xianyu  : 工具栏「获取完整版口令」按钮 + 闲鱼口令弹层
+// - reward  : 工具栏「打赏作者」按钮 + 赞赏码弹层
+var _em = CONFIG.enabledModules || {};
+var _mPromo  = (_em.promo !== undefined) ? _em.promo : _em.xianyu;
+var _mXianyu = _em.xianyu;
+var _mReward = _em.reward;
+function _hide(id) { var _el = document.getElementById(id); if (_el) _el.style.display = 'none'; }
+if (!_mPromo)  { _hide('promoBanner'); }
+if (!_mXianyu) { _hide('downloadOfflineBtn'); _hide('xianyuToastOverlay'); }
+if (!_mReward) { _hide('rewardBtn'); _hide('rewardToastOverlay'); }
+
+// 闲鱼文案（仅开启时才有意义）
+document.getElementById("promoTitle").textContent = CONFIG.promoTitle;
+document.getElementById("promoText").innerHTML = CONFIG.promoText;
+document.getElementById("promoXianyu").textContent = "📋 复制闲鱼号：" + CONFIG.xianyuCode;
+document.getElementById("xtCode").textContent = CONFIG.xianyuCode;
+
+// 打赏文案与赞赏码（仅 reward 开启时有意义）
+if (CONFIG.rewardTitle) document.getElementById("rewardTitle").textContent = CONFIG.rewardTitle;
+if (CONFIG.rewardDesc)  document.getElementById("rewardDesc").innerHTML = CONFIG.rewardDesc;
+if (CONFIG.rewardImage) document.getElementById("rewardQr").src = CONFIG.rewardImage;
+
+// 倒计时显示
+document.getElementById("timerDigits").textContent = (function () { var m = Math.floor(CONFIG.timerSeconds / 60), s = CONFIG.timerSeconds % 60; return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); })();
+
+// 页脚（logo + 文案 + 联系 + 版本）
+var _footer = document.querySelector('.footer');
+if (_footer) {
+  _footer.innerHTML = '';
+  if (CONFIG.logo) {
+    var _lg = document.createElement('img'); _lg.src = CONFIG.logo; _lg.className = 'footer-logo'; _lg.alt = 'logo';
+    _footer.appendChild(_lg);
+  }
+  var _fp = document.createElement('p'); _fp.id = 'footerText';
+  _fp.innerHTML = CONFIG.footerText + (CONFIG.contact ? ' · 联系：' + CONFIG.contact : '');
+  _footer.appendChild(_fp);
+  var _fv = document.createElement('p'); _fv.className = 'footer-version'; _fv.id = 'footerVersion';
+  _footer.appendChild(_fv);
+}
+
+// 版本信息（读取 VERSION.json；离线 file:// 下 fetch 受限时静默跳过）
+(function () {
+  try {
+    fetch('VERSION.json').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (v) {
+        if (!v) return;
+        var _fv = document.getElementById('footerVersion');
+        if (!_fv) return;
+        var _parts = ['RCJ Exam Template v' + (v.version || '1.0.0')];
+        if (v.updated) _parts.push('更新于 ' + v.updated);
+        var _c = [];
+        if (v.writtenCount != null) _c.push('笔试 ' + v.writtenCount);
+        if (v.interviewCount != null) _c.push('面试 ' + v.interviewCount);
+        if (_c.length) _parts.push(_c.join(' / '));
+        _fv.textContent = _parts.join(' · ');
+      }).catch(function () {});
+  } catch (e) {}
+})();
+
+window.addEventListener("DOMContentLoaded", function () {
+  if (!hasW && !hasI && !G_DATA.length) {
+    document.getElementById("questionsList").innerHTML = '<div class="no-result">⚠️ 未找到题目数据。请确认同目录存在 data-written.js / data-interview.js / data.js（由 build_data.py 生成）。</div>';
+    return;
+  }
+  buildModeTabs();
+  buildFilterRows();
+  updateStats();
+  StorageCtrl.updateUI();
+  initAudioRecorderSystem();
+  render();
+});
 </script>
+<style id="ssoPrintStyle">
+@media print {
+  body * { visibility: hidden !important; }
+  #printReport, #printReport * { visibility: visible !important; }
+  #printReport { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; color: #000; background: #fff; font-size: 14px; line-height: 1.7; }
+  #printReport h1 { font-size: 22px; margin: 0 0 8px; }
+  #printReport hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
+  .avoid-break { page-break-inside: avoid; }
+}
+@media screen { #printReport { display: none; } }
+</style>
 </body>
 </html>
-
-```
