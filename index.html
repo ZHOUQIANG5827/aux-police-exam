@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RCJ 辅警题库 · 全国刷题平台</title>
-<meta name="description" content="RCJ9527 辅警真题卡组：笔试+面试，按城市刷题。深圳/惠州/东莞/佛山/珠海/上海 已上线，广州/武汉/成都 筹备中。">
+<meta name="description" content="RCJ9527 辅警真题卡组：笔试+面试，按城市刷题。深圳/惠州 城市专属真题；东莞/佛山/珠海 广东省标通用；广州/武汉/成都/上海 筹备中。">
 <style>
   :root{
     --primary:#2563eb; --primary-dark:#1d4ed8; --primary-light:#3b82f6;
@@ -27,6 +27,11 @@
   .tag{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
   .tag-live{background:#dcfce7;color:#16a34a}
   .tag-soon{background:#fef3c7;color:#b45309}
+  .tag-general{background:#e0e7ff;color:#4338ca}
+  .section{margin-top:34px}
+  .section-title{font-size:16px;font-weight:800;margin-bottom:4px}
+  .section-sub{font-size:13px;color:var(--text-secondary);margin-bottom:16px}
+  .note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;font-size:13px;color:#1e40af;margin:0 0 16px;line-height:1.6}
   .desc{font-size:13.5px;color:var(--text-secondary)}
   .enter{margin-top:auto;font-size:13.5px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:4px}
   .card.disabled{opacity:.7;pointer-events:none}
@@ -44,60 +49,77 @@
       <p>笔试 + 面试真题 · 套题模考 · 定向刷题 · 随机抽题点击即判</p>
     </div>
 
-    <div class="grid">
-      <a class="card" href="/sz/">
-        <div class="card-top"><span class="city">深圳</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警面试 + 笔试真题卡组，含定向刷题与套题模考。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+    <div class="section">
+      <div class="section-title">城市专属真题</div>
+      <div class="section-sub">本地官方真题，含面试模块，针对性最强。</div>
+      <div class="grid">
+        <a class="card" href="/sz/">
+          <div class="card-top"><span class="city">深圳</span><span class="tag tag-live">已上线</span></div>
+          <div class="desc">辅警面试 + 笔试真题卡组，含定向刷题与套题模考。</div>
+          <div class="enter">进入刷题 →</div>
+        </a>
 
-      <a class="card" href="/hz/">
-        <div class="card-top"><span class="city">惠州</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警笔试 2136 题广东省标真题，套题模考 + 定向刷题 + 随机抽题。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+        <a class="card" href="/hz/">
+          <div class="card-top"><span class="city">惠州</span><span class="tag tag-live">已上线</span></div>
+          <div class="desc">辅警笔试 2136 题官方真题，套题模考 + 定向刷题 + 随机抽题。</div>
+          <div class="enter">进入刷题 →</div>
+        </a>
+      </div>
+    </div>
 
-      <a class="card" href="/dg/">
-        <div class="card-top"><span class="city">东莞</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警笔试 2136 题广东省标真题，套题模考 + 定向刷题 + 随机抽题。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+    <div class="section">
+      <div class="section-title">广东省辅警统考 · 通用真题库</div>
+      <div class="section-sub">广东多地辅警笔试采用省统考同源题库，一套通用，适用以下城市。</div>
+      <div class="note">说明：以下为广东省辅警统考通用真题（2136 题），东莞 / 佛山 / 珠海等省标城市通用，非各市独立命题。备考省标城市均可使用。</div>
+      <div class="grid">
+        <a class="card" href="/dg/">
+          <div class="card-top"><span class="city">东莞</span><span class="tag tag-general">省标通用</span></div>
+          <div class="desc">广东省辅警统考通用真题 2136 题，套题模考 + 定向刷题 + 随机抽题。</div>
+          <div class="enter">进入刷题 →</div>
+        </a>
 
-      <a class="card" href="/fs/">
-        <div class="card-top"><span class="city">佛山</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警笔试 2136 题广东省标真题，套题模考 + 定向刷题 + 随机抽题。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+        <a class="card" href="/fs/">
+          <div class="card-top"><span class="city">佛山</span><span class="tag tag-general">省标通用</span></div>
+          <div class="desc">广东省辅警统考通用真题 2136 题，套题模考 + 定向刷题 + 随机抽题。</div>
+          <div class="enter">进入刷题 →</div>
+        </a>
 
-      <a class="card" href="/zh/">
-        <div class="card-top"><span class="city">珠海</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警笔试 2136 题广东省标真题，套题模考 + 定向刷题 + 随机抽题。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+        <a class="card" href="/zh/">
+          <div class="card-top"><span class="city">珠海</span><span class="tag tag-general">省标通用</span></div>
+          <div class="desc">广东省辅警统考通用真题 2136 题，套题模考 + 定向刷题 + 随机抽题。</div>
+          <div class="enter">进入刷题 →</div>
+        </a>
+      </div>
+    </div>
 
-      <a class="card" href="/sh/">
-        <div class="card-top"><span class="city">上海</span><span class="tag tag-live">已上线</span></div>
-        <div class="desc">辅警笔试 2136 题广东省标真题（打底），套题模考 + 定向刷题 + 随机抽题。</div>
-        <div class="enter">进入刷题 →</div>
-      </a>
+    <div class="section">
+      <div class="section-title">筹备中</div>
+      <div class="section-sub">官方 / 本地真题到位后上线，保证针对性。</div>
+      <div class="grid">
+        <a class="card disabled" href="#">
+          <div class="card-top"><span class="city">广州</span><span class="tag tag-soon">筹备中</span></div>
+          <div class="desc">广州辅警笔试/面试，官方题库到位即上线。</div>
+          <div class="enter">敬请期待</div>
+        </a>
 
-      <a class="card disabled" href="#">
-        <div class="card-top"><span class="city">广州</span><span class="tag tag-soon">筹备中</span></div>
-        <div class="desc">广州辅警笔试/面试，官方题库到位即上线。</div>
-        <div class="enter">敬请期待</div>
-      </a>
+        <a class="card disabled" href="#">
+          <div class="card-top"><span class="city">武汉</span><span class="tag tag-soon">筹备中</span></div>
+          <div class="desc">武汉辅警笔试/面试（7/18 考试），本地题库整理中。</div>
+          <div class="enter">敬请期待</div>
+        </a>
 
-      <a class="card disabled" href="#">
-        <div class="card-top"><span class="city">武汉</span><span class="tag tag-soon">筹备中</span></div>
-        <div class="desc">武汉辅警笔试/面试，题库到位即上线。</div>
-        <div class="enter">敬请期待</div>
-      </a>
+        <a class="card disabled" href="#">
+          <div class="card-top"><span class="city">成都</span><span class="tag tag-soon">筹备中</span></div>
+          <div class="desc">成都辅警笔试/面试（7/25 考试），本地题库整理中。</div>
+          <div class="enter">敬请期待</div>
+        </a>
 
-      <a class="card disabled" href="#">
-        <div class="card-top"><span class="city">成都</span><span class="tag tag-soon">筹备中</span></div>
-        <div class="desc">成都辅警笔试/面试，题库到位即上线。</div>
-        <div class="enter">敬请期待</div>
-      </a>
+        <a class="card disabled" href="#">
+          <div class="card-top"><span class="city">上海</span><span class="tag tag-soon">筹备中</span></div>
+          <div class="desc">上海辅警，官方题库到位即上线（不用外省题冒充）。</div>
+          <div class="enter">敬请期待</div>
+        </a>
+      </div>
     </div>
 
     <div class="footer">
