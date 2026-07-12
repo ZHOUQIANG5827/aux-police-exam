@@ -119,6 +119,8 @@ body {
 .action-btn:hover { background: var(--surface-hover); color: var(--primary); border-color: var(--primary-light); }
 .download-offline-btn { background: var(--primary-bg); color: var(--primary-light); border-color: var(--primary-light); font-weight: bold; }
 .download-offline-btn:hover { background: var(--primary); color: #fff; }
+.exam-enter-btn { background: linear-gradient(135deg,#2563eb,#3b82f6); color:#fff; border-color: transparent; font-weight:700; padding:8px 18px; box-shadow:0 2px 10px rgba(37,99,235,.32); }
+.exam-enter-btn:hover { color:#fff; background: linear-gradient(135deg,#1d4ed8,#2563eb); border-color: transparent; box-shadow:0 4px 14px rgba(37,99,235,.42); }
 .result-count { font-size: 12px; color: var(--text-muted); margin-left: auto; }
 .result-count strong { color: var(--primary); font-weight: 700; }
 [data-theme="dark"] .result-count strong { color: var(--primary-light); }
@@ -414,14 +416,13 @@ body {
     </div>
     <div id="filterRows"></div>
     <div class="action-row">
+      <button class="action-btn exam-enter-btn" id="examBtn">📝 套题模考</button>
+      <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
       <button class="action-btn" id="expandAll">⏬ 展开全部</button>
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
-      <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
       <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
-      <button class="action-btn" id="exportBtn">📄 导出题目</button>
       <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
       <button class="action-btn reward-btn" id="rewardBtn">💝 打赏作者</button>
-      <button class="action-btn exam-enter-btn" id="examBtn">📝 套题模考</button>
       <span class="result-count" id="resultCount"></span>
     </div>
   </div>
@@ -1176,7 +1177,7 @@ themeToggle.addEventListener("click", function () {
   else { document.documentElement.setAttribute("data-theme", "dark"); themeToggle.textContent = "☀️"; localStorage.setItem("theme", "dark"); }
 });
 
-// 只看未掌握 / 快捷键 / 导出
+// 只看未掌握 / 快捷键
 (function () {
   var markModeBtn = document.getElementById("markModeBtn");
   markModeBtn.addEventListener("click", function () {
@@ -1200,28 +1201,6 @@ themeToggle.addEventListener("click", function () {
       return true;
     });
   }
-  function buildExport() {
-    var list = currentQuestions();
-    if (!list.length) { alert("当前筛选没有可导出的题目"); return; }
-    var siteName = (MODE === "interview" ? "面试" : "笔试");
-    var html = "<h1>招考题库 · " + siteName + "导出（" + list.length + " 道）</h1>";
-    html += "<p>生成时间：" + new Date().toLocaleString() + " ｜ 当前筛选条件下导出</p><hr>";
-    list.forEach(function (q, n) {
-      var title = MODE === "interview" ? (q.title || "") : (q.stem || "");
-      var meta = MODE === "interview" ? (TYPE_MAP[q.type] ? TYPE_MAP[q.type].label : q.type) + "·" + (q.year || "") : (q._typeLabel || WRITTEN_TYPE_LABEL[q.type] || q.type) + "·" + (q._batchName || "");
-      html += '<div class="avoid-break" style="margin-bottom:16px;">';
-      html += "<p><b>" + (n + 1) + ". [" + escapeHtml(meta) + "] " + escapeHtml(title) + "</b></p>";
-      if (MODE !== "interview" && q.options && q.options.length) {
-        q.options.forEach(function (o) { html += "<p>" + escapeHtml(o.letter) + ". " + escapeHtml(o.text) + "</p>"; });
-      }
-      html += "<p>参考答案：" + formatAnswer(MODE === "interview" ? (q.answer || "") : ("答案：" + (q.answer || "") + (q.explanation ? "；解析：" + q.explanation : "")), "") + "</p></div>";
-    });
-    var box = document.getElementById("printReport");
-    if (!box) { box = document.createElement("div"); box.id = "printReport"; document.body.appendChild(box); }
-    box.innerHTML = html;
-    window.print();
-  }
-  document.getElementById("exportBtn").addEventListener("click", buildExport);
   document.addEventListener("keydown", function (e) {
     var k = (e.key || "").toLowerCase();
     if (k === "escape") { if (randomModal.classList.contains("show")) closeRandomModal(); return; }
@@ -1595,16 +1574,5 @@ window.addEventListener("DOMContentLoaded", function () {
   render();
 });
 </script>
-<style id="ssoPrintStyle">
-@media print {
-  body * { visibility: hidden !important; }
-  #printReport, #printReport * { visibility: visible !important; }
-  #printReport { position: absolute; left: 0; top: 0; width: 100%; padding: 24px; color: #000; background: #fff; font-size: 14px; line-height: 1.7; }
-  #printReport h1 { font-size: 22px; margin: 0 0 8px; }
-  #printReport hr { border: none; border-top: 1px solid #ccc; margin: 12px 0; }
-  .avoid-break { page-break-inside: avoid; }
-}
-@media screen { #printReport { display: none; } }
-</style>
 </body>
 </html>
