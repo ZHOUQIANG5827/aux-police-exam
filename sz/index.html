@@ -617,6 +617,17 @@ if (!hasW && !hasI && G_DATA.length) {
   singleMode = (_s && (_s.title !== undefined || _s.session !== undefined) && !_s.options) ? "interview" : "written";
 }
 
+// 拆分笔试 batch 为批次名与题型标签（批次筛选不再和题型混在一起）
+[W_DATA, G_DATA].forEach(function(list){
+  list.forEach(function(q){
+    if (!q || q._batchName !== undefined) return;
+    var raw = String(q.batch || "");
+    var parts = raw.split("·");
+    q._batchName = parts[0] || raw || "未注明";
+    q._typeLabel = (parts[1] || WRITTEN_TYPE_LABEL[q.type] || q.type || "未知").trim();
+  });
+});
+
 function dataset() {
   if (MODE === "written") return hasW ? W_DATA : G_DATA;
   return hasI ? I_DATA : G_DATA;
@@ -692,13 +703,14 @@ function formatAnswer(text, keyword) {
 function activeDimensions() {
   return MODE === "interview"
     ? [{ key: "year", label: "年份" }, { key: "type", label: "题型" }, { key: "tag", label: "标签" }]
-    : [{ key: "batch", label: "批次" }, { key: "type", label: "题型" }];
+    : [{ key: "_batchName", label: "批次" }, { key: "type", label: "题型" }];
 }
 function deriveValues(dim) {
   var set = {}, data = dataset();
   data.forEach(function (q) {
     if (dim === "tag") { normTags(q).forEach(function (t) { if (TAG_MAP[t]) set[t] = 1; }); }
     else if (dim === "year") { if (q.year) set[q.year] = 1; }
+    else if (dim === "_batchName") { if (q._batchName) set[q._batchName] = 1; }
     else if (dim === "batch") { if (q.batch) set[q.batch] = 1; }
     else if (dim === "type") { if (q.type) set[q.type] = 1; }
   });
@@ -715,7 +727,7 @@ var PAGE_SIZE = 40;
 var flatItems = [], renderedCount = 0, currentGroup = null, groupCounts = {}, totalShown = 0, currentSearch = "";
 var PAGE_SIZE_I = PAGE_SIZE;
 
-function groupKey(q) { return MODE === "interview" ? (q.year || "未注明年份") : (q.batch || "未注明批次"); }
+function groupKey(q) { return MODE === "interview" ? (q.year || "未注明年份") : (q._batchName || "未注明批次"); }
 
 function searchText(q) {
   if (MODE === "interview") return (q.title + " " + (q.answer || "") + " " + (q.session || "") + " " + normTags(q).join(" "));
@@ -790,7 +802,7 @@ function cardHtml(q) {
   } else {
     var wl = WRITTEN_TYPE_LABEL[q.type] || q.type;
     badges = (q.num != null ? '<span class="badge badge-year">#' + q.num + "</span>" : "")
-      + (q.batch ? '<span class="badge badge-session">' + escapeHtml(q.batch) + "</span>" : "")
+      + (q._batchName ? '<span class="badge badge-session">' + escapeHtml(q._batchName + "·" + q._typeLabel) + "</span>" : "")
       + '<span class="badge badge-type-zhfx">📝 ' + escapeHtml(wl) + "</span>"
       + tagBadgesHtml(q);
     titleHtml = highlight(q.stem || "", currentSearch);
@@ -872,7 +884,7 @@ function changeTrack(e, idx, status) {
 
 function updateStats() {
   var data = dataset();
-  var dimKey = MODE === "interview" ? "year" : "batch";
+  var dimKey = MODE === "interview" ? "year" : "_batchName";
   var dimSet = {}, typeSet = {};
   data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[q.type] = 1; });
   document.getElementById("statNum0").textContent = data.length;
@@ -1196,7 +1208,7 @@ themeToggle.addEventListener("click", function () {
     html += "<p>生成时间：" + new Date().toLocaleString() + " ｜ 当前筛选条件下导出</p><hr>";
     list.forEach(function (q, n) {
       var title = MODE === "interview" ? (q.title || "") : (q.stem || "");
-      var meta = MODE === "interview" ? (TYPE_MAP[q.type] ? TYPE_MAP[q.type].label : q.type) + "·" + (q.year || "") : (WRITTEN_TYPE_LABEL[q.type] || q.type) + "·" + (q.batch || "");
+      var meta = MODE === "interview" ? (TYPE_MAP[q.type] ? TYPE_MAP[q.type].label : q.type) + "·" + (q.year || "") : (q._typeLabel || WRITTEN_TYPE_LABEL[q.type] || q.type) + "·" + (q._batchName || "");
       html += '<div class="avoid-break" style="margin-bottom:16px;">';
       html += "<p><b>" + (n + 1) + ". [" + escapeHtml(meta) + "] " + escapeHtml(title) + "</b></p>";
       if (MODE !== "interview" && q.options && q.options.length) {
@@ -1268,12 +1280,12 @@ var examPaperList = [], examPaperMeta = null, examLastCfg = null;
 function normType(t){ t = String(t||"").toLowerCase(); if(t==="multiple"||t==="multi"||t==="多选题") return "multi"; if(t==="judge"||t==="bool"||t==="判断"||t==="判断题") return "bool"; return "single"; }
 function typeLabel(t){ return t==="multi"?"多选":(t==="bool"?"判断":"单选"); }
 function shuffleArr(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var x=a[i];a[i]=a[j];a[j]=x; } return a; }
-function scopeKey(){ return (MODE==="interview") ? "year" : "batch"; }
+function scopeKey(){ return (MODE==="interview") ? "year" : "_batchName"; }
 function scopeLabel(v){
   if(v==="__random__") return "🎲 随机抽一套";
   if(v==="__all__") return "📚 全库随机抽题";
   if(MODE==="interview") return (v?("年份 "+v):"未注明");
-  return (v||"未注明")+" 批";
+  return v ? v : "未注明批次";
 }
 function typesText(tc){
   var parts=[];
