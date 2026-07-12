@@ -267,7 +267,7 @@ body {
 body.focus-mode header,
 body.focus-mode .toolbar,
 body.focus-mode .promo-banner { display: none !important; }
-body.focus-mode .main { padding-top: 16px; min-height: 100vh; }
+body.focus-mode .main { padding-top: 16px; min-height: 100vh; max-width: none; margin: 0; padding-left: 16px; padding-right: 16px; }
 .focus-toggle {
   position: fixed; top: 14px; right: 14px; z-index: 300;
   background: var(--primary); color: #fff; border: none; border-radius: 10px;
@@ -1394,13 +1394,17 @@ themeToggle.addEventListener("click", function () {
     var txt = on ? "🖥️ 退出全屏" : "🖥️ 全屏刷题";
     focusBtn.textContent = txt;
     focusToggle.textContent = txt;
-    focusToggle.style.display = "block";
-    localStorage.setItem("focusMode", on ? "1" : "");
+    focusToggle.style.display = on ? "block" : "none";
+    try { localStorage.setItem("focusMode", on ? "1" : ""); } catch (e) {}
   }
   focusBtn.addEventListener("click", function () { setFocus(!document.body.classList.contains("focus-mode")); });
   focusToggle.addEventListener("click", function () { setFocus(false); });
-  if (localStorage.getItem("focusMode")) setFocus(true);
-  else focusToggle.style.display = "block";
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && document.body.classList.contains("focus-mode")) setFocus(false);
+  });
+  var _saved = null;
+  try { _saved = localStorage.getItem("focusMode"); } catch (e) {}
+  if (_saved) setFocus(true);
 })();
 
 // 只看未掌握 / 快捷键
