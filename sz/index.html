@@ -633,9 +633,9 @@ function dataset() {
   return hasI ? I_DATA : G_DATA;
 }
 
-// 默认模式：两库都在时，题量大的优先展示；否则展示存在的那个
+// 默认模式：两库都在时，面试优先展示（笔试已结束）；否则展示存在的那个
 var MODE = (hasW && hasI)
-  ? (CONFIG.defaultPage === "interview" ? "interview" : "written")
+  ? (CONFIG.defaultPage === "written" ? "written" : "interview")
   : (hasW ? "written" : (hasI ? "interview" : singleMode));
 
 var TYPE_MAP = {
@@ -822,7 +822,7 @@ function cardHtml(q) {
   var actNM = cur === "not-mastered" ? "active" : "";
   var actM = cur === "mastered" ? "active" : "";
   return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
-    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>💡 请先独立思考，展开查看' + (MODE === "interview" ? "解析" : "答案与解析") + '。</span>'
+    + '<div class="card-body"><div class="card-body-inner">'
     + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
     + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
     + bodyInner + "</div></div></div>";
@@ -899,8 +899,8 @@ function buildModeTabs() {
   var box = document.getElementById("modeTabs");
   box.innerHTML = "";
   var tabs = [];
-  if (hasW || singleMode === "written") tabs.push({ m: "written", label: "📖 笔试" });
   if (hasI || singleMode === "interview") tabs.push({ m: "interview", label: "🎤 面试" });
+  if (hasW || singleMode === "written") tabs.push({ m: "written", label: "📖 笔试" });
   if (tabs.length <= 1) { box.style.display = "none"; return; }
   box.style.display = "inline-flex";
   tabs.forEach(function (t) {
