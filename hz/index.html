@@ -240,6 +240,12 @@ body {
 .study-check-btn:hover { filter: brightness(.97); }
 .answer-correct-tag { display: inline-block; font-size: 12px; font-weight: 700; color: #16a34a; margin-left: 4px; }
 [data-theme="dark"] .answer-correct-tag { color: #4ade80; }
+/* 答题结果判定横幅：用文字明确"回答正确/回答错误"，避免仅靠颜色造成歧义 */
+.ans-result { font-size: 15px; font-weight: 800; padding: 9px 13px; border-radius: 10px; margin-bottom: 10px; line-height: 1.5; }
+.ans-result.ans-correct { color: #15803d; background: rgba(22,163,74,.12); border: 1px solid rgba(22,163,74,.35); }
+.ans-result.ans-wrong { color: #b91c1c; background: rgba(220,38,38,.10); border: 1px solid rgba(220,38,38,.38); }
+[data-theme="dark"] .ans-result.ans-correct { color: #4ade80; background: rgba(74,222,128,.15); border-color: rgba(74,222,128,.45); }
+[data-theme="dark"] .ans-result.ans-wrong { color: #f87171; background: rgba(248,113,113,.15); border-color: rgba(248,113,113,.45); }
 
 .no-result { text-align: center; color: var(--text-muted); padding: 60px 20px; font-size: 15px; }
 /* === Back to Top === */
@@ -683,6 +689,15 @@ function displayAnswer(q){
   }
   return ans;
 }
+// 生成"回答正确/回答错误"判定横幅（文字明确，避免仅靠红绿颜色造成歧义）
+function makeResultBanner(isCorrect, q){
+  var d = document.createElement("div");
+  d.className = "ans-result " + (isCorrect ? "ans-correct" : "ans-wrong");
+  d.innerHTML = isCorrect
+    ? "✅ 回答正确"
+    : "❌ 回答错误，正确答案：<b>" + escapeHtml(displayAnswer(q)) + "</b>";
+  return d;
+}
 // ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
 var CONFIG = window.SITE_CONFIG || {
   siteTitle: "考试题库",
@@ -1039,7 +1054,16 @@ function revealStudyAnswer(idx) {
     o.classList.add(sel ? (isCorr ? "ok" : "bad") : (isCorr ? "right" : ""));
     o.classList.add("locked");
   });
-  if (ansEl) ansEl.style.display = "block";
+  if (ansEl) {
+    // 计算是否答对（支持多选：所选集合与答案集合一致）
+    var selLetters = Array.prototype.map.call(selectedOpts, function (o) { return o.dataset.letter; });
+    var ansLetters = String(q.answer).split("").filter(function (c) { return /[A-Z]/.test(c); });
+    var isCorrect = selLetters.length === ansLetters.length && selLetters.length > 0
+      && selLetters.every(function (l) { return ansLetters.indexOf(l) !== -1; })
+      && ansLetters.every(function (l) { return selLetters.indexOf(l) !== -1; });
+    ansEl.insertBefore(makeResultBanner(isCorrect, q), ansEl.firstChild);
+    ansEl.style.display = "block";
+  }
   var btn = card.querySelector(".study-check-btn");
   if (btn) btn.style.display = "none";
 }
@@ -1242,6 +1266,7 @@ function showRandomQuestion() {
   document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
   document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
   document.getElementById("randomModalAnswerContent").innerHTML = randomAnswerHtml(q);
+  var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove(); // 清除上一题的判定横幅
   document.getElementById("randomModalAnswer").classList.remove("show");
   randomModal.classList.add("show");
 }
@@ -1267,6 +1292,11 @@ document.getElementById("randomModalQuestion").addEventListener("click", functio
     var letter = opt.dataset.randLetter;
     var isCorrect = String(q.answer).indexOf(letter) !== -1 || String(q.answer).indexOf(opt.children[1].textContent) !== -1;
     if (isCorrect) opt.classList.add("ok"); else opt.classList.add("bad");
+    // 用文字明确"回答正确/回答错误"，避免仅靠颜色造成歧义
+    var banner = document.getElementById("randomResultBanner");
+    if (!banner) { banner = document.createElement("div"); banner.id = "randomResultBanner"; document.getElementById("randomModalAnswer").insertBefore(banner, document.getElementById("randomModalAnswerContent")); }
+    banner.className = "ans-result " + (isCorrect ? "ans-correct" : "ans-wrong");
+    banner.innerHTML = isCorrect ? "✅ 回答正确" : "❌ 回答错误，正确答案：<b>" + escapeHtml(displayAnswer(q)) + "</b>";
   }
   revealRandomAnswer();
 });
@@ -1669,6 +1699,8 @@ function submitExam() {
     card.classList.add("graded");
     var exp = card.querySelector(".exam-explain");
     if (exp) exp.style.display = "block";
+    // 在题卡顶部插入"回答正确/回答错误"文字判定，避免仅靠颜色造成歧义
+    card.insertBefore(makeResultBanner(isCorrect, q), card.firstChild);
     if (isCorrect) { correct++; card.classList.add("graded-correct"); }
     else { wrong++; card.classList.add("graded-wrong"); }
     var ansArr = normAnsArr(q.answer);
