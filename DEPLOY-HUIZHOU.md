@@ -1,7 +1,7 @@
 # 辅警刷题站 · 部署指南（单仓库 · 单 Pages 项目 · 门户 + 城市子路径）
 
 > 本仓库统一存放**所有辅警系列**刷题站。一个 GitHub 仓库 + 一个 Cloudflare Pages 项目 + 一个主域名 `fj.rcj9527.dpdns.org`，
-> 各城市用**子路径**区分（`/sz` `/hz` `/wh` `/cd`）。**不新建多个 Pages 项目、不新建多个 Workers**，深圳篇章也完全不受影响。
+> 各城市用**子路径**区分（`/sz` `/hz` `/dg` `/fs` `/zh`）。**不新建多个 Pages 项目、不新建多个 Workers**，深圳篇章也完全不受影响。
 
 ## 线上结构（最终形态）
 
@@ -13,12 +13,8 @@
 | `fj.rcj9527.dpdns.org/dg/` | 东莞 | 笔试 2136 题广东省标真题（母库复用） | 已上线 |
 | `fj.rcj9527.dpdns.org/fs/` | 佛山 | 笔试 2136 题广东省标真题（母库复用） | 已上线 |
 | `fj.rcj9527.dpdns.org/zh/` | 珠海 | 笔试 2136 题广东省标真题（母库复用） | 已上线 |
-| `fj.rcj9527.dpdns.org/sh/` | 上海 | 笔试 2136 题广东省标真题（打底） | 已上线 |
-| `fj.rcj9527.dpdns.org/gz/` | 广州 | 待上线 | 官方题库到位即建（门户已占位） |
-| `fj.rcj9527.dpdns.org/wh/` | 武汉 | 待上线 | 题库到位即建 |
-| `fj.rcj9527.dpdns.org/cd/` | 成都 | 待上线 | 题库到位即建 |
 
-> **命名约定**：城市代码 = 城市拼音首字母（`sz` 深圳 / `hz` 惠州 / `dg` 东莞 / `fs` 佛山 / `zh` 珠海 / `sh` 上海 / `gz` 广州 / `wh` 武汉 / `cd` 成都）。
+> **命名约定**：城市代码 = 城市拼音首字母（`sz` 深圳 / `hz` 惠州 / `dg` 东莞 / `fs` 佛山 / `zh` 珠海）。
 > 消防系列走**另一个仓库**，同样结构 → `xf.rcj9527.dpdns.org/sz`（本文档只管辅警）。
 
 ---
@@ -41,9 +37,9 @@ fujing-mianshi/                ← 仓库根（= 门户 + 整个静态站）
 │   └── README.md  CHANGELOG.md
 ├── hz/                        ← 惠州站（自包含单文件，0 外部引用，= 广东省标母库）
 │   └── index.html
-├── dg/  fs/  zh/  sh/          ← 东莞/佛山/珠海/上海站（均由 hz 母库"去惠州化+改品牌"生成，自包含单文件）
+├── dg/  fs/  zh/              ← 东莞/佛山/珠海站（均由 hz 母库"去惠州化+改品牌"生成，自包含单文件）
 │   └── index.html
-└── （gz/ wh/ cd/ 待建，门户已占位）
+└── （新城市待建时按母库复用或官方题库方式新增子目录）
 ```
 > ⚠️ Cloudflare Pages **只读取根目录的 `_headers` 和 `_redirects`**，子目录里的同名文件不生效，所以缓存/跳转统一在根配置。
 
@@ -100,5 +96,4 @@ curl -I https://fj.rcj9527.dpdns.org/hz/      # 惠州 200
 curl -I https://fj.rcj9527.dpdns.org/dg/      # 东莞 200
 curl -I https://fj.rcj9527.dpdns.org/fs/      # 佛山 200
 curl -I https://fj.rcj9527.dpdns.org/zh/      # 珠海 200
-curl -I https://fj.rcj9527.dpdns.org/sh/      # 上海 200
 ```
