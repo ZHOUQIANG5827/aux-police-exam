@@ -1,2 +1,4 @@
 wrangler.jsonc
 .wrangler
+*.bak
+*.bak_*
