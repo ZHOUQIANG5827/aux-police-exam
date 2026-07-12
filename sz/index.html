@@ -221,8 +221,36 @@ body {
 [data-theme="dark"] .opt-row { background: var(--surface); }
 .answer-correct-tag { display: inline-block; font-size: 12px; font-weight: 700; color: #16a34a; margin-left: 4px; }
 [data-theme="dark"] .answer-correct-tag { color: #4ade80; }
+/* 答题判定横幅（与惠州一致：✅回答正确 / ❌回答错误＋正确答案） */
+.ans-result { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+.ans-correct { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
+.ans-wrong { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.ans-result b { color: inherit; }
+[data-theme="dark"] .ans-correct { background: rgba(22,163,74,.18); color: #4ade80; border-color: rgba(74,222,128,.4); }
+[data-theme="dark"] .ans-wrong { background: rgba(220,38,38,.18); color: #f87171; border-color: rgba(248,113,113,.4); }
+/* 笔试选项可点选中 */
+.answer-wrap { margin: 12px 0; }
+.opt-row.selectable { cursor: pointer; transition: all .15s; }
+.opt-row.selectable:hover { border-color: var(--primary-light); }
+.opt-row.selected { border-color: var(--primary); background: var(--surface); }
+.opt-row.ok { border-color: #16a34a; background: #dcfce7; }
+.opt-row.bad { border-color: #dc2626; background: #fee2e2; }
+.opt-row.right { border-color: #16a34a; background: #f0fdf4; }
+[data-theme="dark"] .opt-row.ok { background: rgba(22,163,74,.18); }
+[data-theme="dark"] .opt-row.bad { background: rgba(220,38,38,.18); }
+[data-theme="dark"] .opt-row.right { background: rgba(22,163,74,.1); }
+/* 核对答案按钮 */
+.check-row { margin: 8px 0 4px; }
+.check-btn { padding: 6px 14px; border-radius: 14px; font-size: 12px; border: 1px solid var(--primary-light); background: var(--primary); color: #fff; cursor: pointer; font-weight: 600; }
+.check-btn:hover { opacity: .92; }
 
 .no-result { text-align: center; color: var(--text-muted); padding: 60px 20px; font-size: 15px; }
+/* === 全屏专注刷题模式 === */
+body.focus-mode header { display: none !important; }
+body.focus-mode .toolbar { display: none !important; }
+body.focus-mode .promo-banner { display: none !important; }
+body.focus-mode .main { max-width: 100%; padding-top: 16px; min-height: 100vh; }
+.focus-toggle { position: fixed; top: 14px; right: 14px; z-index: 999; padding: 8px 14px; border-radius: 16px; border: 1px solid var(--primary-light); background: var(--primary); color: #fff; font-size: 13px; cursor: pointer; box-shadow: var(--shadow-lg); }
 /* === Back to Top === */
 .back-to-top {
   position: fixed; bottom: 28px; right: 28px; z-index: 200;
@@ -417,6 +445,7 @@ body {
     <div id="filterRows"></div>
     <div class="action-row">
       <button class="action-btn exam-enter-btn" id="examBtn">📝 套题模考</button>
+      <button class="action-btn" id="focusModeBtn">🖥️ 全屏刷题</button>
       <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
       <button class="action-btn" id="expandAll">⏬ 展开全部</button>
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
@@ -519,6 +548,7 @@ body {
 .exam-q.graded .exam-explain{display:block}
 </style>
 <button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
+<button class="focus-toggle" id="focusToggle" style="display:none;">🖥️ 退出全屏</button>
 <footer class="footer"><p id="footerText">© 离线题库卡组 · 双击即可使用</p></footer>
 
 <div class="xianyu-toast-overlay" id="xianyuToastOverlay">
@@ -615,6 +645,64 @@ function displayAnswer(q){
     if(ans==="B") return "错误";
   }
   return ans;
+}
+// 答题判定横幅（与惠州一致：✅回答正确 / ❌回答错误＋正确答案）
+function makeResultBanner(isCorrect, q) {
+  var d = document.createElement("div");
+  d.className = "ans-result " + (isCorrect ? "ans-correct" : "ans-wrong");
+  d.innerHTML = isCorrect
+    ? "✅ 回答正确"
+    : "❌ 回答错误，正确答案：<b>" + escapeHtml(displayAnswer(q)) + "</b>";
+  return d;
+}
+// 按 _idx 查找题目（深圳站数据分笔试/面试/兜底三池）
+function szQuestionByIdx(idx) {
+  var pools = [W_DATA, I_DATA, G_DATA];
+  for (var p = 0; p < pools.length; p++) {
+    for (var i = 0; i < pools[p].length; i++) {
+      if (pools[p][i]._idx === idx) return pools[p][i];
+    }
+  }
+  return null;
+}
+// 笔试选项点击选中（单选清兄弟，多选切换）
+function szToggleOpt(el) {
+  var card = el.closest(".card"); if (!card) return;
+  var isMulti = card.getAttribute("data-multi") === "1";
+  if (!isMulti) card.querySelectorAll(".opt-row.selected").forEach(function (o) { o.classList.remove("selected"); });
+  el.classList.toggle("selected");
+}
+// 笔试「核对答案」：显示答案 + 判定横幅
+function szRevealAnswer(idx) {
+  try {
+    var q = szQuestionByIdx(idx); if (!q) return;
+    var card = document.getElementById("q" + idx); if (!card) return;
+    var ansEl = document.getElementById("ans" + idx); if (!ansEl) return;
+    if (ansEl.style.display === "block") { ansEl.style.display = "none"; return; }
+    var sel = [];
+    card.querySelectorAll(".opt-row.selected").forEach(function (o) { sel.push(o.getAttribute("data-letter")); });
+    if (!sel.length) {
+      var b = card.querySelector(".check-btn");
+      if (b) { var t = b.textContent; b.textContent = "⚠️ 请先选择答案"; setTimeout(function () { b.textContent = t; }, 1200); }
+      return;
+    }
+    card.querySelectorAll(".opt-row").forEach(function (o) {
+      var L = o.getAttribute("data-letter");
+      var isCorr = q.answer != null && String(q.answer).indexOf(L) !== -1;
+      var s = o.classList.contains("selected");
+      if (s) o.classList.add(isCorr ? "ok" : "bad"); else if (isCorr) o.classList.add("right");
+    });
+    ansEl.style.display = "block";
+    var oldB = ansEl.querySelector(".ans-result"); if (oldB) oldB.remove();
+    var isCorrect;
+    if (q.type === "multiple" || q.type === "multi") {
+      var a = normAnsArr(q.answer).slice().sort().join("");
+      isCorrect = sel.slice().sort().join("") === a && sel.length > 0;
+    } else {
+      isCorrect = sel.length === 1 && String(sel[0]).trim() === String(q.answer).trim();
+    }
+    ansEl.insertBefore(makeResultBanner(isCorrect, q), ansEl.firstChild);
+  } catch (e) { console.error(e); }
 }
 // ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
 var CONFIG = window.SITE_CONFIG || {
@@ -841,19 +929,22 @@ function cardHtml(q) {
     var optsHtml = "";
     if (q.options && q.options.length) {
       q.options.forEach(function (o) {
-        var corr = (q.answer != null && String(q.answer).indexOf(o.letter) !== -1) ? " correct" : "";
-        optsHtml += '<div class="opt-row' + corr + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+        optsHtml += '<div class="opt-row selectable" data-letter="' + escapeHtml(o.letter) + '" onclick="szToggleOpt(this)"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
       });
     }
     var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
     if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
-    bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "") + answerSection(ansHtml);
+    var checkBtn = (q.options && q.options.length) ? '<button class="check-btn" onclick="szRevealAnswer(' + q._idx + ')">📋 核对答案</button>' : "";
+    bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
+      + '<div class="answer-wrap" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + '</div>'
+      + '<div class="check-row">' + checkBtn + '</div>';
   }
+  var isMulti = (q.type === "multiple" || q.type === "multi") ? "1" : "0";
   var statusDB = StorageCtrl.get();
   var cur = statusDB[q._idx] || "not-mastered";
   var actNM = cur === "not-mastered" ? "active" : "";
   var actM = cur === "mastered" ? "active" : "";
-  return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
+  return '<div class="card" id="q' + q._idx + '" data-multi="' + isMulti + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
     + '<div class="card-body"><div class="card-body-inner">'
     + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
     + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
@@ -1090,6 +1181,7 @@ function resetAudioRecorderUI() {
 var randomModal = document.getElementById("randomModal");
 var randomModalReveal = document.getElementById("randomModalReveal");
 var currentRandomQ = null;
+var rndSelected = [];
 
 function randomBadgesHtml(q) {
   var html = "";
@@ -1114,8 +1206,7 @@ function randomQuestionHtml(q) {
   if (q.options && q.options.length) {
     h += '<div style="margin-top:12px">';
     q.options.forEach(function (o) {
-      var corr = (q.answer != null && String(q.answer).indexOf(o.letter) !== -1) ? " correct" : "";
-      h += '<div class="opt-row' + corr + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+      h += '<div class="opt-row selectable" data-letter="' + escapeHtml(o.letter) + '" onclick="szRndToggleOpt(this)"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
     });
     h += "</div>";
   }
@@ -1132,6 +1223,7 @@ function showRandomQuestion() {
   startTimerCountdown();
   var data = dataset();
   if (!data.length) return;
+  rndSelected = [];
   var q = data[Math.floor(Math.random() * data.length)];
   currentRandomQ = q;
   document.getElementById("audioRecorderZone").style.display = (MODE === "interview" && _mRecord) ? "block" : "none";
@@ -1147,9 +1239,32 @@ function showRandomQuestion() {
 document.getElementById("randomBtn").addEventListener("click", showRandomQuestion);
 randomModalReveal.addEventListener("click", function () {
   var ans = document.getElementById("randomModalAnswer"), hint = document.getElementById("randomModalHint");
-  if (ans.classList.contains("show")) { ans.classList.remove("show"); randomModalReveal.textContent = "👀 点击查看答案"; hint.style.display = "flex"; }
-  else { ans.classList.add("show"); randomModalReveal.textContent = "🙈 收起答案"; hint.style.display = "none"; }
+  if (ans.classList.contains("show")) { ans.classList.remove("show"); randomModalReveal.textContent = "👀 点击查看答案"; hint.style.display = "flex"; return; }
+  var q = currentRandomQ; if (!q) return;
+  if (!rndSelected.length) { hint.style.display = "flex"; hint.textContent = "⚠️ 请先选择你的答案，再点查看"; return; }
+  document.querySelectorAll("#randomModalQuestion .opt-row").forEach(function (o) {
+    var L = o.getAttribute("data-letter");
+    var isCorr = q.answer != null && String(q.answer).indexOf(L) !== -1;
+    var s = o.classList.contains("selected");
+    if (s) o.classList.add(isCorr ? "ok" : "bad"); else if (isCorr) o.classList.add("right");
+  });
+  var content = document.getElementById("randomModalAnswerContent");
+  var isCorrect;
+  if (q.type === "multiple" || q.type === "multi") { var a = normAnsArr(q.answer).slice().sort().join(""); isCorrect = rndSelected.slice().sort().join("") === a && rndSelected.length > 0; }
+  else { isCorrect = rndSelected.length === 1 && String(rndSelected[0]).trim() === String(q.answer).trim(); }
+  var oldB = content.querySelector(".ans-result"); if (oldB) oldB.remove();
+  content.insertBefore(makeResultBanner(isCorrect, q), content.firstChild);
+  ans.classList.add("show"); randomModalReveal.textContent = "🙈 收起答案"; hint.style.display = "none";
 });
+function szRndToggleOpt(el) {
+  var q = currentRandomQ; if (!q) return;
+  var isMulti = (q.type === "multiple" || q.type === "multi");
+  if (!isMulti) { document.querySelectorAll("#randomModalQuestion .opt-row.selected").forEach(function (o) { o.classList.remove("selected"); }); rndSelected = []; }
+  el.classList.toggle("selected");
+  var L = el.getAttribute("data-letter");
+  if (el.classList.contains("selected")) { if (rndSelected.indexOf(L) === -1) rndSelected.push(L); }
+  else { rndSelected = rndSelected.filter(function (x) { return x !== L; }); }
+}
 document.getElementById("randomModalNext").addEventListener("click", showRandomQuestion);
 function closeRandomModal() { randomModal.classList.remove("show"); stopTimerCountdown(); resetAudioRecorderUI(); }
 document.getElementById("randomModalClose").addEventListener("click", closeRandomModal);
@@ -1206,6 +1321,27 @@ themeToggle.addEventListener("click", function () {
   if (cur === "dark") { document.documentElement.removeAttribute("data-theme"); themeToggle.textContent = "🌙"; localStorage.setItem("theme", "light"); }
   else { document.documentElement.setAttribute("data-theme", "dark"); themeToggle.textContent = "☀️"; localStorage.setItem("theme", "dark"); }
 });
+
+// 全屏专注刷题模式
+(function () {
+  var focusBtn = document.getElementById("focusModeBtn");
+  var focusToggle = document.getElementById("focusToggle");
+  if (!focusBtn || !focusToggle) return;
+  function setFocus(on) {
+    document.body.classList.toggle("focus-mode", on);
+    focusBtn.textContent = on ? "🖥️ 退出全屏" : "🖥️ 全屏刷题";
+    focusToggle.style.display = on ? "block" : "none";
+    try { localStorage.setItem("focusMode", on ? "1" : ""); } catch (e) {}
+  }
+  focusBtn.addEventListener("click", function () { setFocus(!document.body.classList.contains("focus-mode")); });
+  focusToggle.addEventListener("click", function () { setFocus(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && document.body.classList.contains("focus-mode")) setFocus(false);
+  });
+  var fv = null;
+  try { fv = localStorage.getItem("focusMode"); } catch (e) {}
+  if (fv) setFocus(true);
+})();
 
 // 只看未掌握 / 快捷键
 (function () {
@@ -1472,6 +1608,7 @@ function submitExam() {
     card.classList.add("graded");
     if (isCorrect) { correct++; card.classList.add("graded-correct"); }
     else { wrong++; card.classList.add("graded-wrong"); }
+    card.insertBefore(makeResultBanner(isCorrect, q), card.firstChild);
     var ansArr = normAnsArr(q.answer);
     (q.options || []).forEach(function (o) {
       var el = card.querySelector('.exam-opt[data-letter="' + o.letter + '"]'); if (!el) return;
