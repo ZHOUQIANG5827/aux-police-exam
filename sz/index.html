@@ -538,7 +538,7 @@ body {
     <div class="xt-icon">💝</div>
     <div class="xt-title" id="rewardTitle">打赏作者 · 支持开源</div>
     <div class="xt-desc" id="rewardDesc">如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕</div>
-    <img class="xt-qr" id="rewardQr" src="" alt="赞赏码">
+    <img class="xt-qr" id="rewardQr" src="" alt="赞赏码" loading="lazy" decoding="async">
     <button class="xt-btn secondary" id="rewardCloseBtn">已打赏 / 关闭</button>
   </div>
 </div>
@@ -585,6 +585,37 @@ body {
 <script src="data-interview.js"></script>
 <script src="config.js"></script>
 <script>
+// 规范化判断题：把 options.letter 与 answer 由"正确"/"错误"映射为 A/B，避免 UI 显示成"正确。正确"
+(function(){
+  function normBool(data){
+    if(!data || !data.length) return data;
+    data.forEach(function(q){
+      if((q.type==="judge"||q.type==="bool") && q.options && q.options.length){
+        var map={}; var opts=q.options;
+        opts.forEach(function(o,i){
+          var orig=String(o.letter||"").trim();
+          map[orig] = (i===0?"A":"B");
+          o.letter = map[orig];
+        });
+        var ans=String(q.answer||"").trim();
+        if(map[ans]) q.answer=map[ans];
+      }
+    });
+    return data;
+  }
+  if(window.DATA_WRITTEN) window.DATA_WRITTEN = normBool(window.DATA_WRITTEN);
+  if(window.DATA_INTERVIEW) window.DATA_INTERVIEW = normBool(window.DATA_INTERVIEW);
+  if(window.DATA) window.DATA = normBool(window.DATA);
+})();
+// 答案显示：判断题 A/B 映射回"正确"/"错误"
+function displayAnswer(q){
+  var ans = q.answer == null ? "" : String(q.answer).trim();
+  if((q.type==="judge"||q.type==="bool") && ans.length===1){
+    if(ans==="A") return "正确";
+    if(ans==="B") return "错误";
+  }
+  return ans;
+}
 // ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
 var CONFIG = window.SITE_CONFIG || {
   siteTitle: "考试题库",
@@ -814,7 +845,7 @@ function cardHtml(q) {
         optsHtml += '<div class="opt-row' + corr + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
       });
     }
-    var ansHtml = "<div>答案：<b>" + escapeHtml(q.answer == null ? "" : q.answer) + "</b></div>";
+    var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
     if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
     bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "") + answerSection(ansHtml);
   }
@@ -1092,8 +1123,7 @@ function randomQuestionHtml(q) {
 }
 function randomAnswerHtml(q) {
   if (MODE === "interview") return formatAnswer(q.answer || "（暂无参考答案）", "");
-  var a = q.answer == null ? "" : q.answer;
-  var h = "<div>答案：<b>" + escapeHtml(a) + "</b></div>";
+  var h = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
   if (q.explanation) h += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, "") + "</div>";
   return h;
 }
@@ -1388,7 +1418,7 @@ function buildExamCard(q, n) {
         + '<span class="exam-mark"></span></div>';
     }).join("");
     bodyHtml = '<div class="exam-opts">' + opts + '</div>'
-      + '<div class="exam-explain" id="examExp' + q._idx + '"><div>答案：<b>' + escapeHtml(q.answer == null ? "" : q.answer) + '</b></div>'
+      + '<div class="exam-explain" id="examExp' + q._idx + '"><div>答案：<b>' + escapeHtml(displayAnswer(q)) + '</b></div>'
       + (q.explanation ? '<div style="margin-top:6px">解析：' + formatAnswer(q.explanation, currentSearch) + '</div>' : '') + '</div>';
   }
   card.innerHTML = '<div class="exam-q-head"><span class="exam-q-num">#' + n + '</span><span class="exam-q-stem">' + stemHtml + '</span></div>' + bodyHtml;
@@ -1489,12 +1519,15 @@ if (CONFIG.themeColor) {
   document.documentElement.style.setProperty('--header-grad', 'linear-gradient(135deg, ' + CONFIG.themeColor + ' 0%, ' + CONFIG.themeColor + ' 100%)');
 }
 
-// 封面头像（可选）
+// 封面头像（可选）：超长 base64 会阻塞首屏，自动回退到轻量 SVG
+function lightCover(){ return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%231e3a5f'/%3E%3Ctext x='50' y='64' font-size='44' text-anchor='middle' fill='%23fff'%3E🚔%3C/text%3E%3C/svg%3E"; }
+function safeCover(src){ return (src && src.length > 8192) ? lightCover() : src; }
 if (CONFIG.cover) {
   var _hc = document.querySelector('.header-content');
   if (_hc) {
     var _cov = document.createElement('img');
-    _cov.src = CONFIG.cover; _cov.className = 'cover-avatar'; _cov.alt = 'cover';
+    _cov.src = safeCover(CONFIG.cover); _cov.className = 'cover-avatar'; _cov.alt = 'cover';
+    _cov.loading = 'lazy'; _cov.decoding = 'async';
     _hc.insertBefore(_cov, _hc.firstChild);
   }
 }
@@ -1522,7 +1555,7 @@ document.getElementById("xtCode").textContent = CONFIG.xianyuCode;
 // 打赏文案与赞赏码（仅 reward 开启时有意义）
 if (CONFIG.rewardTitle) document.getElementById("rewardTitle").textContent = CONFIG.rewardTitle;
 if (CONFIG.rewardDesc)  document.getElementById("rewardDesc").innerHTML = CONFIG.rewardDesc;
-if (CONFIG.rewardImage) document.getElementById("rewardQr").src = CONFIG.rewardImage;
+if (CONFIG.rewardImage) { var _qr = document.getElementById("rewardQr"); _qr.src = CONFIG.rewardImage; _qr.loading = 'lazy'; _qr.decoding = 'async'; }
 
 // 倒计时显示
 document.getElementById("timerDigits").textContent = (function () { var m = Math.floor(CONFIG.timerSeconds / 60), s = CONFIG.timerSeconds % 60; return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); })();
@@ -1533,6 +1566,7 @@ if (_footer) {
   _footer.innerHTML = '';
   if (CONFIG.logo) {
     var _lg = document.createElement('img'); _lg.src = CONFIG.logo; _lg.className = 'footer-logo'; _lg.alt = 'logo';
+    _lg.loading = 'lazy'; _lg.decoding = 'async';
     _footer.appendChild(_lg);
   }
   var _fp = document.createElement('p'); _fp.id = 'footerText';
