@@ -1072,7 +1072,8 @@ function revealStudyAnswer(idx) {
     var L = o.dataset.letter;
     var isCorr = q.answer != null && String(q.answer).indexOf(L) !== -1;
     var sel = o.classList.contains("selected");
-    o.classList.add(sel ? (isCorr ? "ok" : "bad") : (isCorr ? "right" : ""));
+    if (sel) o.classList.add(isCorr ? "ok" : "bad");
+    else if (isCorr) o.classList.add("right");
     o.classList.add("locked");
   });
   if (ansEl) {
