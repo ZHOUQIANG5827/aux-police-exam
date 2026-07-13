@@ -678,6 +678,7 @@ body.focus-mode .focus-toggle { background: var(--danger); }
     </div>
     <div class="random-modal-footer">
       <button class="random-modal-btn random-modal-btn-next" id="randomModalNext">🔄 换一题</button>
+      <button class="random-modal-btn random-modal-btn-reveal" id="randomModalSubmit" style="display:none;">✅ 提交答案</button>
       <button class="random-modal-btn random-modal-btn-close" id="randomModalDone">✕</button>
     </div>
   </div>
@@ -1302,6 +1303,9 @@ function randomQuestionHtml(q) {
     });
     h += "</div>";
   }
+  if (q.type === "multi" || q.type === "multiple") {
+    h += '<div class="random-modal-hint" style="margin-top:12px;margin-bottom:0;font-size:13px;padding:10px 12px;">💡 多选题：选择所有正确项后，点击下方「提交答案」查看对错</div>';
+  }
   return h;
 }
 function randomAnswerHtml(q) {
@@ -1318,6 +1322,9 @@ function showRandomQuestion() {
   if (!data.length) return;
   var q = data[Math.floor(Math.random() * data.length)];
   currentRandomQ = q;
+  var isMulti = (q.type === "multi" || q.type === "multiple");
+  var submitBtn = document.getElementById("randomModalSubmit");
+  if (submitBtn) submitBtn.style.display = isMulti ? "" : "none";
   document.getElementById("audioRecorderZone").style.display = (MODE === "interview" && _mRecord) ? "block" : "none";
   document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
   document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
@@ -1337,27 +1344,62 @@ function revealRandomAnswer() {
   document.getElementById("randomModalAnswer").classList.add("show");
   stopTimerCountdown();
 }
+function gradeRandomSelection() {
+  var q = currentRandomQ;
+  if (!q || q.answer == null) return;
+  var opts = document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt");
+  var selLetters = [];
+  opts.forEach(function (o) {
+    if (o.classList.contains("selected")) selLetters.push(o.dataset.randLetter);
+  });
+  if (selLetters.length === 0) {
+    var btn = document.getElementById("randomModalSubmit");
+    if (btn) { var orig = btn.textContent; btn.textContent = "⚠️ 请先选择答案"; setTimeout(function () { btn.textContent = orig; }, 1200); }
+    return;
+  }
+  opts.forEach(function (o) {
+    o.classList.add("locked");
+    var letter = o.dataset.randLetter;
+    var isCorr = String(q.answer).indexOf(letter) !== -1 || String(q.answer).indexOf(o.children[1].textContent) !== -1;
+    var sel = o.classList.contains("selected");
+    if (sel) o.classList.add(isCorr ? "ok" : "bad");
+    else if (isCorr) o.classList.add("right");
+  });
+  var ansArr = normAnsArr(q.answer).slice().sort().join("");
+  var isCorrect = selLetters.slice().sort().join("") === ansArr;
+  revealRandomAnswer();
+  var ac = document.getElementById("randomModalAnswerContent");
+  var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove();
+  var banner = makeResultBanner(isCorrect, q); banner.id = "randomResultBanner";
+  ac.insertBefore(banner, ac.firstChild);
+  var submitBtn = document.getElementById("randomModalSubmit");
+  if (submitBtn) submitBtn.style.display = "none";
+}
 document.getElementById("randomModalQuestion").addEventListener("click", function (e) {
   var opt = e.target.closest(".opt-row.rand-opt");
   if (!opt || opt.classList.contains("locked")) return;
-  document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) { o.classList.add("locked"); });
-  opt.classList.add("selected");
   var q = currentRandomQ;
-  var isCorrect = false;
-  if (q && q.answer != null) {
+  if (!q) return;
+  if (q.type === "multi" || q.type === "multiple") {
+    opt.classList.toggle("selected");
+  } else {
+    document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) { o.classList.add("locked"); });
+    opt.classList.add("selected");
     var letter = opt.dataset.randLetter;
-    isCorrect = String(q.answer).indexOf(letter) !== -1 || String(q.answer).indexOf(opt.children[1].textContent) !== -1;
+    var isCorrect = String(q.answer).indexOf(letter) !== -1 || String(q.answer).indexOf(opt.children[1].textContent) !== -1;
     if (isCorrect) opt.classList.add("ok"); else opt.classList.add("bad");
-  }
-  revealRandomAnswer();
-  // 文字判定横幅
-  if (q && q.answer != null) {
+    document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) {
+      var L = o.dataset.randLetter;
+      if (String(q.answer).indexOf(L) !== -1 || String(q.answer).indexOf(o.children[1].textContent) !== -1) o.classList.add("right");
+    });
+    revealRandomAnswer();
     var ac = document.getElementById("randomModalAnswerContent");
     var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove();
     var banner = makeResultBanner(isCorrect, q); banner.id = "randomResultBanner";
     ac.insertBefore(banner, ac.firstChild);
   }
 });
+document.getElementById("randomModalSubmit").addEventListener("click", gradeRandomSelection);
 document.getElementById("randomModalNext").addEventListener("click", showRandomQuestion);
 function closeRandomModal() { randomModal.classList.remove("show"); stopTimerCountdown(); resetAudioRecorderUI(); }
 document.getElementById("randomModalClose").addEventListener("click", closeRandomModal);
