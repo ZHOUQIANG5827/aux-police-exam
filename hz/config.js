@@ -8,7 +8,7 @@ window.SITE_CONFIG = {
   "contact": "",
   "xianyuCode": "RCJ9527",
   "promoTitle": "作者 · rcj9527",
-  "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍搜用户名 <b>RCJ9527</b>。",
+  "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。",
   "rewardImage": "wechat-reward.png?v=2",
   "rewardTitle": "打赏作者 · 支持开源",
   "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
