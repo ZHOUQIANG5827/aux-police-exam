@@ -962,9 +962,8 @@ function cardHtml(q) {
     }
     var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
     if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
-    var isMulti = (q.type === "multi" || q.type === "multiple");
     bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
-      + (isMulti ? '<div class="study-check"><button class="study-check-btn" data-idx="' + q._idx + '">✅ 提交答案</button></div>' : "")
+      + '<div class="study-check"><button class="study-check-btn" data-idx="' + q._idx + '">✅ 提交答案</button></div>'
       + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
   }
   var statusDB = StorageCtrl.get();
@@ -972,7 +971,7 @@ function cardHtml(q) {
   var actNM = cur === "not-mastered" ? "active" : "";
   var actM = cur === "mastered" ? "active" : "";
   return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
-    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : (isMulti ? "💡 多选题：选择所有正确项后，点「提交答案」查看对错与解析。" : "💡 点击选项即自动显示对错与解析。")) + '</span>'
+    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : "💡 选择答案后，点「提交答案」查看对错与解析。") + '</span>'
     + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
     + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
     + bodyInner + "</div></div></div>";
@@ -1137,10 +1136,9 @@ document.getElementById("questionsList").addEventListener("click", function (e) 
       // 多选：先多选，点「提交答案」再判
       opt.classList.toggle("selected");
     } else {
-      // 单选/判断：点选项即自动判分显示答案（同随机抽题体验）
+      // 单选/判断：点选项选中（取消其他），点「提交答案」再判
       card.querySelectorAll(".study-opt").forEach(function (o) { o.classList.remove("selected"); });
       opt.classList.add("selected");
-      revealStudyAnswer(idx);
     }
     return;
   }
@@ -1303,8 +1301,8 @@ function randomQuestionHtml(q) {
     });
     h += "</div>";
   }
-  if (q.type === "multi" || q.type === "multiple") {
-    h += '<div class="random-modal-hint" style="margin-top:12px;margin-bottom:0;font-size:13px;padding:10px 12px;">💡 多选题：选择所有正确项后，点击下方「提交答案」查看对错</div>';
+  if (MODE !== "interview") {
+    h += '<div class="random-modal-hint" style="margin-top:12px;margin-bottom:0;font-size:13px;padding:10px 12px;">💡 选择答案后，点击下方「提交答案」查看对错</div>';
   }
   return h;
 }
@@ -1322,9 +1320,8 @@ function showRandomQuestion() {
   if (!data.length) return;
   var q = data[Math.floor(Math.random() * data.length)];
   currentRandomQ = q;
-  var isMulti = (q.type === "multi" || q.type === "multiple");
   var submitBtn = document.getElementById("randomModalSubmit");
-  if (submitBtn) submitBtn.style.display = isMulti ? "" : "none";
+  if (submitBtn) submitBtn.style.display = (MODE === "interview") ? "none" : "";
   document.getElementById("audioRecorderZone").style.display = (MODE === "interview" && _mRecord) ? "block" : "none";
   document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
   document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
@@ -1383,20 +1380,9 @@ document.getElementById("randomModalQuestion").addEventListener("click", functio
   if (q.type === "multi" || q.type === "multiple") {
     opt.classList.toggle("selected");
   } else {
-    document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) { o.classList.add("locked"); });
+    // 单选/判断：选中该项（取消其他），点「提交答案」再判
+    document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) { o.classList.remove("selected"); });
     opt.classList.add("selected");
-    var letter = opt.dataset.randLetter;
-    var isCorrect = String(q.answer).indexOf(letter) !== -1 || String(q.answer).indexOf(opt.children[1].textContent) !== -1;
-    if (isCorrect) opt.classList.add("ok"); else opt.classList.add("bad");
-    document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt").forEach(function (o) {
-      var L = o.dataset.randLetter;
-      if (String(q.answer).indexOf(L) !== -1 || String(q.answer).indexOf(o.children[1].textContent) !== -1) o.classList.add("right");
-    });
-    revealRandomAnswer();
-    var ac = document.getElementById("randomModalAnswerContent");
-    var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove();
-    var banner = makeResultBanner(isCorrect, q); banner.id = "randomResultBanner";
-    ac.insertBefore(banner, ac.firstChild);
   }
 });
 document.getElementById("randomModalSubmit").addEventListener("click", gradeRandomSelection);
