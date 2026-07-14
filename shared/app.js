@@ -823,26 +823,8 @@ themeToggle.addEventListener("click", function () {
   });
 })();
 
-// 静音 + 撒花
+// 撒花（答对/标记掌握时的正向反馈，纯视觉、无音效）
 (function () {
-  function isMuted() { try { return localStorage.getItem("sso_muted") === "1"; } catch (e) { return false; } }
-  function setMuted(m) { try { localStorage.setItem("sso_muted", m ? "1" : "0"); } catch (e) {} var b = document.getElementById("muteToggle"); if (b) b.textContent = m ? "🔇" : "🔊"; }
-  var muteBtn = document.getElementById("muteToggle");
-  muteBtn.textContent = isMuted() ? "🔇" : "🔊";
-  muteBtn.addEventListener("click", function () { setMuted(!isMuted()); });
-  var audioCtx = null;
-  function playDing() {
-    if (isMuted()) return;
-    try {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.type = "sine"; o.frequency.value = 660; o.connect(g); g.connect(audioCtx.destination);
-      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25);
-      o.start(); o.stop(audioCtx.currentTime + 0.26);
-    } catch (e) {}
-  }
   function playConfetti() {
     var emojis = ["🎉", "⭐", "💡", "✅", "🔥", "🏆", "💪", "🌟"];
     for (var i = 0; i < 18; i++) {
@@ -855,7 +837,7 @@ themeToggle.addEventListener("click", function () {
       (function (el) { setTimeout(function () { el.remove(); }, 2800); })(s);
     }
   }
-  function celebrate() { playConfetti(); playDing(); }
+  function celebrate() { playConfetti(); }
   var _ct = changeTrack;
   changeTrack = function (e, idx, status) { _ct(e, idx, status); if (status === "mastered") celebrate(); };
 })();
