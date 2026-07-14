@@ -33,10 +33,10 @@ body {
 .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: 1px; }
 .header h1 .emoji { font-size: 30px; }
 .header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 10px; }
-.regions-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 12px; }
-.regions-row .region-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: rgba(37,99,235,.1); color: var(--primary, #2563eb); border: 1px solid rgba(37,99,235,.18); white-space: nowrap; transition: background .2s, transform .15s; }
-.regions-row .region-chip:hover { background: rgba(37,99,235,.2); transform: translateY(-1px); }
-.regions-row .region-chip .chip-icon { font-size: 13px; }
+.regions-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.regions-row .region-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; white-space: nowrap; transition: background .2s, transform .15s; }
+.regions-row .region-chip:hover { background: #dbeafe; transform: translateY(-1px); }
+.regions-row .region-chip .chip-icon { font-size: 14px; }
 .cover-avatar { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; object-position: 50% 10%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.25); margin-bottom: 12px; }
 .footer-logo { height: 22px; vertical-align: middle; margin: 0 6px 4px; border-radius: 4px; }
 .footer-version { font-size: 11px; opacity: 0.7; margin-top: 4px; }
@@ -178,6 +178,8 @@ body {
 [data-theme="dark"] .tag-bs { background: #3b0f1a; color: #fda4c0; }
 [data-theme="dark"] .tag-cg { background: #1f2937; color: #94a3b8; }
 [data-theme="dark"] .tag-default { background: #1f2937; color: #94a3b8; }
+[data-theme="dark"] .regions-row .region-chip { background: rgba(255,255,255,.12); color: #e2e8f0; border-color: rgba(255,255,255,.18); }
+[data-theme="dark"] .regions-row .region-chip:hover { background: rgba(255,255,255,.22); }
 .card-title { font-size: 14.5px; color: var(--text); line-height: 1.7; font-weight: 500; }
 .card-title mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 [data-theme="dark"] .card-title mark { background: #854d0e; color: #fef9c3; }
