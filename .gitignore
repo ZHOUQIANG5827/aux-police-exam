@@ -2,3 +2,6 @@ wrangler.jsonc
 .wrangler
 *.bak
 *.bak_*
+NUL
+__pycache__/
+*.pyc

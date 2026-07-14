@@ -10,7 +10,7 @@
 - 仅填充 explanation 字段，不动题目/答案
 
 用法（在你本机，配好 API key 后）：
-  python outputs/fill_explanations.py \
+  python build/fill_explanations.py \
       --input hz/data-written.json \
       --api-key sk-xxxx \
       --base-url https://api.deepseek.com/v1 \
@@ -18,7 +18,8 @@
 
 说明：
 - 默认只处理 explanation 为空/缺失的题；已填的自动跳过（可反复重跑补残）。
-- 处理完 hz/data-written.json 后，再运行 build_city.py 重建 hz/dg/fs/zh 即可全站生效。
+- 处理完 <city>/data-written.json 后，运行 python build/sync_station.py <city>
+  重建 src/<city>/station-data.js 与 <city>/index.html 即可生效（hz 等站需先有对应 data-written.js）。
 """
 import argparse, json, os, sys, time, urllib.request, urllib.error
 

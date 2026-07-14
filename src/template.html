@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><!--SITE_TITLE--></title>
+
+  <link rel="stylesheet" href="../shared/app.css">
+</head>
+<body>
+<header class="header">
+  <button class="theme-toggle" id="themeToggle" title="切换深色模式">🌙</button>
+  <button class="mute-toggle" id="muteToggle" title="音效开关">🔊</button>
+  <div class="header-content">
+    <h1><span class="emoji" id="siteEmoji">🚔</span> <span id="siteTitle">辅警真题卡组</span></h1>
+    <p class="subtitle" id="siteSubtitle">真实考试真题 · 笔试+面试 · 离线可用</p>
+    <div class="mode-tabs" id="modeTabs"></div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-num" id="statNum0">0</div><div class="stat-label" id="statLabel0">总题数</div></div>
+      <div class="stat-card"><div class="stat-num" id="statNum1">0</div><div class="stat-label" id="statLabel1">覆盖年份</div></div>
+      <div class="stat-card"><div class="stat-num" id="statNum2">0</div><div class="stat-label" id="statLabel2">题型分类</div></div>
+      <div class="progress-container">
+        <div class="progress-text"><span id="progressLabel">📊 离线刷题进度</span><span id="progressPercent">0%</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+      </div>
+    </div>
+  </div>
+</header>
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索题目关键词、答案内容…">
+    </div>
+    <div id="filterRows"></div>
+    <div class="action-row">
+      <button class="action-btn exam-enter-btn" id="examBtn">📝 套题模考</button>
+      <button class="action-btn" id="randomBtn">🎲 随机抽题</button>
+      <button class="action-btn" id="expandAll">⏬ 展开全部</button>
+      <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
+      <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
+      <button class="action-btn" id="focusModeBtn">🖥️ 全屏刷题</button>
+      <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版口令</button>
+      <button class="action-btn reward-btn" id="rewardBtn">💝 打赏作者</button>
+      <span class="result-count" id="resultCount"></span>
+    </div>
+  </div>
+</div>
+<div class="promo-banner" id="promoBanner">
+  <button class="promo-close" id="promoClose" title="收起">×</button>
+  <div class="promo-icon">✏️</div>
+  <div class="promo-body">
+    <div class="promo-title" id="promoTitle">作者</div>
+    <div class="promo-text" id="promoText"></div>
+    <div class="promo-actions">
+      <button class="promo-btn" id="promoXianyu">📋 复制闲鱼号</button>
+    </div>
+  </div>
+</div>
+<main class="main" id="questionsList"><div class="loader" id="loader"><div class="spinner"></div><span>📚 题库加载中…</span></div></main>
+<div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+  <button class="action-btn load-more-btn" id="loadMoreBtn">⬇️ 加载更多题目</button>
+</div>
+<div class="exam-setup-overlay" id="examSetupOverlay" style="display:none;">
+  <div class="exam-setup-card">
+    <h3 class="exam-setup-title">📝 套题模考 · 出卷设置</h3>
+    <p class="exam-setup-tip">两种出卷方式：① <b>按套题批次</b> 直接刷整套真题；② <b>自定义随机卷</b> 按题型数量随机抽题。打字题为附加项不计入分，<b>全程无时间限制</b>。</p>
+    <div class="exam-setup-row">
+      <label>出卷方式</label>
+      <select class="exam-setup-select" id="examPlanMode">
+        <option value="batch">📚 按套题批次刷（整套真题）</option>
+        <option value="random">🎲 自定义随机卷</option>
+      </select>
+    </div>
+    <div class="exam-setup-row" id="examBatchRow">
+      <label>选择批次</label>
+      <select class="exam-setup-select" id="examBatch"></select>
+    </div>
+    <div class="exam-setup-grid" id="examCountGrid" style="display:none;">
+      <div class="exam-setup-cell">
+        <label>单选题</label>
+        <div class="exam-setup-input-wrap"><input type="number" min="0" id="cntSingle" class="exam-setup-input" value="36"><span class="es-unit">题</span></div>
+      </div>
+      <div class="exam-setup-cell">
+        <label>多选题</label>
+        <div class="exam-setup-input-wrap"><input type="number" min="0" id="cntMulti" class="exam-setup-input" value="12"><span class="es-unit">题</span></div>
+      </div>
+      <div class="exam-setup-cell">
+        <label>判断题</label>
+        <div class="exam-setup-input-wrap"><input type="number" min="0" id="cntBool" class="exam-setup-input" value="12"><span class="es-unit">题</span></div>
+      </div>
+    </div>
+    <div class="exam-setup-cell exam-setup-cell-wide">
+      <label class="exam-setup-check"><input type="checkbox" id="typingOn" checked> 含打字题</label>
+      <div class="exam-setup-typing-min">
+        <span>打字时长</span>
+        <input type="number" min="1" id="examMinutesTyping" class="exam-setup-input exam-setup-input-sm" value="10"> <span>分钟</span>
+      </div>
+    </div>
+    <div class="exam-setup-info" id="examSetupInfo"></div>
+    <div class="exam-setup-actions">
+      <button class="exam-btn exam-btn-ghost" id="examSetupCancel">取消</button>
+      <button class="exam-btn exam-btn-ghost" id="examSetupPreset" type="button">↺ <span id="examPresetLabel">标准模考</span></button>
+      <button class="exam-btn exam-btn-primary" id="examSetupStart">🚀 开始模考</button>
+    </div>
+  </div>
+</div>
+<section class="exam-view" id="examView" style="display:none;">
+  <div class="exam-bar">
+    <div class="exam-bar-left">
+      <h2 class="exam-title">📝 套题模考 · <span id="examModeLabel">笔试</span></h2>
+      <p class="exam-sub">本套共 <span id="examTotal">0</span> 题 · <span id="examSubInfo"></span></p>
+    </div>
+    <div class="exam-bar-right">
+      <button class="exam-btn exam-btn-ghost" id="examExitBtn">← 返回浏览</button>
+      <button class="exam-btn exam-btn-ghost" id="examResetBtn">🔄 重新模考</button>
+      <button class="exam-btn exam-btn-primary" id="examSubmitBtn">✅ 提交试卷</button>
+    </div>
+  </div>
+  <div class="exam-result" id="examResult" style="display:none;"></div>
+  <div class="exam-questions" id="examQuestions"></div>
+</section>
+
+<button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
+<button class="focus-toggle" id="focusToggle" title="切换全屏刷题模式" style="display:none;">🖥️ 全屏刷题</button>
+<span class="build-version" id="buildVersion"></span>
+<footer class="footer"><p id="footerText">© 离线题库卡组 · 双击即可使用</p></footer>
+
+<div class="xianyu-toast-overlay" id="xianyuToastOverlay">
+  <div class="xianyu-toast">
+    <div class="xt-icon">🔑</div>
+    <div class="xt-title">获取完整版 / 更多真题</div>
+    <div class="xt-desc">口令已自动复制，请打开「闲鱼」App，粘贴口令搜索，即可找到店铺获取完整版内容与持续更新～</div>
+    <div class="xt-code" id="xtCode">RCJ9527</div>
+    <div class="xt-copied" id="xtCopied">✅ 口令已复制到剪贴板</div>
+    <button class="xt-btn" id="xtOpenBtn">🐟 打开闲鱼 App</button>
+    <button class="xt-btn secondary" id="xtCloseBtn">我知道了</button>
+  </div>
+</div>
+
+<div class="xianyu-toast-overlay" id="rewardToastOverlay">
+  <div class="xianyu-toast">
+    <div class="xt-icon">💝</div>
+    <div class="xt-title" id="rewardTitle">打赏作者 · 支持开源</div>
+    <div class="xt-desc" id="rewardDesc">如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕</div>
+    <img class="xt-qr" id="rewardQr" src="" alt="赞赏码" loading="lazy" decoding="async">
+    <button class="xt-btn secondary" id="rewardCloseBtn">已打赏 / 关闭</button>
+  </div>
+</div>
+
+<div class="random-modal-overlay" id="randomModal">
+  <div class="random-modal">
+    <div class="random-modal-header">
+      <h3>🎲 全真模拟考场抽题</h3>
+      <button class="random-modal-close" id="randomModalClose">✕</button>
+    </div>
+    <div class="random-modal-body">
+      <div class="timer-box">
+        <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span id="timerDigits">03:00</span></div>
+        <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
+      </div>
+      <div class="audio-recorder-zone" id="audioRecorderZone">
+        <button class="record-ctrl-btn idle" id="recordCtrlBtn">🎙️ 开始录音演练</button>
+        <audio class="local-audio-player" id="localAudioPlayer" controls></audio>
+        <div class="transcript-box" id="transcriptBox">
+          <div class="transcript-title">📝 语音转文字实时预览</div>
+          <div class="transcript-content" id="transcriptContent"></div>
+          <div class="transcript-note" id="transcriptNote">当前浏览器不支持语音转文字，仅保留录音回听功能</div>
+        </div>
+      </div>
+
+      <div class="random-modal-badges" id="randomModalBadges"></div>
+      <div class="random-modal-question" id="randomModalQuestion"></div>
+      <div class="random-modal-answer" id="randomModalAnswer">
+        <div class="random-modal-answer-title">📝 参考答案</div>
+        <div class="random-modal-answer-content" id="randomModalAnswerContent"></div>
+      </div>
+    </div>
+    <div class="random-modal-footer">
+      <button class="random-modal-btn random-modal-btn-next" id="randomModalNext">🔄 换一题</button>
+      <button class="random-modal-btn random-modal-btn-reveal" id="randomModalSubmit" style="display:none;">✅ 提交答案</button>
+      <button class="random-modal-btn random-modal-btn-close" id="randomModalDone">✕</button>
+    </div>
+  </div>
+</div>
+<!--STATION_DATA-->
+  <script src="../shared/app.js"></script>
+</body>
+</html>

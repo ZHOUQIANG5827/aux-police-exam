@@ -1,8 +1,10 @@
 # GitHub Actions 自动构建（可选）
-# 作用：push 改动 sz/data-*.json / sz/template-config.json 后，自动重新生成
-#       sz/data-*.js + sz/config.js + sz/VERSION.json 并 commit，触发 Cloudflare Pages 重新部署。
+# 作用：push 改动 sz/data-*.json / sz/template-config.json 后：
+#   1) 由 sz/build_data.py 重建 sz/data-written.js / sz/data-interview.js / sz/config.js / sz/VERSION.json
+#   2) 由 build/sync_station.py 把数据源同步进公共模板，重建 src/sz/station-data.js 与 sz/index.html
+#   再 commit，触发 Cloudflare Pages 重新部署。
 # 注意：推送含此文件的 commit 需要 GitHub Token 带 workflow scope（仅 repo scope 会报 403）。
-# 依赖：仓库 sz/ 目录下需有 build_data.py。
+# 依赖：仓库 sz/ 目录下需有 build_data.py；仓库 build/ 目录下需有 sync_station.py / assemble.py。
 name: auto-build
 
 on:
@@ -35,10 +37,13 @@ jobs:
           python build_data.py data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify --config template-config.json --emit-config config.js --emit-version --template-version 1.0.0
           python build_data.py data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
 
+      - name: 同步进公共模板并重建 sz/index.html
+        run: python build/sync_station.py sz
+
       - name: 提交构建产物
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add sz/data-written.js sz/data-interview.js sz/config.js sz/VERSION.json
+          git add sz/data-written.js sz/data-interview.js sz/config.js sz/VERSION.json src/sz/station-data.js sz/index.html
           git commit -m "auto-build: 由源 JSON 重建运行时与版本信息" || echo "no changes"
           git push
