@@ -486,8 +486,19 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 <div class="exam-setup-overlay" id="examSetupOverlay" style="display:none;">
   <div class="exam-setup-card">
     <h3 class="exam-setup-title">📝 套题模考 · 出卷设置</h3>
-    <p class="exam-setup-tip">自定义各题型数量与答题时间，系统将<b>随机打乱</b>生成一套试卷；打字题为附加项，不计入客观题分数。</p>
-    <div class="exam-setup-grid">
+    <p class="exam-setup-tip">两种出卷方式：① <b>按套题批次</b> 直接刷整套真题；② <b>自定义随机卷</b> 按题型数量随机抽题。打字题为附加项不计入分，<b>全程无时间限制</b>。</p>
+    <div class="exam-setup-row">
+      <label>出卷方式</label>
+      <select class="exam-setup-select" id="examPlanMode">
+        <option value="batch">📚 按套题批次刷（整套真题）</option>
+        <option value="random">🎲 自定义随机卷</option>
+      </select>
+    </div>
+    <div class="exam-setup-row" id="examBatchRow">
+      <label>选择批次</label>
+      <select class="exam-setup-select" id="examBatch"></select>
+    </div>
+    <div class="exam-setup-grid" id="examCountGrid" style="display:none;">
       <div class="exam-setup-cell">
         <label>单选题</label>
         <div class="exam-setup-input-wrap"><input type="number" min="0" id="cntSingle" class="exam-setup-input" value="36"><span class="es-unit">题</span></div>
@@ -500,13 +511,6 @@ body.focus-mode .focus-toggle { background: var(--danger); }
         <label>判断题</label>
         <div class="exam-setup-input-wrap"><input type="number" min="0" id="cntBool" class="exam-setup-input" value="12"><span class="es-unit">题</span></div>
       </div>
-    </div>
-    <div class="exam-setup-time">
-      <div class="est-row">
-        <label>本卷答题时间</label>
-        <div class="exam-setup-input-wrap"><input type="number" min="1" id="examMinutes" class="exam-setup-input" value="60"><span class="es-unit">分钟</span></div>
-      </div>
-      <span class="es-hint">可自由调整</span>
     </div>
     <div class="exam-setup-cell exam-setup-cell-wide">
       <label class="exam-setup-check"><input type="checkbox" id="typingOn" checked> 含打字题</label>
@@ -534,11 +538,6 @@ body.focus-mode .focus-toggle { background: var(--danger); }
       <button class="exam-btn exam-btn-ghost" id="examResetBtn">🔄 重新模考</button>
       <button class="exam-btn exam-btn-primary" id="examSubmitBtn">✅ 提交试卷</button>
     </div>
-  </div>
-  <div class="exam-timer-bar" id="examTimerBar" style="display:none;">
-    <span class="exam-timer-label">⏱ 剩余时间</span>
-    <span class="exam-timer-digits" id="examTimerDigits">60:00</span>
-    <div class="exam-timer-track"><div class="exam-timer-fill" id="examTimerFill"></div></div>
   </div>
   <div class="exam-result" id="examResult" style="display:none;"></div>
   <div class="exam-questions" id="examQuestions"></div>
@@ -1602,9 +1601,45 @@ function buildExamPaperByType(counts){
   shuffleArr(chosen);
   return { list: chosen, meta: { per: per, shortage: shortage } };
 }
+// 按出现顺序取出卷批次列表
+function getBatchesInOrder(){
+  var seen = [], map = {};
+  dataset().forEach(function(q){ var b = q.batch || "未注明"; if(!map[b]){ map[b] = true; seen.push(b); } });
+  return seen;
+}
+function countByType(list){
+  var per = { single:0, multi:0, bool:0 };
+  list.forEach(function(q){ var t = normType(q.type); if (per[t] !== undefined) per[t]++; });
+  return per;
+}
+// 根据出卷配置重新生成试卷（batch=整套真题 / random=按题型随机）
+function rebuildPaper(cfg){
+  if (cfg.plan === "batch") {
+    var list = dataset().filter(function(q){ return (q.batch || "未注明") === cfg.batch; });
+    return { list: list, meta: { per: countByType(list), shortage: [] } };
+  }
+  return buildExamPaperByType(cfg.counts);
+}
+// 切换出卷方式：显示/隐藏批次选择 or 题型数量
+function toggleExamPlan(){
+  var plan = document.getElementById("examPlanMode").value;
+  document.getElementById("examBatchRow").style.display = (plan === "batch") ? "" : "none";
+  document.getElementById("examCountGrid").style.display = (plan === "random") ? "" : "none";
+  refreshExamInfo();
+}
+function populateExamBatches(){
+  var sel = document.getElementById("examBatch");
+  var batches = getBatchesInOrder();
+  sel.innerHTML = batches.map(function(b){
+    var n = dataset().filter(function(q){ return (q.batch || "未注明") === b; }).length;
+    return '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + ' 批 · ' + n + '题</option>';
+  }).join("");
+}
 function openExamSetup(){
   examActive = true;
   populateExamSetup();
+  populateExamBatches();
+  toggleExamPlan();
   document.getElementById("examSetupOverlay").style.display = "flex";
 }
 function populateExamSetup(){
@@ -1615,48 +1650,63 @@ function applyExamPreset(){
   document.getElementById("cntSingle").value = p.single;
   document.getElementById("cntMulti").value = p.multi;
   document.getElementById("cntBool").value = p.bool;
-  document.getElementById("examMinutes").value = p.minutes;
   document.getElementById("typingOn").checked = !!p.typing;
   document.getElementById("examMinutesTyping").value = p.typingMinutes || 10;
   document.getElementById("examPresetLabel").textContent = p.label || "标准模考";
   refreshExamInfo();
 }
 function refreshExamInfo(){
-  var s = parseInt(document.getElementById("cntSingle").value,10)||0;
-  var m = parseInt(document.getElementById("cntMulti").value,10)||0;
-  var b = parseInt(document.getElementById("cntBool").value,10)||0;
-  var min = parseInt(document.getElementById("examMinutes").value,10)||0;
   var typing = document.getElementById("typingOn").checked;
   var tmin = parseInt(document.getElementById("examMinutesTyping").value,10)||0;
-  var total = s+m+b;
-  var info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+b+'），限时 <b>'+min+'</b> 分钟';
+  var plan = document.getElementById("examPlanMode").value;
+  var info = "";
+  if (plan === "batch") {
+    var b = document.getElementById("examBatch").value;
+    var list = dataset().filter(function(q){ return (q.batch || "未注明") === b; });
+    var per = countByType(list);
+    info = '本卷为 <b>'+escapeHtml(b)+' 批</b> 整套真题，共 <b>'+list.length+'</b> 题（单选 '+per.single+' · 多选 '+per.multi+' · 判断 '+per.bool+'），<b>无时间限制</b>';
+  } else {
+    var s = parseInt(document.getElementById("cntSingle").value,10)||0;
+    var m = parseInt(document.getElementById("cntMulti").value,10)||0;
+    var bo = parseInt(document.getElementById("cntBool").value,10)||0;
+    var total = s+m+bo;
+    info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+bo+'），<b>无时间限制</b>';
+    var data = dataset();
+    var avail = { single:0, multi:0, bool:0 };
+    data.forEach(function(q){ var t=normType(q.type); if(avail[t]!==undefined) avail[t]++; });
+    var warn = [];
+    if (s > avail.single) warn.push('单选库仅 '+avail.single+' 题');
+    if (m > avail.multi) warn.push('多选库仅 '+avail.multi+' 题');
+    if (bo > avail.bool) warn.push('判断库仅 '+avail.bool+' 题');
+    if (warn.length) info += '<br><span style="color:#dc2626">⚠️ '+warn.join('，')+'，将自动按上限抽取</span>';
+  }
   if (typing) info += '；另加打字题 <b>'+tmin+'</b> 分钟（不计入客观题分）';
-  var data = dataset();
-  var avail = { single:0, multi:0, bool:0 };
-  data.forEach(function(q){ var t=normType(q.type); if(avail[t]!==undefined) avail[t]++; });
-  var warn = [];
-  if (s > avail.single) warn.push('单选库仅 '+avail.single+' 题');
-  if (m > avail.multi) warn.push('多选库仅 '+avail.multi+' 题');
-  if (b > avail.bool) warn.push('判断库仅 '+avail.bool+' 题');
-  if (warn.length) info += '<br><span style="color:#dc2626">⚠️ '+warn.join('，')+'，将自动按上限抽取</span>';
   document.getElementById("examSetupInfo").innerHTML = info;
 }
 function confirmExamSetup(){
-  var counts = {
-    single: parseInt(document.getElementById("cntSingle").value,10)||0,
-    multi:  parseInt(document.getElementById("cntMulti").value,10)||0,
-    bool:   parseInt(document.getElementById("cntBool").value,10)||0
-  };
-  var minutes = parseInt(document.getElementById("examMinutes").value,10)||60;
+  var plan = document.getElementById("examPlanMode").value;
   var typing = document.getElementById("typingOn").checked;
   var typingMinutes = parseInt(document.getElementById("examMinutesTyping").value,10)||10;
-  if (counts.single + counts.multi + counts.bool < 1) { alert("请至少设置 1 道客观题"); return; }
-  examLastCfg = { counts: counts, minutes: minutes, typing: typing, typingMinutes: typingMinutes };
+  var cfg;
+  if (plan === "batch") {
+    var b = document.getElementById("examBatch").value;
+    if (!b) { alert("请选择要刷的批次"); return; }
+    cfg = { plan: "batch", batch: b, typing: typing, typingMinutes: typingMinutes };
+  } else {
+    var counts = {
+      single: parseInt(document.getElementById("cntSingle").value,10)||0,
+      multi:  parseInt(document.getElementById("cntMulti").value,10)||0,
+      bool:   parseInt(document.getElementById("cntBool").value,10)||0
+    };
+    if (counts.single + counts.multi + counts.bool < 1) { alert("请至少设置 1 道客观题"); return; }
+    cfg = { plan: "random", counts: counts, typing: typing, typingMinutes: typingMinutes };
+  }
+  examLastCfg = cfg;
   document.getElementById("examSetupOverlay").style.display = "none";
   enterExamView();
-  var paper = buildExamPaperByType(counts);
+  var paper = rebuildPaper(cfg);
   examPaperList = paper.list; examPaperMeta = paper.meta;
-  examTypingOn = typing; examTypingMinutes = typingMinutes; examMinutesSet = minutes;
+  examTypingOn = typing; examTypingMinutes = typingMinutes;
   startExam();
 }
 function enterExamView() {
@@ -1706,7 +1756,6 @@ function startExam() {
   var meta = examPaperMeta;
   document.getElementById("examTotal").textContent = list.length;
   document.getElementById("examSubInfo").innerHTML = typesText(meta.per) + (examTypingOn ? "　+ 打字题" : "");
-  startExamTimer(examMinutesSet || 60);
   var arr = list.slice();
   examQuestions.innerHTML = "";
   if (!arr.length) { examQuestions.innerHTML = '<div class="no-result">🔍 该范围没有题目</div>'; return; }
@@ -1835,9 +1884,9 @@ function gradeTyping(){
 function resetExam() {
   examGraded = false; examSelections = {}; examResult.style.display = "none"; examResult.innerHTML = ""; examQuestions.innerHTML = "";
   if (examLastCfg) {
-    var paper = buildExamPaperByType(examLastCfg.counts);
+    var paper = rebuildPaper(examLastCfg);
     examPaperList = paper.list; examPaperMeta = paper.meta;
-    examTypingOn = examLastCfg.typing; examTypingMinutes = examLastCfg.typingMinutes; examMinutesSet = examLastCfg.minutes;
+    examTypingOn = examLastCfg.typing; examTypingMinutes = examLastCfg.typingMinutes;
   }
   startExam(); window.scrollTo({ top: 0 });
 }
@@ -1849,6 +1898,7 @@ document.getElementById("examSetupStart").addEventListener("click", confirmExamS
 document.getElementById("examSetupPreset").addEventListener("click", applyExamPreset);
 document.getElementById("examSetupCancel").addEventListener("click", function(){ examActive=false; document.getElementById("examSetupOverlay").style.display="none"; });
 document.getElementById("typingOn").addEventListener("change", refreshExamInfo);
+document.getElementById("examPlanMode").addEventListener("change", toggleExamPlan);
 ["cntSingle","cntMulti","cntBool","examMinutes","examMinutesTyping"].forEach(function(id){
   var el = document.getElementById(id); if (el) el.addEventListener("input", refreshExamInfo);
 });
