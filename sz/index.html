@@ -775,6 +775,12 @@ var W_DATA = window.DATA_WRITTEN || [];
 var I_DATA = window.DATA_INTERVIEW || [];
 var G_DATA = window.DATA || [];
 
+// 修复：数据源可能缺失 _idx 字段，导致卡片按钮 data-idx="undefined"、点击提交无反应
+[W_DATA, I_DATA, G_DATA].forEach(function (arr) {
+  if (!arr || !arr.length) return;
+  arr.forEach(function (q, i) { if (q._idx == null) q._idx = i; });
+});
+
 var hasW = W_DATA.length > 0, hasI = I_DATA.length > 0;
 var singleMode = null;
 if (!hasW && !hasI && G_DATA.length) {
