@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "rcj-fj", // 辅警门户项目名（与 GitHub 仓库改名 rcj-fj 对齐）
+  "name": "rcj-fj", // Cloudflare Pages 项目名；GitHub 仓库对应 aux-police-exam（本地文件夹=辅警GITHUB）
   "compatibility_date": "2026-07-08",
   "observability": {
     "enabled": true
