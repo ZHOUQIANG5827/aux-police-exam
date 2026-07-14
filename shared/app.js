@@ -111,7 +111,8 @@ var TAG_MAP = {
   "高频": { cls: "gp", icon: "🔥" },
   "深圳特色": { cls: "sz", icon: "🏙️" },
   "热点": { cls: "rd", icon: "📌" },
-  "必刷": { cls: "bs", icon: "⭐" }
+  "必刷": { cls: "bs", icon: "⭐" },
+  "常规": { cls: "cg", icon: "📋" }
 };
 
 // 标签统一成数组：面试 tags 是数组，笔试 tags 是空格分隔字符串
@@ -241,10 +242,12 @@ function computeFiltered() {
 }
 
 function tagBadgesHtml(q) {
+  if (MODE === "written") return "";   // 笔试批次/题型已在卡片别处展示，隐藏标签避免冗余
   var h = "";
   normTags(q).forEach(function (t) {
     var ti = TAG_MAP[t];
     if (ti) h += '<span class="tag-badge tag-' + ti.cls + '">' + ti.icon + " " + escapeHtml(t) + "</span>";
+    else h += '<span class="tag-badge tag-default">' + escapeHtml(t) + "</span>";
   });
   return h;
 }

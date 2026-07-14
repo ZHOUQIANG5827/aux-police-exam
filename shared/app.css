@@ -166,10 +166,14 @@ body {
 .tag-sz { background: #dbeafe; color: #2563eb; }
 .tag-rd { background: #ffedd5; color: #ea580c; }
 .tag-bs { background: #ffe4e6; color: #be123c; }
+.tag-cg { background: #f1f5f9; color: #64748b; }
+.tag-default { background: #e2e8f0; color: #475569; }
 [data-theme="dark"] .tag-gp { background: #3b1414; color: #fca5a5; }
 [data-theme="dark"] .tag-sz { background: #1e3a5f; color: #93c5fd; }
 [data-theme="dark"] .tag-rd { background: #3b2410; color: #fdba74; }
 [data-theme="dark"] .tag-bs { background: #3b0f1a; color: #fda4c0; }
+[data-theme="dark"] .tag-cg { background: #1f2937; color: #94a3b8; }
+[data-theme="dark"] .tag-default { background: #1f2937; color: #94a3b8; }
 .card-title { font-size: 14.5px; color: var(--text); line-height: 1.7; font-weight: 500; }
 .card-title mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 [data-theme="dark"] .card-title mark { background: #854d0e; color: #fef9c3; }
