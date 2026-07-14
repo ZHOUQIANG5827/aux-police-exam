@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fj", // Cloudflare Pages 项目名（自定义域 fj.rcj9527.dpdns.org）；GitHub 仓库=aux-police-exam；本地文件夹=辅警GITHUB
+  "name": "aux-police-exam", // CF Pages 项目名=GitHub 仓库名=aux-police-exam；自定义域 fj.rcj9527.dpdns.org；本地文件夹=辅警GITHUB
   "compatibility_date": "2026-07-08",
   "observability": {
     "enabled": true
