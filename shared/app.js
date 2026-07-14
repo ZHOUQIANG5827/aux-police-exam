@@ -1197,6 +1197,21 @@ document.getElementById("siteTitle").textContent = CONFIG.siteTitle;
 document.getElementById("siteEmoji").textContent = CONFIG.siteEmoji;
 document.getElementById("siteSubtitle").textContent = CONFIG.subtitle + (CONFIG.examYear ? "（" + CONFIG.examYear + "）" : "");
 
+// 适用地区标签行（仅面试专区等配置了 applicableRegions 的站点显示）
+(function () {
+  var regions = CONFIG.applicableRegions;
+  if (!regions || !regions.length) return;
+  var row = document.getElementById("regionsRow");
+  if (!row) return;
+  // 深圳（真题来源）用实心标记，其余城市用通用标记
+  var h = '<span class="region-chip"><span class="chip-icon">📍</span>适用地区</span>';
+  for (var i = 0; i < regions.length; i++) {
+    var isSource = (regions[i] === '深圳');
+    h += '<span class="region-chip"><span class="chip-icon">' + (isSource ? '✅' : '🏙️') + '</span>' + escapeHtml(regions[i]) + '</span>';
+  }
+  row.innerHTML = h;
+})();
+
 // 主题色注入（themeColor 统一控制主色与圆角按钮）
 if (CONFIG.themeColor) {
   document.documentElement.style.setProperty('--primary', CONFIG.themeColor);
