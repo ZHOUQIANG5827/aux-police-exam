@@ -106,7 +106,7 @@ var TYPE_MAP = {
   "自我认知与职位匹配": { cls: "zwrz", label: "自我认知" },
   "人际沟通": { cls: "rjgt", label: "人际沟通" }
 };
-var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题" };
+var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题", essay: "简答题", case: "案例分析", subjective: "主观题" };
 var TAG_MAP = {
   "高频": { cls: "gp", icon: "🔥" },
   "深圳特色": { cls: "sz", icon: "🏙️" },
@@ -278,24 +278,33 @@ function cardHtml(q) {
       + '<span class="badge badge-type-zhfx">📝 ' + escapeHtml(wl) + "</span>"
       + tagBadgesHtml(q);
     titleHtml = highlight(q.stem || "", currentSearch);
-    var optsHtml = "";
-    if (q.options && q.options.length) {
-      q.options.forEach(function (o) {
-        optsHtml += '<div class="opt-row study-opt" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
-      });
+    var isSubjective = normType(q.type) === "subjective";
+    if (isSubjective) {
+      // 主观题（简答/案例）：无选项，点「查看答案」直接展开参考答案，不判分
+      var subAns = '<div class="subjective-answer">' + formatAnswer(q.answer || "（暂无参考答案）", currentSearch) + "</div>";
+      if (q.explanation) subAns += '<div class="subjective-tip">💡 要点提示：' + formatAnswer(q.explanation, currentSearch) + "</div>";
+      bodyInner = '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">📖 查看答案</button></div>'
+        + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(subAns) + "</div>";
+    } else {
+      var optsHtml = "";
+      if (q.options && q.options.length) {
+        q.options.forEach(function (o) {
+          optsHtml += '<div class="opt-row study-opt" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+        });
+      }
+      var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
+      if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
+      bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
+        + '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
+        + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
     }
-    var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
-    if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
-    bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
-      + '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
-      + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
   }
   var statusDB = StorageCtrl.get();
   var cur = statusDB[q._idx] || "not-mastered";
   var actNM = cur === "not-mastered" ? "active" : "";
   var actM = cur === "mastered" ? "active" : "";
   return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
-    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : "💡 选择答案后，点「提交答案」查看对错与解析。") + '</span>'
+    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : (isSubjective ? "💡 先自行作答，点「查看答案」核对要点。" : "💡 选择答案后，点「提交答案」查看对错与解析。")) + '</span>'
     + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
     + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
     + bodyInner + "</div></div></div>";
@@ -362,7 +371,7 @@ function updateStats() {
   var data = dataset();
   var dimKey = MODE === "interview" ? "year" : "batch";
   var dimSet = {}, typeSet = {};
-  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[q.type] = 1; });
+  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[normType(q.type)] = 1; });
   document.getElementById("statNum0").textContent = data.length;
   document.getElementById("statLabel0").textContent = "真题数";
   document.getElementById("statNum1").textContent = Object.keys(dimSet).length;
@@ -412,6 +421,14 @@ function revealStudyAnswer(idx) {
   try {
   var q = studyQuestionByIdx(idx); if (!q) return;
   var card = document.getElementById("q" + idx);
+  if (normType(q.type) === "subjective") {
+    var sAns = document.getElementById("ans" + idx);
+    if (sAns) sAns.style.display = "block";
+    var sBtn = card.querySelector(".study-check-btn");
+    if (sBtn) sBtn.style.display = "none";
+    return;
+  }
+
   var selLetters = [];
   card.querySelectorAll(".study-opt.selected").forEach(function (o) { selLetters.push(o.dataset.letter); });
   var btn = card.querySelector(".study-check-btn");
@@ -856,8 +873,8 @@ var examSubmitBtn = document.getElementById("examSubmitBtn");
 var examPaperList = [], examPaperMeta = null, examLastCfg = null;
 var examMinutesSet = 60, examTypingOn = false, examTypingMinutes = 10;
 var examTimer = null, examTimerRemaining = 0, examTimerLimit = 0;
-function normType(t){ t = String(t||"").toLowerCase(); if(t==="multiple"||t==="multi"||t==="多选题") return "multi"; if(t==="judge"||t==="bool"||t==="判断"||t==="判断题") return "bool"; return "single"; }
-function typeLabel(t){ return t==="multi"?"多选":(t==="bool"?"判断":"单选"); }
+function normType(t){ t = String(t||"").toLowerCase(); if(t==="multiple"||t==="multi"||t==="多选题") return "multi"; if(t==="judge"||t==="bool"||t==="判断"||t==="判断题") return "bool"; if(t==="qa"||t==="essay"||t==="case"||t==="subjective"||t==="简答"||t==="简答题"||t==="案例"||t==="案例分析"||t==="主观题") return "subjective"; return "single"; }
+function typeLabel(t){ return t==="multi"?"多选":(t==="bool"?"判断":(t==="subjective"?"主观":"单选")); }
 function shuffleArr(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var x=a[i];a[i]=a[j];a[j]=x; } return a; }
 function scopeKey(){ return (MODE==="interview") ? "year" : "batch"; }
 function scopeLabel(v){
@@ -902,7 +919,7 @@ function countByType(list){
 // 根据出卷配置重新生成试卷（batch=整套真题 / random=按题型随机）
 function rebuildPaper(cfg){
   if (cfg.plan === "batch") {
-    var list = dataset().filter(function(q){ return (q.batch || "未注明") === cfg.batch; });
+    var list = dataset().filter(function(q){ return normType(q.type) !== "subjective" && (q.batch || "未注明") === cfg.batch; });
     return { list: list, meta: { per: countByType(list), shortage: [] } };
   }
   return buildExamPaperByType(cfg.counts);
@@ -1047,14 +1064,14 @@ function startExam() {
   examQuestions.innerHTML = "";
   if (!arr.length) { examQuestions.innerHTML = '<div class="no-result">🔍 该范围没有题目</div>'; return; }
   arr.forEach(function (q, i) { examQuestions.appendChild(buildExamCard(q, i + 1)); });
-  if (examTypingOn) {
+  if (examTypingOn && MODE === "written") {
     var passage = CONFIG.typingText || "";
     var tcard = document.createElement("div");
     tcard.className = "exam-q typing-q";
     tcard.innerHTML = '<div class="exam-q-head"><div class="exam-q-meta"><span class="exam-q-tag" style="background:linear-gradient(135deg,#d97706,#f59e0b)">打字题</span><span class="exam-q-num">限时 ' + examTypingMinutes + ' 分钟 · 不计入客观题分</span></div><div class="exam-q-stem">✍️ 请照抄下方范文</div></div>'
       + '<div class="typing-passage" id="typingPassage">' + escapeHtml(passage) + '</div>'
       + '<textarea class="typing-area" id="typingArea" placeholder="在此处对照上方范文抄写……"></textarea>';
-    examQuestions.appendChild(tcard);
+    examQuestions.insertBefore(tcard, examQuestions.firstChild);
   }
 }
 function buildExamCard(q, n) {

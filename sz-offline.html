@@ -40,7 +40,13 @@ body {
 .header-content { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; }
 .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: 1px; }
 .header h1 .emoji { font-size: 30px; }
-.header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 14px; }
+.header .subtitle { font-size: 14px; opacity: 0.85; margin-bottom: 10px; }
+.regions-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.regions-row .region-chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; white-space: nowrap; transition: background .2s, transform .15s; }
+.regions-row .region-chip:hover { background: #dbeafe; transform: translateY(-1px); }
+.regions-row .region-chip .chip-icon { font-size: 14px; }
+.regions-row .region-chip.muted { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; }
+.regions-row .region-chip.muted:hover { background: #e2e8f0; transform: none; }
 .cover-avatar { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; object-position: 50% 10%; border: 3px solid rgba(255,255,255,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.25); margin-bottom: 12px; }
 .footer-logo { height: 22px; vertical-align: middle; margin: 0 6px 4px; border-radius: 4px; }
 .footer-version { font-size: 11px; opacity: 0.7; margin-top: 4px; }
@@ -182,6 +188,10 @@ body {
 [data-theme="dark"] .tag-bs { background: #3b0f1a; color: #fda4c0; }
 [data-theme="dark"] .tag-cg { background: #1f2937; color: #94a3b8; }
 [data-theme="dark"] .tag-default { background: #1f2937; color: #94a3b8; }
+[data-theme="dark"] .regions-row .region-chip { background: rgba(255,255,255,.12); color: #e2e8f0; border-color: rgba(255,255,255,.18); }
+[data-theme="dark"] .regions-row .region-chip:hover { background: rgba(255,255,255,.22); }
+[data-theme="dark"] .regions-row .region-chip.muted { background: rgba(255,255,255,.04); color: #64748b; border-color: rgba(255,255,255,.08); }
+[data-theme="dark"] .regions-row .region-chip.muted:hover { background: rgba(255,255,255,.08); }
 .card-title { font-size: 14.5px; color: var(--text); line-height: 1.7; font-weight: 500; }
 .card-title mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 [data-theme="dark"] .card-title mark { background: #854d0e; color: #fef9c3; }
@@ -218,6 +228,11 @@ body {
 }
 [data-theme="dark"] .answer-title { color: var(--primary-light); }
 .answer-content { font-size: 13.5px; line-height: 1.85; color: var(--text); }
+/* 主观题（简答/案例）参考答案：长文本、要点清晰 */
+.subjective-answer { font-size: 14px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+.subjective-answer b, .subjective-answer strong { color: var(--primary); }
+.subjective-tip { margin-top: 12px; padding: 10px 14px; background: rgba(37,99,235,.08); border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--text); line-height: 1.75; }
+[data-theme="dark"] .subjective-tip { background: rgba(37,99,235,.16); }
 .answer-content mark { background: #fef08a; color: inherit; border-radius: 2px; padding: 0 2px; }
 [data-theme="dark"] .answer-content mark { background: #854d0e; color: #fef9c3; }
 .framework-box { background:#f1f5f9; border-left:4px solid var(--primary); border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.7; color:#334155; }
@@ -530,6 +545,7 @@ body.focus-mode .focus-toggle { background: var(--danger); }
   <div class="header-content">
     <h1><span class="emoji" id="siteEmoji">🚔</span> <span id="siteTitle">辅警真题卡组</span></h1>
     <p class="subtitle" id="siteSubtitle">真实考试真题 · 笔试+面试 · 离线可用</p>
+    <div class="regions-row" id="regionsRow"></div>
     <div class="mode-tabs" id="modeTabs"></div>
     <div class="stats">
       <div class="stat-card"><div class="stat-num" id="statNum0">0</div><div class="stat-label" id="statLabel0">总题数</div></div>
@@ -580,7 +596,7 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 <div class="exam-setup-overlay" id="examSetupOverlay" style="display:none;">
   <div class="exam-setup-card">
     <h3 class="exam-setup-title">📝 套题模考 · 出卷设置</h3>
-    <p class="exam-setup-tip">两种出卷方式：① <b>按套题批次</b> 直接刷整套真题；② <b>自定义随机卷</b> 按题型数量随机抽题。打字题为附加项不计入分，<b>全程无时间限制</b>。</p>
+    <p class="exam-setup-tip">两种出卷方式：① <b>按套题批次</b> 直接刷整套真题；② <b>自定义随机卷</b> 按题型数量随机抽题。打字题为附加项，<b>不计入客观题分</b>（排在最前，进入模考即可看到）。</p>
     <div class="exam-setup-row">
       <label>出卷方式</label>
       <select class="exam-setup-select" id="examPlanMode">
@@ -813,7 +829,7 @@ var TYPE_MAP = {
   "自我认知与职位匹配": { cls: "zwrz", label: "自我认知" },
   "人际沟通": { cls: "rjgt", label: "人际沟通" }
 };
-var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题" };
+var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题", essay: "简答题", case: "案例分析", subjective: "主观题" };
 var TAG_MAP = {
   "高频": { cls: "gp", icon: "🔥" },
   "深圳特色": { cls: "sz", icon: "🏙️" },
@@ -985,24 +1001,33 @@ function cardHtml(q) {
       + '<span class="badge badge-type-zhfx">📝 ' + escapeHtml(wl) + "</span>"
       + tagBadgesHtml(q);
     titleHtml = highlight(q.stem || "", currentSearch);
-    var optsHtml = "";
-    if (q.options && q.options.length) {
-      q.options.forEach(function (o) {
-        optsHtml += '<div class="opt-row study-opt" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
-      });
+    var isSubjective = normType(q.type) === "subjective";
+    if (isSubjective) {
+      // 主观题（简答/案例）：无选项，点「查看答案」直接展开参考答案，不判分
+      var subAns = '<div class="subjective-answer">' + formatAnswer(q.answer || "（暂无参考答案）", currentSearch) + "</div>";
+      if (q.explanation) subAns += '<div class="subjective-tip">💡 要点提示：' + formatAnswer(q.explanation, currentSearch) + "</div>";
+      bodyInner = '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">📖 查看答案</button></div>'
+        + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(subAns) + "</div>";
+    } else {
+      var optsHtml = "";
+      if (q.options && q.options.length) {
+        q.options.forEach(function (o) {
+          optsHtml += '<div class="opt-row study-opt" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+        });
+      }
+      var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
+      if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
+      bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
+        + '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
+        + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
     }
-    var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
-    if (q.explanation) ansHtml += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, currentSearch) + "</div>";
-    bodyInner = (optsHtml ? '<div style="margin:12px 0">' + optsHtml + "</div>" : "")
-      + '<div class="study-check"><button type="button" class="study-check-btn" data-idx="' + q._idx + '" onclick="revealStudyAnswer(' + q._idx + ')">✅ 提交答案</button></div>'
-      + '<div class="study-answer" id="ans' + q._idx + '" style="display:none">' + answerSection(ansHtml) + "</div>";
   }
   var statusDB = StorageCtrl.get();
   var cur = statusDB[q._idx] || "not-mastered";
   var actNM = cur === "not-mastered" ? "active" : "";
   var actM = cur === "mastered" ? "active" : "";
   return '<div class="card" id="q' + q._idx + '"><div class="card-header"><div class="card-left"><div class="card-badges">' + badges + '</div><div class="card-title">' + titleHtml + '</div></div><span class="arrow">▼</span></div>'
-    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : "💡 选择答案后，点「提交答案」查看对错与解析。") + '</span>'
+    + '<div class="card-body"><div class="card-body-inner"><div class="hint-bar"><span>' + (MODE === "interview" ? "💡 先自我作答，再展开参考答案。" : (isSubjective ? "💡 先自行作答，点「查看答案」核对要点。" : "💡 选择答案后，点「提交答案」查看对错与解析。")) + '</span>'
     + '<div class="study-actions"><button class="study-btn not-mastered ' + actNM + '" onclick="changeTrack(event,' + q._idx + ",'not-mastered')\">❌ 仍需练习</button>"
     + '<button class="study-btn mastered ' + actM + '" onclick="changeTrack(event,' + q._idx + ",'mastered')\">🟢 已掌握</button></div></div>"
     + bodyInner + "</div></div></div>";
@@ -1069,7 +1094,7 @@ function updateStats() {
   var data = dataset();
   var dimKey = MODE === "interview" ? "year" : "batch";
   var dimSet = {}, typeSet = {};
-  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[q.type] = 1; });
+  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[normType(q.type)] = 1; });
   document.getElementById("statNum0").textContent = data.length;
   document.getElementById("statLabel0").textContent = "真题数";
   document.getElementById("statNum1").textContent = Object.keys(dimSet).length;
@@ -1119,6 +1144,14 @@ function revealStudyAnswer(idx) {
   try {
   var q = studyQuestionByIdx(idx); if (!q) return;
   var card = document.getElementById("q" + idx);
+  if (normType(q.type) === "subjective") {
+    var sAns = document.getElementById("ans" + idx);
+    if (sAns) sAns.style.display = "block";
+    var sBtn = card.querySelector(".study-check-btn");
+    if (sBtn) sBtn.style.display = "none";
+    return;
+  }
+
   var selLetters = [];
   card.querySelectorAll(".study-opt.selected").forEach(function (o) { selLetters.push(o.dataset.letter); });
   var btn = card.querySelector(".study-check-btn");
@@ -1563,8 +1596,8 @@ var examSubmitBtn = document.getElementById("examSubmitBtn");
 var examPaperList = [], examPaperMeta = null, examLastCfg = null;
 var examMinutesSet = 60, examTypingOn = false, examTypingMinutes = 10;
 var examTimer = null, examTimerRemaining = 0, examTimerLimit = 0;
-function normType(t){ t = String(t||"").toLowerCase(); if(t==="multiple"||t==="multi"||t==="多选题") return "multi"; if(t==="judge"||t==="bool"||t==="判断"||t==="判断题") return "bool"; return "single"; }
-function typeLabel(t){ return t==="multi"?"多选":(t==="bool"?"判断":"单选"); }
+function normType(t){ t = String(t||"").toLowerCase(); if(t==="multiple"||t==="multi"||t==="多选题") return "multi"; if(t==="judge"||t==="bool"||t==="判断"||t==="判断题") return "bool"; if(t==="qa"||t==="essay"||t==="case"||t==="subjective"||t==="简答"||t==="简答题"||t==="案例"||t==="案例分析"||t==="主观题") return "subjective"; return "single"; }
+function typeLabel(t){ return t==="multi"?"多选":(t==="bool"?"判断":(t==="subjective"?"主观":"单选")); }
 function shuffleArr(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var x=a[i];a[i]=a[j];a[j]=x; } return a; }
 function scopeKey(){ return (MODE==="interview") ? "year" : "batch"; }
 function scopeLabel(v){
@@ -1609,7 +1642,7 @@ function countByType(list){
 // 根据出卷配置重新生成试卷（batch=整套真题 / random=按题型随机）
 function rebuildPaper(cfg){
   if (cfg.plan === "batch") {
-    var list = dataset().filter(function(q){ return (q.batch || "未注明") === cfg.batch; });
+    var list = dataset().filter(function(q){ return normType(q.type) !== "subjective" && (q.batch || "未注明") === cfg.batch; });
     return { list: list, meta: { per: countByType(list), shortage: [] } };
   }
   return buildExamPaperByType(cfg.counts);
@@ -1754,14 +1787,14 @@ function startExam() {
   examQuestions.innerHTML = "";
   if (!arr.length) { examQuestions.innerHTML = '<div class="no-result">🔍 该范围没有题目</div>'; return; }
   arr.forEach(function (q, i) { examQuestions.appendChild(buildExamCard(q, i + 1)); });
-  if (examTypingOn) {
+  if (examTypingOn && MODE === "written") {
     var passage = CONFIG.typingText || "";
     var tcard = document.createElement("div");
     tcard.className = "exam-q typing-q";
     tcard.innerHTML = '<div class="exam-q-head"><div class="exam-q-meta"><span class="exam-q-tag" style="background:linear-gradient(135deg,#d97706,#f59e0b)">打字题</span><span class="exam-q-num">限时 ' + examTypingMinutes + ' 分钟 · 不计入客观题分</span></div><div class="exam-q-stem">✍️ 请照抄下方范文</div></div>'
       + '<div class="typing-passage" id="typingPassage">' + escapeHtml(passage) + '</div>'
       + '<textarea class="typing-area" id="typingArea" placeholder="在此处对照上方范文抄写……"></textarea>';
-    examQuestions.appendChild(tcard);
+    examQuestions.insertBefore(tcard, examQuestions.firstChild);
   }
 }
 function buildExamCard(q, n) {
@@ -1903,6 +1936,25 @@ document.title = CONFIG.siteTitle || document.title;
 document.getElementById("siteTitle").textContent = CONFIG.siteTitle;
 document.getElementById("siteEmoji").textContent = CONFIG.siteEmoji;
 document.getElementById("siteSubtitle").textContent = CONFIG.subtitle + (CONFIG.examYear ? "（" + CONFIG.examYear + "）" : "");
+
+// 适用地区标签行（仅面试专区等配置了 applicableRegions 的站点显示）
+(function () {
+  var regions = CONFIG.applicableRegions;
+  if (!regions || !regions.length) return;
+  var row = document.getElementById("regionsRow");
+  if (!row) return;
+  var withData = CONFIG.regionsWithData || [];
+  var h = '<span class="region-chip"><span class="chip-icon">📍</span>适用地区</span>';
+  for (var i = 0; i < regions.length; i++) {
+    var has = withData.indexOf(regions[i]) !== -1;
+    if (has) {
+      h += '<span class="region-chip"><span class="chip-icon">✅</span>' + escapeHtml(regions[i]) + '</span>';
+    } else {
+      h += '<span class="region-chip muted">' + escapeHtml(regions[i]) + '</span>';
+    }
+  }
+  row.innerHTML = h;
+})();
 
 // 主题色注入（themeColor 统一控制主色与圆角按钮）
 if (CONFIG.themeColor) {
