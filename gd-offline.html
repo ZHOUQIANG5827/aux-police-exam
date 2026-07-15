@@ -762,7 +762,7 @@ function makeResultBanner(isCorrect, q){
   return d;
 }
 // ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
-var CONFIG = window.SITE_CONFIG || {
+var _DEFAULTS = {
   siteTitle: "辅警真题卡组",
   siteEmoji: "🚔",
   subtitle: "真实考试真题 · 笔试+面试 · 离线可用",
@@ -793,6 +793,8 @@ var CONFIG = window.SITE_CONFIG || {
   realQuestionsNote: "本站题目全部为真实考试真题，无拼凑与洗白内容。",
   modules: { mockExam: true, targeted: true, random: true, written: true, interview: true }
 };
+// 站点配置覆盖默认值（站点没配的字段自动回退到_DEFAULTS，如 typingText / examPreset 等）
+var CONFIG = Object.assign({}, _DEFAULTS, window.SITE_CONFIG || {});
 
 // 数据来源：笔试 = window.DATA_WRITTEN，面试 = window.DATA_INTERVIEW；兜底 window.DATA（单文件模式）
 var W_DATA = window.DATA_WRITTEN || [];
