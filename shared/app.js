@@ -106,7 +106,8 @@ var TYPE_MAP = {
   "应急应变": { cls: "yjyb", label: "应急应变" },
   "组织管理": { cls: "zzgl", label: "组织管理" },
   "自我认知与职位匹配": { cls: "zwrz", label: "自我认知" },
-  "人际沟通": { cls: "rjgt", label: "人际沟通" }
+  "人际沟通": { cls: "rjgt", label: "人际沟通" },
+  "现场模拟": { cls: "xcmn", label: "现场模拟" }
 };
 var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题", essay: "简答题", case: "案例分析", subjective: "主观题" };
 var TAG_MAP = {
