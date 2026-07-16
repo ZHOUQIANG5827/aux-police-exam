@@ -231,6 +231,12 @@ body {
 [data-theme="dark"] .framework-box { background:#1e293b; color:#cbd5e1; }
 .fw-title { font-weight:700; color:var(--primary); margin-bottom:6px; font-size:13px; }
 .fw-line { white-space:pre-wrap; }
+.ability-logic-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.75; }
+[data-theme="dark"] .ability-logic-box { background:#0f172a; border-color:#334155; }
+.al-item { display:flex; gap:8px; padding:3px 0; }
+.al-label { flex:0 0 auto; font-weight:700; color:var(--primary); white-space:nowrap; }
+.al-text { color:#334155; }
+[data-theme="dark"] .al-text { color:#cbd5e1; }
 
 /* 笔试选项 */
 .opt-row { display: flex; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; background: var(--surface-2); font-size: 14px; align-items: flex-start; }

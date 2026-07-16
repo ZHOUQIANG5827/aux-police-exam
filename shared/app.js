@@ -262,6 +262,15 @@ function frameworkHtml(q) {
   var inner = lines.map(function (l) { return '<div class="fw-line">' + escapeHtml(l) + "</div>"; }).join("");
   return '<div class="framework-box"><div class="fw-title">🧩 结构化思路</div>' + inner + "</div>";
 }
+function abilityLogicHtml(q) {
+  if (!q || MODE !== "interview") return "";
+  if (!q.ability && !q.logic) return "";
+  var h = '<div class="ability-logic-box">';
+  if (q.ability) h += '<div class="al-item"><span class="al-label">🎯 考察能力</span><span class="al-text">' + escapeHtml(q.ability) + "</span></div>";
+  if (q.logic) h += '<div class="al-item"><span class="al-label">🧠 出题逻辑</span><span class="al-text">' + escapeHtml(q.logic) + "</span></div>";
+  h += "</div>";
+  return h;
+}
 
 function cardHtml(q) {
   var badges, titleHtml, bodyInner;
@@ -272,7 +281,7 @@ function cardHtml(q) {
       + (q.session ? '<span class="badge badge-session">' + escapeHtml(q.session) + "</span>" : "")
       + tagBadgesHtml(q);
     titleHtml = highlight(q.title || "", currentSearch);
-    bodyInner = answerSection(frameworkHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", currentSearch));
+    bodyInner = answerSection(frameworkHtml(q) + abilityLogicHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", currentSearch));
   } else {
     var wl = WRITTEN_TYPE_LABEL[q.type] || q.type;
     badges = (q.num != null ? '<span class="badge badge-year">#' + q.num + "</span>" : "")
@@ -652,7 +661,7 @@ function randomQuestionHtml(q) {
   return h;
 }
 function randomAnswerHtml(q) {
-  if (MODE === "interview") return frameworkHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", "");
+  if (MODE === "interview") return frameworkHtml(q) + abilityLogicHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", "");
   var h = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
   if (q.explanation) h += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, "") + "</div>";
   return h;
