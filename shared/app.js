@@ -647,7 +647,11 @@ function randomBadgesHtml(q) {
   return html;
 }
 function randomQuestionHtml(q) {
-  if (MODE === "interview") return escapeHtml(q.title || "");
+  if (MODE === "interview") {
+    var h = escapeHtml(q.title || "");
+    h += '<div class="random-modal-hint" style="margin-top:12px;margin-bottom:0;font-size:13px;padding:10px 12px;">💡 先自己组织作答，点下方「显示答案」查看参考答案与结构化思路</div>';
+    return h;
+  }
   var h = escapeHtml(q.stem || "");
   if (q.options && q.options.length) {
     h += '<div style="margin-top:12px">';
@@ -676,13 +680,18 @@ function showRandomQuestion() {
   var q = data[Math.floor(Math.random() * data.length)];
   currentRandomQ = q;
   var submitBtn = document.getElementById("randomModalSubmit");
-  if (submitBtn) submitBtn.style.display = (MODE === "interview") ? "none" : "";
+  if (MODE === "interview") {
+    // 面试：默认隐藏答案，点「显示答案」才展开
+    if (submitBtn) { submitBtn.style.display = ""; submitBtn.textContent = "💡 显示答案"; }
+    document.getElementById("randomModalAnswer").classList.remove("show");
+  } else {
+    if (submitBtn) { submitBtn.style.display = ""; submitBtn.textContent = "✅ 提交答案"; }
+    document.getElementById("randomModalAnswer").classList.remove("show");
+  }
   document.getElementById("audioRecorderZone").style.display = (MODE === "interview" && _mRecord) ? "block" : "none";
   document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
   document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
   document.getElementById("randomModalAnswerContent").innerHTML = randomAnswerHtml(q);
-  if (MODE === "interview") document.getElementById("randomModalAnswer").classList.add("show");
-  else document.getElementById("randomModalAnswer").classList.remove("show");
   randomModal.classList.add("show");
 }
 document.getElementById("randomBtn").addEventListener("click", showRandomQuestion);
@@ -697,7 +706,16 @@ function revealRandomAnswer() {
   document.getElementById("randomModalAnswer").classList.add("show");
   stopTimerCountdown();
 }
+function revealInterviewAnswer() {
+  var q = currentRandomQ;
+  if (!q) return;
+  document.getElementById("randomModalAnswer").classList.add("show");
+  stopTimerCountdown();
+  var btn = document.getElementById("randomModalSubmit");
+  if (btn) btn.style.display = "none";
+}
 function gradeRandomSelection() {
+  if (MODE === "interview") { revealInterviewAnswer(); return; }
   var q = currentRandomQ;
   if (!q || q.answer == null) return;
   var opts = document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt");
