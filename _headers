@@ -3,12 +3,16 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: microphone=(self)
+  Cache-Control: public, max-age=300
 
 # 递归匹配所有层级的 HTML（门户根 /sz /hz 等子路径都生效）
 /**/*.html
   Cache-Control: public, max-age=300
 
-# 大体积数据/配置 JS：边缘缓存 1h，源站可缓存 1 天
+# 大体积数据（外置后单文件可达 1~2MB）：边缘缓存 1h，源站可缓存 1 天
+/**/station-data.js
+  Cache-Control: public, max-age=3600, s-maxage=86400
+
 /**/data-written.js
   Cache-Control: public, max-age=3600, s-maxage=86400
 

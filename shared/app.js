@@ -1434,13 +1434,14 @@ if (_footer) {
 
 window.addEventListener("DOMContentLoaded", function () {
   if (!hasW && !hasI && !G_DATA.length) {
-    document.getElementById("questionsList").innerHTML = '<div class="no-result">⚠️ 未找到题目数据。请确认同目录存在 data-written.js / data-interview.js / data.js（由 build_data.py 生成）。</div>';
+    document.getElementById("questionsList").innerHTML = '<div class="no-result">⚠️ 未找到题目数据。请确认同目录存在 station-data.js（由 build 生成）。</div>';
     return;
   }
   buildModeTabs();
-  buildFilterRows();
-  updateStats();
   StorageCtrl.updateUI();
   initAudioRecorderSystem();
   render();
+  // 筛选维度与统计需遍历全部题目；题库大时(如惠州2136题)会阻塞首屏渲染，延迟到浏览器空闲执行
+  var _idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 120); };
+  _idle(function () { buildFilterRows(); updateStats(); });
 });

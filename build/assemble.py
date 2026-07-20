@@ -33,13 +33,16 @@ def main():
             continue
         data = open(data_path, encoding="utf-8").read().strip()
         title = BRAND_TITLE
+        # 数据外置：HTML 仅引用 station-data.js，避免 1.5MB 内联拖慢首屏（配合 _headers 长缓存）
+        data_out = os.path.join(ROOT, c, "station-data.js")
+        open(data_out, "w", encoding="utf-8").write(data)
         out = (tpl
                .replace("<!--SITE_TITLE-->", title)
                .replace("<!--STATION_DATA-->",
-                        "<script>\n" + data + "\n</script>"))
+                        '<script src="station-data.js"></script>'))
         out_path = os.path.join(ROOT, c, "index.html")
         open(out_path, "w", encoding="utf-8").write(out)
-        print(f"[ok] 生成 {c}/index.html  ({len(out)} 字节)")
+        print(f"[ok] 生成 {c}/index.html  ({len(out)} 字节) + 外置 {c}/station-data.js ({len(data)} 字节)")
     print("[done]")
 
 if __name__ == "__main__":
