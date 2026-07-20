@@ -19,7 +19,7 @@ assemble.py —— 由公共模板生成各城市 index.html。
 import os, sys, json, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CITIES = ["sz", "hz", "gd", "ms"]
+CITIES = ["sz", "hz", "gd", "ms", "cd"]
 TPL = os.path.join(ROOT, "src/template.html")
 BRAND_TITLE = "RCJ Exam Template"
 
