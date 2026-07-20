@@ -97,6 +97,12 @@
         <input type="number" min="1" id="examMinutesTyping" class="exam-setup-input exam-setup-input-sm" value="10"> <span>分钟</span>
       </div>
     </div>
+    <div class="exam-setup-cell exam-setup-cell-wide">
+      <label class="exam-setup-check"><span style="font-weight:600">⏱️ 考试时长</span></label>
+      <div class="exam-setup-typing-min">
+        <input type="number" min="0" id="examMinutes" class="exam-setup-input exam-setup-input-sm" value="60"> <span>分钟（填 0 或不限时不计时）</span>
+      </div>
+    </div>
     <div class="exam-setup-info" id="examSetupInfo"></div>
     <div class="exam-setup-actions">
       <button class="exam-btn exam-btn-ghost" id="examSetupCancel">取消</button>
@@ -115,9 +121,14 @@
       <button class="exam-btn exam-btn-ghost" id="examExitBtn">← 返回浏览</button>
       <button class="exam-btn exam-btn-ghost" id="examResetBtn">🔄 重新模考</button>
       <button class="exam-btn exam-btn-primary" id="examSubmitBtn">✅ 提交试卷</button>
+      </div>
     </div>
-  </div>
-  <div class="exam-result" id="examResult" style="display:none;"></div>
+    <div class="exam-timer-bar" id="examTimerBar" style="display:none;">
+      <span class="exam-timer-label">⏱️ 剩余时间</span>
+      <div class="exam-timer-track"><div class="exam-timer-fill" id="examTimerFill"></div></div>
+      <span class="exam-timer-digits" id="examTimerDigits">60:00</span>
+    </div>
+    <div class="exam-result" id="examResult" style="display:none;"></div>
   <div class="exam-questions" id="examQuestions"></div>
 </section>
 
@@ -156,12 +167,13 @@
     </div>
     <div class="random-modal-body">
       <div class="timer-box">
-        <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span id="timerDigits">03:00</span></div>
+        <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span class="timer-right"><span id="timerDigits">03:00</span><button class="timer-reset-btn" id="timerResetBtn" type="button" title="重置计时">🔄 重置</button></span></div>
         <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
       </div>
       <div class="audio-recorder-zone" id="audioRecorderZone">
         <button class="record-ctrl-btn idle" id="recordCtrlBtn">🎙️ 开始录音演练</button>
         <audio class="local-audio-player" id="localAudioPlayer" controls></audio>
+        <button class="record-ctrl-btn download-record-btn" id="downloadRecordBtn" type="button" style="display:none;">💾 下载录音(MP3)</button>
         <div class="transcript-box" id="transcriptBox">
           <div class="transcript-title">📝 语音转文字实时预览</div>
           <div class="transcript-content" id="transcriptContent"></div>
@@ -2228,6 +2240,7 @@ window.DATA_INTERVIEW = [
   }
 ];
 </script>
+  <script src="../shared/lame.min.js"></script>
   <script src="../shared/app.js"></script>
 </body>
 </html>

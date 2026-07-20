@@ -48,6 +48,18 @@ def main():
         html,
     )
 
+    # 2.5) 内联 lamejs（MP3 录音编码器，仅当模板引用时）
+    lame_path = os.path.join(ROOT, "shared", "lame.min.js")
+    if os.path.exists(lame_path):
+        lame_js = open(lame_path, encoding="utf-8").read()
+        html = re.sub(
+            r'<script src="\.\./shared/lame\.min\.js"></script>',
+            lambda m: f"<script>\n{lame_js}\n</script>",
+            html,
+        )
+    else:
+        print("⚠️ 警告：找不到 shared/lame.min.js，MP3 录音将不可用。")
+
     # 3) 健全性检查：不应再残留 external shared 引用
     leftover = "../shared/" in html
     if leftover:

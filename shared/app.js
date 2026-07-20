@@ -554,14 +554,27 @@ function startTimerCountdown() {
 }
 function stopTimerCountdown() { clearInterval(testTimer); }
 
-// 录音（仅面试模式）
-var mediaRecorder = null, audioChunks = [], recordBtn = document.getElementById("recordCtrlBtn");
+// 录音（仅面试模式）—— MP3 编码（Web Audio 抓 PCM + lamejs 转码，手机端不再存成 .txt）
+var recordBtn = document.getElementById("recordCtrlBtn");
+var downloadRecordBtn = document.getElementById("downloadRecordBtn");
 var audioPlayer = document.getElementById("localAudioPlayer");
+var lastAudioBlob = null, lastAudioUrl = null;
+var isRecording = false;
+var audioCtx = null, micStream = null, scriptNode = null, gainNode = null, mp3Encoder = null, mp3Chunks = [];
 var transcriptBox = document.getElementById("transcriptBox");
 var transcriptContent = document.getElementById("transcriptContent");
 var transcriptNote = document.getElementById("transcriptNote");
 var SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 var speechRecognizer = null, finalTranscript = "";
+
+function floatTo16(input) {
+  var out = new Int16Array(input.length);
+  for (var k = 0; k < input.length; k++) {
+    var s = Math.max(-1, Math.min(1, input[k]));
+    out[k] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return out;
+}
 
 function initSpeechRecognizer() {
   if (!SpeechRecognitionImpl) {
@@ -573,9 +586,9 @@ function initSpeechRecognizer() {
   rec.lang = "zh-CN"; rec.continuous = true; rec.interimResults = true;
   rec.onresult = function (e) {
     var interim = "";
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      var text = e.results[i][0].transcript;
-      if (e.results[i].isFinal) finalTranscript += text; else interim += text;
+    for (var x = e.resultIndex; x < e.results.length; x++) {
+      var text = e.results[x][0].transcript;
+      if (e.results[x].isFinal) finalTranscript += text; else interim += text;
     }
     transcriptContent.innerHTML = escapeHtml(finalTranscript) + '<span class="transcript-interim">' + escapeHtml(interim) + "</span>";
   };
@@ -587,43 +600,103 @@ function initSpeechRecognizer() {
     else msg = "⚠️ 语音转文字暂时出错（" + e.error + "），不影响录音回听";
     if (msg) { transcriptNote.textContent = msg; transcriptNote.style.display = "block"; }
   };
-  rec.onend = function () { if (mediaRecorder && mediaRecorder.state === "recording") { try { rec.start(); } catch (e) {} } };
+  rec.onend = function () { if (isRecording) { try { rec.start(); } catch (e2) {} } };
   return rec;
 }
+
 function initAudioRecorderSystem() {
   recordBtn.onclick = function () {
-    if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    if (!window.lamejs || !window.lamejs.Mp3Encoder) {
+      alert("MP3 编码器未就绪，请刷新页面后重试。");
+      return;
+    }
+    if (!isRecording) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      if (audioCtx.state === "suspended") { try { audioCtx.resume(); } catch (e0) {} }
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-        audioChunks = []; mediaRecorder = new MediaRecorder(stream);
-        mediaRecorder.ondataavailable = function (e) { audioChunks.push(e.data); };
-        mediaRecorder.onstop = function () {
-          var audioBlob = new Blob(audioChunks);
-          audioPlayer.src = URL.createObjectURL(audioBlob);
-          audioPlayer.style.display = "block";
+        micStream = stream;
+        var sr = audioCtx.sampleRate;
+        mp3Encoder = new window.lamejs.Mp3Encoder(1, sr, 128);
+        mp3Chunks = [];
+        var source = audioCtx.createMediaStreamSource(stream);
+        scriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+        scriptNode.onaudioprocess = function (e) {
+          if (!isRecording) return;
+          var samples = e.inputBuffer.getChannelData(0);
+          var buf = mp3Encoder.encodeBuffer(floatTo16(samples));
+          if (buf.length > 0) mp3Chunks.push(new Int8Array(buf));
         };
-        mediaRecorder.start();
-        recordBtn.textContent = "⏹️ 停止录音并回听"; recordBtn.className = "record-ctrl-btn recording";
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 0;
+        source.connect(scriptNode);
+        scriptNode.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        isRecording = true;
+        recordBtn.textContent = "⏹️ 停止录音并保存(MP3)"; recordBtn.className = "record-ctrl-btn recording";
         finalTranscript = ""; transcriptContent.innerHTML = ""; transcriptBox.classList.add("show"); transcriptNote.style.display = "none";
         speechRecognizer = initSpeechRecognizer();
-        if (speechRecognizer) { try { speechRecognizer.start(); } catch (e) {} }
+        if (speechRecognizer) { try { speechRecognizer.start(); } catch (e1) {} }
       }).catch(function (err) {
         alert("麦克风调用失败！请确保已授予麦克风权限，或在 HTTPS 线上安全环境打开网站。本地双击部分浏览器受安全策略限制不可直接调用录音。");
       });
     } else {
-      mediaRecorder.stop();
-      mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); });
-      recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
-      if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {} }
+      stopAndEncodeRecording();
     }
   };
+  downloadRecordBtn.onclick = function () {
+    if (!lastAudioBlob) return;
+    var a = document.createElement("a");
+    var now = new Date();
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    var ts = now.getFullYear() + p(now.getMonth() + 1) + p(now.getDate()) + "_" + p(now.getHours()) + p(now.getMinutes()) + p(now.getSeconds());
+    a.href = lastAudioUrl || URL.createObjectURL(lastAudioBlob);
+    a.download = "深圳辅警面试录音_" + ts + ".mp3";
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { try { a.remove(); } catch (e3) {} }, 1000);
+  };
 }
-function resetAudioRecorderUI() {
-  if (mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(function (t) { t.stop(); }); }
-  if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e) {} }
+
+function stopAndEncodeRecording() {
+  isRecording = false;
+  if (scriptNode) { try { scriptNode.disconnect(); } catch (e4) {} scriptNode = null; }
+  if (gainNode) { try { gainNode.disconnect(); } catch (e5) {} gainNode = null; }
+  if (micStream) { micStream.getTracks().forEach(function (t) { t.stop(); }); micStream = null; }
+  if (audioCtx) { try { audioCtx.close(); } catch (e6) {} audioCtx = null; }
+  if (mp3Encoder) {
+    var tail = mp3Encoder.flush();
+    if (tail.length > 0) mp3Chunks.push(new Int8Array(tail));
+    mp3Encoder = null;
+  }
+  var blob = new Blob(mp3Chunks, { type: "audio/mpeg" });
+  mp3Chunks = [];
+  if (lastAudioUrl) { try { URL.revokeObjectURL(lastAudioUrl); } catch (e7) {} }
+  lastAudioBlob = blob;
+  lastAudioUrl = URL.createObjectURL(blob);
+  audioPlayer.src = lastAudioUrl;
+  audioPlayer.style.display = "block";
+  downloadRecordBtn.style.display = "inline-block";
   recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
+  if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e8) {} }
+}
+
+function resetAudioRecorderUI() {
+  isRecording = false;
+  if (scriptNode) { try { scriptNode.disconnect(); } catch (e9) {} scriptNode = null; }
+  if (gainNode) { try { gainNode.disconnect(); } catch (e10) {} gainNode = null; }
+  if (micStream) { micStream.getTracks().forEach(function (t) { t.stop(); }); micStream = null; }
+  if (audioCtx) { try { audioCtx.close(); } catch (e11) {} audioCtx = null; }
+  if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e12) {} }
+  recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
+  if (lastAudioUrl) { try { URL.revokeObjectURL(lastAudioUrl); } catch (e13) {} lastAudioUrl = null; }
+  lastAudioBlob = null;
   audioPlayer.src = ""; audioPlayer.style.display = "none";
+  downloadRecordBtn.style.display = "none";
   transcriptBox.classList.remove("show"); transcriptContent.innerHTML = ""; finalTranscript = "";
 }
+
 
 // 随机抽题
 var randomModal = document.getElementById("randomModal");
@@ -764,6 +837,7 @@ document.getElementById("randomModalNext").addEventListener("click", showRandomQ
 function closeRandomModal() { randomModal.classList.remove("show"); stopTimerCountdown(); resetAudioRecorderUI(); }
 document.getElementById("randomModalClose").addEventListener("click", closeRandomModal);
 document.getElementById("randomModalDone").addEventListener("click", closeRandomModal);
+document.getElementById("timerResetBtn").addEventListener("click", startTimerCountdown);
 randomModal.addEventListener("click", function (e) { if (e.target === randomModal) closeRandomModal(); });
 
 // 闲鱼口令

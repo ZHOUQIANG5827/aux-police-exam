@@ -167,12 +167,13 @@
     </div>
     <div class="random-modal-body">
       <div class="timer-box">
-        <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span id="timerDigits">03:00</span></div>
+        <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span class="timer-right"><span id="timerDigits">03:00</span><button class="timer-reset-btn" id="timerResetBtn" type="button" title="重置计时">🔄 重置</button></span></div>
         <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
       </div>
       <div class="audio-recorder-zone" id="audioRecorderZone">
         <button class="record-ctrl-btn idle" id="recordCtrlBtn">🎙️ 开始录音演练</button>
         <audio class="local-audio-player" id="localAudioPlayer" controls></audio>
+        <button class="record-ctrl-btn download-record-btn" id="downloadRecordBtn" type="button" style="display:none;">💾 下载录音(MP3)</button>
         <div class="transcript-box" id="transcriptBox">
           <div class="transcript-title">📝 语音转文字实时预览</div>
           <div class="transcript-content" id="transcriptContent"></div>
@@ -195,6 +196,7 @@
   </div>
 </div>
 <!--STATION_DATA-->
+  <script src="../shared/lame.min.js"></script>
   <script src="../shared/app.js"></script>
 </body>
 </html>

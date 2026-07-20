@@ -1,10 +1,11 @@
 {
-  "version": "1.0.0",
-  "updated": "2026-07-14",
+  "version": "3.0.0",
+  "updated": "2026-07-20",
   "counts": {
     "written": 900,
     "interview": 138
   },
   "writtenCount": 900,
-  "interviewCount": 138
+  "interviewCount": 138,
+  "note": "MP3 录音（lamejs，手机端下载不再存 .txt）+ 随机抽题计时器可重置"
 }

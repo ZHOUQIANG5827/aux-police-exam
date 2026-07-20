@@ -542,3 +542,10 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 /* ===== merged from 3 <style> blocks (extracted from sz) ===== */
 
 .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 20px;color:var(--text-secondary);font-size:15px}.spinner{width:34px;height:34px;border:4px solid var(--border);border-top-color:var(--primary-light);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 计时器重置按钮 + 录音下载按钮 */
+.timer-right { display: flex; align-items: center; gap: 8px; }
+.timer-reset-btn { font-size: 12px; font-weight: 600; color: var(--primary-light); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; cursor: pointer; transition: all .15s; }
+.timer-reset-btn:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.download-record-btn { background: var(--primary-light); color: #fff; border: none; }
+.download-record-btn:hover { filter: brightness(1.05); }
