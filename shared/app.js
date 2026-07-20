@@ -986,25 +986,27 @@ function applyExamPreset(){
   document.getElementById("cntBool").value = p.bool;
   document.getElementById("typingOn").checked = !!p.typing;
   document.getElementById("examMinutesTyping").value = p.typingMinutes || 10;
+  document.getElementById("examMinutes").value = (p.minutes || 60);
   document.getElementById("examPresetLabel").textContent = p.label || "标准模考";
   refreshExamInfo();
 }
 function refreshExamInfo(){
   var typing = document.getElementById("typingOn").checked;
   var tmin = parseInt(document.getElementById("examMinutesTyping").value,10)||0;
+  var em = parseInt(document.getElementById("examMinutes").value,10)||0;
   var plan = document.getElementById("examPlanMode").value;
   var info = "";
   if (plan === "batch") {
     var b = document.getElementById("examBatch").value;
     var list = dataset().filter(function(q){ return (q.batch || "未注明") === b; });
     var per = countByType(list);
-    info = '本卷为 <b>'+escapeHtml(b)+' 批</b> 整套真题，共 <b>'+list.length+'</b> 题（单选 '+per.single+' · 多选 '+per.multi+' · 判断 '+per.bool+'），<b>无时间限制</b>';
+    info = '本卷为 <b>'+escapeHtml(b)+' 批</b> 整套真题，共 <b>'+list.length+'</b> 题（单选 '+per.single+' · 多选 '+per.multi+' · 判断 '+per.bool+'），'+(em>0?('限时 <b>'+em+'</b> 分钟'):'<b>无时间限制</b>');
   } else {
     var s = parseInt(document.getElementById("cntSingle").value,10)||0;
     var m = parseInt(document.getElementById("cntMulti").value,10)||0;
     var bo = parseInt(document.getElementById("cntBool").value,10)||0;
     var total = s+m+bo;
-    info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+bo+'），<b>无时间限制</b>';
+    info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+bo+'），'+(em>0?('限时 <b>'+em+'</b> 分钟'):'<b>无时间限制</b>');
     var data = dataset();
     var avail = { single:0, multi:0, bool:0 };
     data.forEach(function(q){ var t=normType(q.type); if(avail[t]!==undefined) avail[t]++; });
@@ -1025,7 +1027,7 @@ function confirmExamSetup(){
   if (plan === "batch") {
     var b = document.getElementById("examBatch").value;
     if (!b) { alert("请选择要刷的批次"); return; }
-    cfg = { plan: "batch", batch: b, typing: typing, typingMinutes: typingMinutes };
+    cfg = { plan: "batch", batch: b, typing: typing, typingMinutes: typingMinutes, examMinutes: parseInt(document.getElementById("examMinutes").value,10)||0 };
   } else {
     var counts = {
       single: parseInt(document.getElementById("cntSingle").value,10)||0,
@@ -1033,7 +1035,7 @@ function confirmExamSetup(){
       bool:   parseInt(document.getElementById("cntBool").value,10)||0
     };
     if (counts.single + counts.multi + counts.bool < 1) { alert("请至少设置 1 道客观题"); return; }
-    cfg = { plan: "random", counts: counts, typing: typing, typingMinutes: typingMinutes };
+    cfg = { plan: "random", counts: counts, typing: typing, typingMinutes: typingMinutes, examMinutes: parseInt(document.getElementById("examMinutes").value,10)||0 };
   }
   examLastCfg = cfg;
   document.getElementById("examSetupOverlay").style.display = "none";
@@ -1086,6 +1088,9 @@ function stopExamTimer(){ if (examTimer) clearInterval(examTimer); examTimer = n
 function startExam() {
   examGraded = false; examSelections = {};
   examResult.style.display = "none"; examResult.innerHTML = "";
+  var mins = (examLastCfg && examLastCfg.examMinutes) ? examLastCfg.examMinutes : (CONFIG.examPreset ? (CONFIG.examPreset.minutes || 0) : 0);
+  if (mins > 0) startExamTimer(mins);
+  else { var tb = document.getElementById("examTimerBar"); if (tb) tb.style.display = "none"; }
   var list = examPaperList;
   var meta = examPaperMeta;
   document.getElementById("examTotal").textContent = list.length;

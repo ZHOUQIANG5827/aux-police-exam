@@ -168,11 +168,13 @@ body {
 .badge-type-zzgl { background: #dcfce7; color: #16a34a; }
 .badge-type-zwrz { background: #ede9fe; color: #7c3aed; }
 .badge-type-rjgt { background: #cffafe; color: #0891b2; }
+.badge-type-xcmn { background: #fef3c7; color: #d97706; }
 [data-theme="dark"] .badge-type-zhfx { background: #1e3a5f; color: #93c5fd; }
 [data-theme="dark"] .badge-type-yjyb { background: #3b1414; color: #fca5a5; }
 [data-theme="dark"] .badge-type-zzgl { background: #14241a; color: #86efac; }
 [data-theme="dark"] .badge-type-zwrz { background: #2d1b4e; color: #c4b5fd; }
 [data-theme="dark"] .badge-type-rjgt { background: #0c2730; color: #67e8f9; }
+[data-theme="dark"] .badge-type-xcmn { background: #3b2a0e; color: #fcd34d; }
 .badge-year { background: var(--surface-2); color: var(--text-secondary); }
 .badge-session { background: var(--surface-2); color: var(--text-muted); font-weight: 500; font-size: 10px; }
 .tag-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
@@ -239,6 +241,12 @@ body {
 [data-theme="dark"] .framework-box { background:#1e293b; color:#cbd5e1; }
 .fw-title { font-weight:700; color:var(--primary); margin-bottom:6px; font-size:13px; }
 .fw-line { white-space:pre-wrap; }
+.ability-logic-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; margin-bottom:12px; font-size:12.5px; line-height:1.75; }
+[data-theme="dark"] .ability-logic-box { background:#0f172a; border-color:#334155; }
+.al-item { display:flex; gap:8px; padding:3px 0; }
+.al-label { flex:0 0 auto; font-weight:700; color:var(--primary); white-space:nowrap; }
+.al-text { color:#334155; }
+[data-theme="dark"] .al-text { color:#cbd5e1; }
 
 /* 笔试选项 */
 .opt-row { display: flex; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; background: var(--surface-2); font-size: 14px; align-items: flex-start; }
@@ -455,6 +463,12 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 .exam-title{font-size:17px;margin:0;color:var(--text)}
 .exam-sub{font-size:12.5px;color:var(--text-secondary);margin:4px 0 0}
 .exam-bar-right{display:flex;gap:8px;flex-wrap:wrap}
+.exam-timer-bar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;margin:8px 0;box-shadow:var(--shadow)}
+.exam-timer-label{font-size:13px;color:var(--text-secondary);white-space:nowrap;font-weight:600}
+.exam-timer-track{flex:1;height:10px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.exam-timer-fill{height:100%;width:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:999px;transition:width 1s linear}
+.exam-timer-fill.warning{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.exam-timer-digits{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:19px;font-weight:700;color:var(--text);min-width:74px;text-align:right}
 .exam-btn{border:none;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .12s,box-shadow .12s}
 .exam-btn:active{transform:translateY(1px)}
 .exam-btn-primary{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.3)}
@@ -629,6 +643,12 @@ body.focus-mode .focus-toggle { background: var(--danger); }
         <input type="number" min="1" id="examMinutesTyping" class="exam-setup-input exam-setup-input-sm" value="10"> <span>分钟</span>
       </div>
     </div>
+    <div class="exam-setup-cell exam-setup-cell-wide">
+      <label class="exam-setup-check"><span style="font-weight:600">⏱️ 考试时长</span></label>
+      <div class="exam-setup-typing-min">
+        <input type="number" min="0" id="examMinutes" class="exam-setup-input exam-setup-input-sm" value="60"> <span>分钟（填 0 或不限时不计时）</span>
+      </div>
+    </div>
     <div class="exam-setup-info" id="examSetupInfo"></div>
     <div class="exam-setup-actions">
       <button class="exam-btn exam-btn-ghost" id="examSetupCancel">取消</button>
@@ -647,9 +667,14 @@ body.focus-mode .focus-toggle { background: var(--danger); }
       <button class="exam-btn exam-btn-ghost" id="examExitBtn">← 返回浏览</button>
       <button class="exam-btn exam-btn-ghost" id="examResetBtn">🔄 重新模考</button>
       <button class="exam-btn exam-btn-primary" id="examSubmitBtn">✅ 提交试卷</button>
+      </div>
     </div>
-  </div>
-  <div class="exam-result" id="examResult" style="display:none;"></div>
+    <div class="exam-timer-bar" id="examTimerBar" style="display:none;">
+      <span class="exam-timer-label">⏱️ 剩余时间</span>
+      <div class="exam-timer-track"><div class="exam-timer-fill" id="examTimerFill"></div></div>
+      <span class="exam-timer-digits" id="examTimerDigits">60:00</span>
+    </div>
+    <div class="exam-result" id="examResult" style="display:none;"></div>
   <div class="exam-questions" id="examQuestions"></div>
 </section>
 
@@ -782,7 +807,7 @@ var _DEFAULTS = {
   examPreset: { label: "标准模考", single: 36, multi: 12, bool: 12, minutes: 60, typing: true, typingMinutes: 10 },
   // 打字题范文（套题模考附加项，不计入客观题分）
   typingText: "辅警是公安机关的重要辅助力量，承担着维护社会治安、服务人民群众的重要职责。每一位辅警都应当以高度的责任感和使命感，认真履行岗位职责，严格遵守工作纪律，做到忠诚、干净、担当，为建设平安中国贡献自己的力量。",
-  enabledModules: { promo: true, xianyu: false, reward: false, progress: true, themeToggle: true, record: false },
+  enabledModules: { promo: true, xianyu: false, reward: false, progress: true, themeToggle: true, record: true },
   defaultPage: "written",
   // ===== 重新设计：真题优先 + 机考/非机考通用 =====
   brandName: "辅警真题卡组",
@@ -829,7 +854,8 @@ var TYPE_MAP = {
   "应急应变": { cls: "yjyb", label: "应急应变" },
   "组织管理": { cls: "zzgl", label: "组织管理" },
   "自我认知与职位匹配": { cls: "zwrz", label: "自我认知" },
-  "人际沟通": { cls: "rjgt", label: "人际沟通" }
+  "人际沟通": { cls: "rjgt", label: "人际沟通" },
+  "现场模拟": { cls: "xcmn", label: "现场模拟" }
 };
 var WRITTEN_TYPE_LABEL = { single: "单选题", multiple: "多选题", multi: "多选题", judge: "判断题", bool: "判断题", blank: "填空题", qa: "简答题", essay: "简答题", case: "案例分析", subjective: "主观题" };
 var TAG_MAP = {
@@ -985,6 +1011,15 @@ function frameworkHtml(q) {
   var inner = lines.map(function (l) { return '<div class="fw-line">' + escapeHtml(l) + "</div>"; }).join("");
   return '<div class="framework-box"><div class="fw-title">🧩 结构化思路</div>' + inner + "</div>";
 }
+function abilityLogicHtml(q) {
+  if (!q || MODE !== "interview") return "";
+  if (!q.ability && !q.logic) return "";
+  var h = '<div class="ability-logic-box">';
+  if (q.ability) h += '<div class="al-item"><span class="al-label">🎯 考察能力</span><span class="al-text">' + escapeHtml(q.ability) + "</span></div>";
+  if (q.logic) h += '<div class="al-item"><span class="al-label">🧠 出题逻辑</span><span class="al-text">' + escapeHtml(q.logic) + "</span></div>";
+  h += "</div>";
+  return h;
+}
 
 function cardHtml(q) {
   var badges, titleHtml, bodyInner;
@@ -995,7 +1030,7 @@ function cardHtml(q) {
       + (q.session ? '<span class="badge badge-session">' + escapeHtml(q.session) + "</span>" : "")
       + tagBadgesHtml(q);
     titleHtml = highlight(q.title || "", currentSearch);
-    bodyInner = answerSection(frameworkHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", currentSearch));
+    bodyInner = answerSection(frameworkHtml(q) + abilityLogicHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", currentSearch));
   } else {
     var wl = WRITTEN_TYPE_LABEL[q.type] || q.type;
     badges = (q.num != null ? '<span class="badge badge-year">#' + q.num + "</span>" : "")
@@ -1096,7 +1131,7 @@ function updateStats() {
   var data = dataset();
   var dimKey = MODE === "interview" ? "year" : "batch";
   var dimSet = {}, typeSet = {};
-  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[normType(q.type)] = 1; });
+  data.forEach(function (q) { if (q[dimKey]) dimSet[q[dimKey]] = 1; if (q.type) typeSet[MODE === "interview" ? q.type : normType(q.type)] = 1; });
   document.getElementById("statNum0").textContent = data.length;
   document.getElementById("statLabel0").textContent = "真题数";
   document.getElementById("statNum1").textContent = Object.keys(dimSet).length;
@@ -1360,7 +1395,11 @@ function randomBadgesHtml(q) {
   return html;
 }
 function randomQuestionHtml(q) {
-  if (MODE === "interview") return escapeHtml(q.title || "");
+  if (MODE === "interview") {
+    var h = escapeHtml(q.title || "");
+    h += '<div class="random-modal-hint" style="margin-top:12px;margin-bottom:0;font-size:13px;padding:10px 12px;">💡 先自己组织作答，点下方「显示答案」查看参考答案与结构化思路</div>';
+    return h;
+  }
   var h = escapeHtml(q.stem || "");
   if (q.options && q.options.length) {
     h += '<div style="margin-top:12px">';
@@ -1375,7 +1414,7 @@ function randomQuestionHtml(q) {
   return h;
 }
 function randomAnswerHtml(q) {
-  if (MODE === "interview") return frameworkHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", "");
+  if (MODE === "interview") return frameworkHtml(q) + abilityLogicHtml(q) + formatAnswer(q.answer || "（暂无参考答案）", "");
   var h = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
   if (q.explanation) h += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, "") + "</div>";
   return h;
@@ -1389,13 +1428,18 @@ function showRandomQuestion() {
   var q = data[Math.floor(Math.random() * data.length)];
   currentRandomQ = q;
   var submitBtn = document.getElementById("randomModalSubmit");
-  if (submitBtn) submitBtn.style.display = (MODE === "interview") ? "none" : "";
+  if (MODE === "interview") {
+    // 面试：默认隐藏答案，点「显示答案」才展开
+    if (submitBtn) { submitBtn.style.display = ""; submitBtn.textContent = "💡 显示答案"; }
+    document.getElementById("randomModalAnswer").classList.remove("show");
+  } else {
+    if (submitBtn) { submitBtn.style.display = ""; submitBtn.textContent = "✅ 提交答案"; }
+    document.getElementById("randomModalAnswer").classList.remove("show");
+  }
   document.getElementById("audioRecorderZone").style.display = (MODE === "interview" && _mRecord) ? "block" : "none";
   document.getElementById("randomModalBadges").innerHTML = randomBadgesHtml(q);
   document.getElementById("randomModalQuestion").innerHTML = randomQuestionHtml(q);
   document.getElementById("randomModalAnswerContent").innerHTML = randomAnswerHtml(q);
-  if (MODE === "interview") document.getElementById("randomModalAnswer").classList.add("show");
-  else document.getElementById("randomModalAnswer").classList.remove("show");
   randomModal.classList.add("show");
 }
 document.getElementById("randomBtn").addEventListener("click", showRandomQuestion);
@@ -1410,7 +1454,16 @@ function revealRandomAnswer() {
   document.getElementById("randomModalAnswer").classList.add("show");
   stopTimerCountdown();
 }
+function revealInterviewAnswer() {
+  var q = currentRandomQ;
+  if (!q) return;
+  document.getElementById("randomModalAnswer").classList.add("show");
+  stopTimerCountdown();
+  var btn = document.getElementById("randomModalSubmit");
+  if (btn) btn.style.display = "none";
+}
 function gradeRandomSelection() {
+  if (MODE === "interview") { revealInterviewAnswer(); return; }
   var q = currentRandomQ;
   if (!q || q.answer == null) return;
   var opts = document.querySelectorAll("#randomModalQuestion .opt-row.rand-opt");
@@ -1681,25 +1734,27 @@ function applyExamPreset(){
   document.getElementById("cntBool").value = p.bool;
   document.getElementById("typingOn").checked = !!p.typing;
   document.getElementById("examMinutesTyping").value = p.typingMinutes || 10;
+  document.getElementById("examMinutes").value = (p.minutes || 60);
   document.getElementById("examPresetLabel").textContent = p.label || "标准模考";
   refreshExamInfo();
 }
 function refreshExamInfo(){
   var typing = document.getElementById("typingOn").checked;
   var tmin = parseInt(document.getElementById("examMinutesTyping").value,10)||0;
+  var em = parseInt(document.getElementById("examMinutes").value,10)||0;
   var plan = document.getElementById("examPlanMode").value;
   var info = "";
   if (plan === "batch") {
     var b = document.getElementById("examBatch").value;
     var list = dataset().filter(function(q){ return (q.batch || "未注明") === b; });
     var per = countByType(list);
-    info = '本卷为 <b>'+escapeHtml(b)+' 批</b> 整套真题，共 <b>'+list.length+'</b> 题（单选 '+per.single+' · 多选 '+per.multi+' · 判断 '+per.bool+'），<b>无时间限制</b>';
+    info = '本卷为 <b>'+escapeHtml(b)+' 批</b> 整套真题，共 <b>'+list.length+'</b> 题（单选 '+per.single+' · 多选 '+per.multi+' · 判断 '+per.bool+'），'+(em>0?('限时 <b>'+em+'</b> 分钟'):'<b>无时间限制</b>');
   } else {
     var s = parseInt(document.getElementById("cntSingle").value,10)||0;
     var m = parseInt(document.getElementById("cntMulti").value,10)||0;
     var bo = parseInt(document.getElementById("cntBool").value,10)||0;
     var total = s+m+bo;
-    info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+bo+'），<b>无时间限制</b>';
+    info = '本卷共 <b>'+total+'</b> 道客观题（单选 '+s+' · 多选 '+m+' · 判断 '+bo+'），'+(em>0?('限时 <b>'+em+'</b> 分钟'):'<b>无时间限制</b>');
     var data = dataset();
     var avail = { single:0, multi:0, bool:0 };
     data.forEach(function(q){ var t=normType(q.type); if(avail[t]!==undefined) avail[t]++; });
@@ -1720,7 +1775,7 @@ function confirmExamSetup(){
   if (plan === "batch") {
     var b = document.getElementById("examBatch").value;
     if (!b) { alert("请选择要刷的批次"); return; }
-    cfg = { plan: "batch", batch: b, typing: typing, typingMinutes: typingMinutes };
+    cfg = { plan: "batch", batch: b, typing: typing, typingMinutes: typingMinutes, examMinutes: parseInt(document.getElementById("examMinutes").value,10)||0 };
   } else {
     var counts = {
       single: parseInt(document.getElementById("cntSingle").value,10)||0,
@@ -1728,7 +1783,7 @@ function confirmExamSetup(){
       bool:   parseInt(document.getElementById("cntBool").value,10)||0
     };
     if (counts.single + counts.multi + counts.bool < 1) { alert("请至少设置 1 道客观题"); return; }
-    cfg = { plan: "random", counts: counts, typing: typing, typingMinutes: typingMinutes };
+    cfg = { plan: "random", counts: counts, typing: typing, typingMinutes: typingMinutes, examMinutes: parseInt(document.getElementById("examMinutes").value,10)||0 };
   }
   examLastCfg = cfg;
   document.getElementById("examSetupOverlay").style.display = "none";
@@ -1781,6 +1836,9 @@ function stopExamTimer(){ if (examTimer) clearInterval(examTimer); examTimer = n
 function startExam() {
   examGraded = false; examSelections = {};
   examResult.style.display = "none"; examResult.innerHTML = "";
+  var mins = (examLastCfg && examLastCfg.examMinutes) ? examLastCfg.examMinutes : (CONFIG.examPreset ? (CONFIG.examPreset.minutes || 0) : 0);
+  if (mins > 0) startExamTimer(mins);
+  else { var tb = document.getElementById("examTimerBar"); if (tb) tb.style.display = "none"; }
   var list = examPaperList;
   var meta = examPaperMeta;
   document.getElementById("examTotal").textContent = list.length;

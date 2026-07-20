@@ -97,6 +97,12 @@
         <input type="number" min="1" id="examMinutesTyping" class="exam-setup-input exam-setup-input-sm" value="10"> <span>分钟</span>
       </div>
     </div>
+    <div class="exam-setup-cell exam-setup-cell-wide">
+      <label class="exam-setup-check"><span style="font-weight:600">⏱️ 考试时长</span></label>
+      <div class="exam-setup-typing-min">
+        <input type="number" min="0" id="examMinutes" class="exam-setup-input exam-setup-input-sm" value="60"> <span>分钟（填 0 或不限时不计时）</span>
+      </div>
+    </div>
     <div class="exam-setup-info" id="examSetupInfo"></div>
     <div class="exam-setup-actions">
       <button class="exam-btn exam-btn-ghost" id="examSetupCancel">取消</button>
@@ -115,9 +121,14 @@
       <button class="exam-btn exam-btn-ghost" id="examExitBtn">← 返回浏览</button>
       <button class="exam-btn exam-btn-ghost" id="examResetBtn">🔄 重新模考</button>
       <button class="exam-btn exam-btn-primary" id="examSubmitBtn">✅ 提交试卷</button>
+      </div>
     </div>
-  </div>
-  <div class="exam-result" id="examResult" style="display:none;"></div>
+    <div class="exam-timer-bar" id="examTimerBar" style="display:none;">
+      <span class="exam-timer-label">⏱️ 剩余时间</span>
+      <div class="exam-timer-track"><div class="exam-timer-fill" id="examTimerFill"></div></div>
+      <span class="exam-timer-digits" id="examTimerDigits">60:00</span>
+    </div>
+    <div class="exam-result" id="examResult" style="display:none;"></div>
   <div class="exam-questions" id="examQuestions"></div>
 </section>
 
