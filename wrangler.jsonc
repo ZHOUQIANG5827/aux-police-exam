@@ -12,11 +12,13 @@
     "nodejs_compat"
   ],
   // —— 按 IP 每日访问限额（functions/_middleware.js 读取）——
-  // 这些 vars 无需提前创建，可直接部署生效。
+  // 注意：Cloudflare Pages 的 Functions 不会自动注入本文件的 vars，需在 Cloudflare 后台
+  // Settings→Functions→环境变量 单独设置才会生效；函数已内置相同默认值，故不设在也能跑。
+  // 真·私有豁免：后台设 ALLOW_IPS=你的IP（逗号分隔）。
   "vars": {
-    "ALLOW_IPS": "",                       // 作者本人 IP 白名单，逗号分隔，如 "1.2.3.4,5.6.7.8"
-    "DAILY_LIMIT": "30",                   // 每个 IP 每日最多浏览的页面数
-    "VIP_SECRET": "rcj9527-vip-change-me"  // 改成你自己的随机串；访问 ?vip=该串 一次即永久免限制
+    "ALLOW_IPS": "",                       // 后台设：作者本人 IP 白名单，逗号分隔，如 "1.2.3.4,5.6.7.8"
+    "DAILY_LIMIT": "30",                   // 可选覆盖：每个访客每日最多浏览页数
+    "VIP_SECRET": "rcj9527-vip-change-me"  // 可选覆盖：?vip=该串 一次即永久免限制（见函数内说明）
   }
   // —— 启用「计数」需额外建 KV 命名空间（functions 默认在 KV 未绑定时自动放行）——
   // 步骤：1) 运行  wrangler kv namespace create VISIT_KV --pages ...

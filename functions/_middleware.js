@@ -37,8 +37,16 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const cookie = request.headers.get("cookie") || "";
 
+  // 配置（硬编码默认值，确保部署即生效；若 Cloudflare 后台设了同名环境变量则优先覆盖）
+  // ⚠️ VIP_SECRET 写在公开仓库里，属「软限制」——懂行的人也能用 ?vip= 自豁免；
+  //    要真正私有豁免，请在 Cloudflare 后台 Settings→Functions 环境变量设 ALLOW_IPS=你的IP。
+  const VIP_SECRET = (env && env.VIP_SECRET) || "rcj9527-vip-change-me";
+  const DAILY_LIMIT = parseInt((env && env.DAILY_LIMIT) || "30", 10);
+  const allowIps = (env && env.ALLOW_IPS)
+    ? (env.ALLOW_IPS).split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
   // —— 1) 作者豁免：VIP 密钥一次性种 Cookie ——
-  const VIP_SECRET = env.VIP_SECRET || "";
   if (VIP_SECRET && url.searchParams.get("vip") === VIP_SECRET) {
     const res = await next();
     res.headers.append(
@@ -50,10 +58,6 @@ export async function onRequest(context) {
   if (cookie.includes("rcj_vip=1")) return next();
 
   // —— 2) 作者 IP 白名单 ——
-  const allowIps = (env.ALLOW_IPS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
   const ip = request.headers.get("cf-connecting-ip") || "";
   if (ip && allowIps.includes(ip)) return next();
 
@@ -65,7 +69,7 @@ export async function onRequest(context) {
 
   // —— 4) 每日访问计数（Cookie 方案）——
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-  const limit = parseInt(env.DAILY_LIMIT || "30", 10);
+  const limit = DAILY_LIMIT;
 
   let visits = 0;
   try {
