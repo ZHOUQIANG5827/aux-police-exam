@@ -14,7 +14,7 @@ window.SITE_CONFIG = {
   "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
   "footerText": "© 辅警真题卡组 · 开源离线版",
   "timerSeconds": 180,
-  "enabledModules": { "promo": true, "xianyu": true, "reward": true, "progress": true, "themeToggle": true, "record": false },
+  "enabledModules": { "promo": true, "xianyu": true, "reward": false, "progress": true, "themeToggle": true, "record": false },
   "defaultPage": "written",
   "examType": "paper",
   "examYear": "2024-2026",
