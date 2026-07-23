@@ -1,14 +1,17 @@
 // Cloudflare Pages Functions 中间件：每日访问限额（防白嫖党无限刷免费站）
 // 部署后由 Cloudflare 自动对每个请求执行。
 //
-// 计数方案：默认用「浏览器 Cookie」记录当日已浏览页数（零配置，push 即生效）。
-//   - 优点：无需建 KV，立即生效。
-//   - 缺点：访客清 Cookie / 开无痕可重置（软限制，足够拦住大部分白嫖党）。
-//   - 升级为真·按 IP 限制（更硬）：见文件底部「KV 升级说明」，建好命名空间后取消注释即可。
+// 计数方案（两档自动切换）：
+//   ★ 真·按 IP 硬限制（KV）：在 Cloudflare 后台把 KV 命名空间绑定到本函数(绑定名 VISIT_KV)后，
+//     自动按访客 IP 记当日浏览页数。优点：清 Cookie / 开无痕 / 换浏览器都绕不过，最硬。
+//   ★ 回退·Cookie 软限制：未绑定 KV 时，用浏览器 Cookie 记当日页数（零配置，push 即生效）。
+//     缺点：访客清 Cookie 可重置（足够拦住大部分白嫖党）。
 //
-// 作者本人永不被限（二选一）：
-//   1) VIP 密钥：访问一次 https://你的域名/sz/?vip=VIP_SECRET 即种下免限制 Cookie(rcj_vip=1)，全站永不被限。
-//   2) ALLOW_IPS：在 wrangler.jsonc 的 vars.ALLOW_IPS 填你自己的 IP（逗号分隔），该 IP 直接放行。
+// 作者本人永不被限（优先级从高到低）：
+//   1) ALLOW_IPS：在 Cloudflare 后台 Settings→Functions 环境变量设 ALLOW_IPS=你的IP(逗号分隔)，
+//      该 IP 直接放行——【私密、最安全、推荐】。
+//   2) VIP 密钥：访问一次 https://你的域名/sz/?vip=VIP_SECRET 即种下免限制 Cookie(rcj_vip=1)，全站永不被限。
+//      ⚠️ 此密钥写在公开仓库里属「软豁免」，懂行的人也能 ?vip= 自豁免；故优先用 ALLOW_IPS。
 //
 // 计数范围：仅统计「HTML 页面导航(GET)」，静态资源(js/css/png/json/...)不计数，省开销且不影响加载。
 
@@ -38,13 +41,13 @@ export async function onRequest(context) {
   const cookie = request.headers.get("cookie") || "";
 
   // 配置（硬编码默认值，确保部署即生效；若 Cloudflare 后台设了同名环境变量则优先覆盖）
-  // ⚠️ VIP_SECRET 写在公开仓库里，属「软限制」——懂行的人也能用 ?vip= 自豁免；
-  //    要真正私有豁免，请在 Cloudflare 后台 Settings→Functions 环境变量设 ALLOW_IPS=你的IP。
+  // ⚠️ VIP_SECRET 写在公开仓库里，属「软豁免」；真正私有豁免请用 ALLOW_IPS。
   const VIP_SECRET = (env && env.VIP_SECRET) || "rcj9527-vip-change-me";
   const DAILY_LIMIT = parseInt((env && env.DAILY_LIMIT) || "30", 10);
   const allowIps = (env && env.ALLOW_IPS)
     ? (env.ALLOW_IPS).split(",").map((s) => s.trim()).filter(Boolean)
     : [];
+  const limit = DAILY_LIMIT;
 
   // —— 1) 作者豁免：VIP 密钥一次性种 Cookie ——
   if (VIP_SECRET && url.searchParams.get("vip") === VIP_SECRET) {
@@ -57,7 +60,7 @@ export async function onRequest(context) {
   }
   if (cookie.includes("rcj_vip=1")) return next();
 
-  // —— 2) 作者 IP 白名单 ——
+  // —— 2) 作者 IP 白名单（私密豁免，优先级最高）——
   const ip = request.headers.get("cf-connecting-ip") || "";
   if (ip && allowIps.includes(ip)) return next();
 
@@ -67,10 +70,39 @@ export async function onRequest(context) {
   );
   if (isStatic || request.method !== "GET") return next();
 
-  // —— 4) 每日访问计数（Cookie 方案）——
+  // —— 4) 每日访问计数 ——
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-  const limit = DAILY_LIMIT;
+  const kv = env && env.VISIT_KV; // 后台绑定 KV(绑定名 VISIT_KV)后存在 → 按 IP 硬限制
 
+  if (kv) {
+    // ===== 真·按 IP 硬限制（KV）=====
+    const key = `v:${ip || "unknown"}:${today}`;
+    let n = 0;
+    try {
+      n = parseInt((await kv.get(key)) || "0", 10) || 0;
+    } catch (e) {
+      n = 0; // 读失败不挡用户（fail-open）
+    }
+    if (n >= limit) {
+      return new Response(LIMIT_HTML, {
+        status: 429,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "retry-after": "86400",
+          "cache-control": "no-store",
+        },
+      });
+    }
+    const res = await next();
+    try {
+      await kv.put(key, String(n + 1), { expirationTtl: 172800 }); // 48h 覆盖次日 UTC 翻转
+    } catch (e) {
+      /* 写失败不挡用户 */
+    }
+    return res;
+  }
+
+  // ===== 回退：Cookie 软限制（未绑 KV 时）=====
   let visits = 0;
   try {
     const m = cookie.match(/rcj_visits=([^;]+)/);
@@ -101,18 +133,3 @@ export async function onRequest(context) {
   );
   return res;
 }
-
-/* ============================================================
- * KV 升级说明（如需真·按 IP 限制，比 Cookie 更硬）：
- *   1) 本机装好 wrangler 并登录：npm i -g wrangler && wrangler login
- *   2) 建命名空间：  wrangler kv namespace create VISIT_KV
- *      记下返回的 id（形如 3a1b...）
- *   3) 在 wrangler.jsonc 里取消注释并填入 id：
- *        "kv_namespaces": [ { "binding": "VISIT_KV", "id": "上面的id" } ]
- *   4) 把上面「4) 每日访问计数」整段替换为 KV 版本（伪代码）：
- *        const key = `v:${ip}:${today}`;
- *        let n = parseInt(await env.VISIT_KV.get(key) || "0", 10) || 0;
- *        if (n >= limit) return new Response(LIMIT_HTML, {status:429,...});
- *        await env.VISIT_KV.put(key, String(n+1), { expirationTtl: 172800 });
- *   5) git add -A && git commit && git push  → 自动部署生效
- * ============================================================ */

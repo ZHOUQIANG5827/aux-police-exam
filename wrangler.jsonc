@@ -20,10 +20,12 @@
     "DAILY_LIMIT": "30",                   // 可选覆盖：每个访客每日最多浏览页数
     "VIP_SECRET": "rcj9527-vip-change-me"  // 可选覆盖：?vip=该串 一次即永久免限制（见函数内说明）
   }
-  // —— 启用「计数」需额外建 KV 命名空间（functions 默认在 KV 未绑定时自动放行）——
-  // 步骤：1) 运行  wrangler kv namespace create VISIT_KV --pages ...
-  //       2) 把下面注释打开，把 id 换成上一步返回的命名空间 id
-  //       3) git push 重新部署
+  // —— 真·按 IP 硬限制（KV）：functions/_middleware.js 读取 env.VISIT_KV ——
+  // 未绑定 KV 时函数自动回退「Cookie 软限制」，不影响现有部署。绑定后自动切换为按 IP 硬限制。
+  // 建命名空间(本机，需 wrangler 登录)：wrangler kv namespace create VISIT_KV
+  // 绑定方式二选一：
+  //   A) 后台：Pages 项目 → Settings → Functions → KV namespace bindings → 添加，名称填 VISIT_KV
+  //   B) 配置：把下方注释打开，id 换成上一步返回的命名空间 id，再 git push
   // "kv_namespaces": [
   //   { "binding": "VISIT_KV", "id": "在此粘贴KV命名空间ID" }
   // ]
