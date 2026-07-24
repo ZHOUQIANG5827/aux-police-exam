@@ -9,7 +9,7 @@ window.SITE_CONFIG = {
   "xianyuCode": "RCJ9527",
   "promoTitle": "",
   "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。",
-  "rewardImage": "",
+  "rewardImage": "wechat-reward.png?v=2",
   "rewardTitle": "",
   "rewardDesc": "",
   "footerText": "© 辅警真题卡组 · 在线开源版",

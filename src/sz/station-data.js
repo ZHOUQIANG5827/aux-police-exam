@@ -9,7 +9,7 @@ window.SITE_CONFIG = {
   "xianyuCode": "RCJ9527",
   "promoTitle": "",
   "promoText": "本题库为线上开源项目，已包含全部题库，<b>双击浏览器即用、零安装</b>。离线版本，不受网络限制、可自由修改，进阶可选 <b>Anki 记忆卡组</b> 辅助背诵。去闲鱼搜 <b>RCJ9527</b>。",
-  "rewardImage": "",
+  "rewardImage": "wechat-reward.png?v=2",
   "rewardTitle": "",
   "rewardDesc": "",
   "footerText": "© 辅警真题卡组 · 在线开源版",
