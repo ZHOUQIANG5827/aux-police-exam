@@ -52,7 +52,7 @@ var _DEFAULTS = {
   promoText: "",
   rewardImage: "",
   rewardTitle: "打赏作者 · 支持开源",
-  rewardDesc: "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
+  rewardDesc: "开源维护不易，觉得有用就支持一下作者吧 ☕",
   footerText: "Powered by RCJ Exam Template",
   timerSeconds: 180,
   // 套题模考默认预设（可由 template-config.json 的 examPreset 覆盖，实现"一键标准卷"）

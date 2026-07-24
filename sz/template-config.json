@@ -11,7 +11,7 @@
   "promoText": "本题库为线上开源项目，已包含全部题库，<b>双击浏览器即用、零安装</b>。离线版本，不受网络限制、可自由修改，进阶可选 <b>Anki 记忆卡组</b> 辅助背诵。去闲鱼搜 <b>RCJ9527</b>。",
   "rewardImage": "wechat-reward.png?v=2",
   "rewardTitle": "打赏作者 · 支持开源",
-  "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
+  "rewardDesc": "开源维护不易，觉得有用就支持一下作者吧 ☕",
   "footerText": "© 辅警真题卡组 · 开源离线版 · 打开链接即用",
   "timerSeconds": 180,
   "enabledModules": {
