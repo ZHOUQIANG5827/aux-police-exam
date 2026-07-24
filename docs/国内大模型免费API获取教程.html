@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>国内大模型免费 API 获取教程</title>
+<style>
+  :root{ --blue:#0b62c4; --bg:#f6f8fb; --card:#fff; --line:#e3e8ef; --text:#1f2937; --mut:#6b7280; }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--text);line-height:1.7;}
+  .wrap{max-width:880px;margin:0 auto;padding:28px 20px 60px;}
+  h1{font-size:24px;margin:0 0 4px;}
+  .sub{color:var(--mut);margin:0 0 18px;font-size:14px;}
+  .note{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 14px;font-size:13px;color:#9a3412;margin:14px 0;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  h2{font-size:18px;margin:22px 0 8px;color:var(--blue);}
+  h3{font-size:15px;margin:14px 0 6px;}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:#eef4fb;font-weight:700;}
+  code{background:#eef2f7;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#0b3b73;}
+  a{color:var(--blue);}
+  ol,ul{margin:8px 0 8px 22px;padding:0;}
+  li{margin:5px 0;}
+  .tag{display:inline-block;background:#e7f0ff;color:var(--blue);border-radius:999px;padding:1px 9px;font-size:12px;margin:2px 3px 2px 0;}
+  .tip{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:10px 14px;font-size:13px;margin:10px 0;}
+  .warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:10px 14px;font-size:13px;margin:10px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📖 国内大模型免费 API 获取教程</h1>
+  <p class="sub">配套《深圳辅警面试真题卡组 · 离线版》的 AI 点评 / 语音转写功能</p>
+
+  <div class="note">
+    ⚠️ 本刷题站的「AI 点评」「语音转写」需要<b>你自己的大模型 API Key</b>。
+    Key 只存在你本机浏览器（localStorage），<b>不会上传给任何人</b>，请放心填写。
+    本教程只讲「怎么免费拿 Key」，各平台<b>免费额度会随政策变动</b>，具体以官网为准。
+  </div>
+
+  <h2>一、先分清两种用途</h2>
+  <div class="card">
+    <p>本站的接口分两块，填的 Key 可以相同也可以不同：</p>
+    <ul>
+      <li><b>☁️ 语音转写（ASR）</b>：把你的录音变成文字。需要支持「语音识别」的接口，目前最稳的是
+        <span class="tag">硅基流动 SenseVoice</span>（模型 <code>FunAudioLLM/SenseVoiceSmall</code>）。
+        其它纯对话大模型（通义/智谱/DeepSeek 等）没有语音识别接口，<b>不能</b>用于转写。</li>
+      <li><b>🤖 AI 点评</b>：把「题目 + 你的口述文字」发给大模型打分。只要是 <b>OpenAI 兼容的对话接口</b>都能用，
+        硅基流动 / 通义千问 / 智谱 GLM / DeepSeek / 月之暗面 / 腾讯混元 / 火山豆包 等都可。</li>
+    </ul>
+    <div class="tip">💡 省事方案：直接去 <b>硅基流动（siliconflow.cn）</b> 申请一个 Key，<b>转写和点评都用它</b>，
+      模型分别填 <code>FunAudioLLM/SenseVoiceSmall</code> 和 <code>deepseek-ai/DeepSeek-V3</code>（或 <code>Qwen/Qwen2.5-7B-Instruct</code> 等）。一个 Key 全搞定。</div>
+  </div>
+
+  <h2>二、常见国内平台（免费额度一览）</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>平台</th><th>官网</th><th>免费额度（以官网为准）</th><th>能做</th><th>API Base URL</th><th>模型示例</th></tr></thead>
+      <tbody>
+        <tr><td><b>硅基流动</b><br>SiliconFlow</td><td><code>siliconflow.cn</code></td>
+            <td>注册即送体验额度，含 SenseVoice 语音识别 + 多个对话模型</td>
+            <td>转写 ✅<br>点评 ✅</td><td><code>https://api.siliconflow.cn/v1</code></td>
+            <td>转写 <code>FunAudioLLM/SenseVoiceSmall</code><br>点评 <code>deepseek-ai/DeepSeek-V3</code></td></tr>
+        <tr><td><b>阿里云百炼</b><br>通义千问</td><td><code>bailian.aliyun.com</code></td>
+            <td>新用户送调用额度；qwen 系列有免费/低价档</td>
+            <td>点评 ✅</td><td><code>https://dashscope.aliyun.com/compatible-mode/v1</code></td>
+            <td><code>qwen-plus</code> / <code>qwen-turbo</code> / <code>qwen-max</code></td></tr>
+        <tr><td><b>智谱 AI</b><br>BigModel / GLM</td><td><code>open.bigmodel.cn</code></td>
+            <td>GLM-4-Flash 等长期免费档；新用户送额度</td>
+            <td>点评 ✅</td><td><code>https://open.bigmodel.cn/api/paas/v4</code></td>
+            <td><code>glm-4-flash</code> / <code>glm-4-plus</code></td></tr>
+        <tr><td><b>深度求索</b><br>DeepSeek</td><td><code>platform.deepseek.com</code></td>
+            <td>新用户送充值额度（常有限时赠送）</td>
+            <td>点评 ✅<br>（无语音接口）</td><td><code>https://api.deepseek.com/v1</code></td>
+            <td><code>deepseek-chat</code> / <code>deepseek-reasoner</code></td></tr>
+        <tr><td><b>月之暗面</b><br>Moonshot / Kimi</td><td><code>platform.moonshot.cn</code></td>
+            <td>新用户送额度</td>
+            <td>点评 ✅</td><td><code>https://api.moonshot.cn/v1</code></td>
+            <td><code>moonshot-v1-8k</code></td></tr>
+        <tr><td><b>腾讯混元</b><br>Hunyuan</td><td><code>console.cloud.tencent.com/hunyuan</code></td>
+            <td>有免费试用额度</td>
+            <td>点评 ✅</td><td><code>https://api.hunyuan.cloud.tencent.com/v1</code></td>
+            <td><code>hunyuan-lite</code> / <code>hunyuan-turbo</code></td></tr>
+        <tr><td><b>火山方舟</b><br>豆包 Doubao</td><td><code>console.volcengine.com/ark</code></td>
+            <td>新用户送体验金</td>
+            <td>点评 ✅</td><td><code>https://ark.cn-beijing.volces.com/api/v3</code></td>
+            <td><code>doubao-pro</code></td></tr>
+      </tbody>
+    </table>
+    <p class="sub">注：以上为常见档位，<b>具体免费额度、可用模型、接口地址以各平台官网「帮助 / 文档」页为准</b>，本表不承诺实时准确。</p>
+  </div>
+
+  <h2>三、通用拿 Key 步骤（每个平台都差不多）</h2>
+  <div class="card">
+    <ol>
+      <li>打开上面的官网，用手机号注册 / 登录。</li>
+      <li>在左侧菜单找「<b>API 密钥 / API Key / 访问控制 / 令牌 / 鉴权</b>」。</li>
+      <li>点「<b>创建密钥 / 新建 Key</b>」，生成后<b>立刻复制</b>保存（通常只显示一次，形如 <code>sk-xxxx</code>）。</li>
+      <li>查看「<b>免费额度 / 体验额度 / 资源包</b>」：新用户一般送几元到几十元，或某些模型直接免费。</li>
+      <li>回到刷题站 ⚙️ 语音设置，把 Key + 模型名 + Base URL 填进去，点「保存」。</li>
+    </ol>
+  </div>
+
+  <h2>四、在本刷题站怎么填</h2>
+  <div class="card">
+    <h3>① 语音转写（录音→文字）</h3>
+    <ul>
+      <li>转写引擎选 ☁️ <b>云端 API</b></li>
+      <li>API Base URL：<code>https://api.siliconflow.cn/v1</code></li>
+      <li>API Key：你的硅基流动 Key</li>
+      <li>模型名：<code>FunAudioLLM/SenseVoiceSmall</code></li>
+    </ul>
+    <h3>② AI 点评（文字→打分）</h3>
+    <ul>
+      <li>先勾选「✅ 启用 AI 点评」</li>
+      <li>API Base URL / Key / 模型名：填你选的平台（硅基流动可复用上面的 Key）</li>
+      <li>模型名示例：<code>deepseek-ai/DeepSeek-V3</code> / <code>qwen-plus</code> / <code>glm-4-flash</code></li>
+    </ul>
+    <div class="tip">💡 填完点「🧪 测试连接」验证。转写完题目，再点「🤖 AI 点评」即可出分。</div>
+  </div>
+
+  <h2>五、常见问题</h2>
+  <div class="card">
+    <ul>
+      <li><b>提示 401 / Key 无效</b>：多半是复制时带进了空格，或 Key 已过期 / 额度用完。重新复制完整 Key 再试。</li>
+      <li><b>手机打不开 / 转写没反应</b>：推荐用☁️云端 API（国内直连），比浏览器内置/Whisper 离线兼容性更好；华为/微信内置浏览器也支持。</li>
+      <li><b>只想点评、不录音</b>：可以手动在「自定义题」里贴文字，再点 AI 点评，不一定要录。。</li>
+      <li><b>配置不生效</b>：更新题库后请按 <code>Ctrl+F5</code>（Mac：<code>Cmd+Shift+R</code>）硬刷新。</li>
+    </ul>
+  </div>
+
+  <div class="warn">
+    🔒 安全提醒：Key 仅存你自己的浏览器，<b>不要截图发给别人、不要填到不明网站</b>。
+    如担心泄露，去平台「删除 / 重置密钥」即可，旧 Key 立刻失效。
+  </div>
+</div>
+</body>
+</html>

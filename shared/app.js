@@ -59,7 +59,7 @@ var _DEFAULTS = {
   examPreset: { label: "标准模考", single: 36, multi: 12, bool: 12, minutes: 60, typing: true, typingMinutes: 10 },
   // 打字题范文（套题模考附加项，不计入客观题分）
   typingText: "辅警是公安机关的重要辅助力量，承担着维护社会治安、服务人民群众的重要职责。每一位辅警都应当以高度的责任感和使命感，认真履行岗位职责，严格遵守工作纪律，做到忠诚、干净、担当，为建设平安中国贡献自己的力量。",
-  enabledModules: { promo: true, xianyu: false, reward: false, progress: true, themeToggle: true, record: true },
+  enabledModules: { promo: false, xianyu: false, reward: false, progress: true, themeToggle: true, record: true },
   defaultPage: "written",
   // ===== 重新设计：真题优先 + 机考/非机考通用 =====
   brandName: "辅警真题卡组",
@@ -396,7 +396,7 @@ function buildModeTabs() {
   var box = document.getElementById("modeTabs");
   box.innerHTML = "";
   var tabs = [];
-  if (hasW || singleMode === "written") tabs.push({ m: "written", label: "📖 笔试真题" });
+  if ((hasW || singleMode === "written") && !CONFIG.hideWritten) tabs.push({ m: "written", label: "📖 笔试真题" });
   if (hasI || singleMode === "interview") tabs.push({ m: "interview", label: "🎤 面试真题" });
   if (tabs.length <= 1) { box.style.display = "none"; return; }
   box.style.display = "inline-flex";
@@ -1445,3 +1445,103 @@ window.addEventListener("DOMContentLoaded", function () {
   var _idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 120); };
   _idle(function () { buildFilterRows(); updateStats(); });
 });
+
+/* ===================== AI 点评（自备 Key，仅本机） ===================== */
+(function () {
+  var AI_KEY = "rcj_ai_settings";
+  function loadAi() { try { return JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch (e) { return {}; } }
+  function saveAi(s) { try { localStorage.setItem(AI_KEY, JSON.stringify(s)); } catch (e) {} }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var ov = document.getElementById("aiSettingsOverlay");
+  var btn = document.getElementById("aiSettingsBtn");
+  var saveBtn = document.getElementById("aiSettingsSave");
+  var closeBtn = document.getElementById("aiSettingsClose");
+  var aiBtn = document.getElementById("aiReviewBtn");
+  var myAnswer = document.getElementById("myAnswer");
+  var resultBox = document.getElementById("aiReviewResult");
+
+  function openSettings() {
+    var s = loadAi();
+    document.getElementById("aiEnabled").checked = !!s.enabled;
+    document.getElementById("aiBaseUrl").value = s.baseUrl || "";
+    document.getElementById("aiApiKey").value = s.apiKey || "";
+    document.getElementById("aiModel").value = s.model || "";
+    ov.classList.add("show");
+  }
+  function closeSettings() { ov.classList.remove("show"); }
+
+  if (btn) btn.addEventListener("click", openSettings);
+  if (closeBtn) closeBtn.addEventListener("click", closeSettings);
+  if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) closeSettings(); });
+
+  if (saveBtn) saveBtn.addEventListener("click", function () {
+    var s = {
+      enabled: document.getElementById("aiEnabled").checked,
+      baseUrl: document.getElementById("aiBaseUrl").value.trim(),
+      apiKey: document.getElementById("aiApiKey").value.trim(),
+      model: document.getElementById("aiModel").value.trim()
+    };
+    if (s.enabled && !s.baseUrl) { alert("已启用 AI 点评，但缺少 API Base URL（例如 https://api.siliconflow.cn/v1）"); return; }
+    if (s.enabled && !s.apiKey) { alert("已启用 AI 点评，但缺少 API Key"); return; }
+    if (s.enabled && !s.model) { alert("已启用 AI 点评，但缺少模型名"); return; }
+    saveAi(s);
+    closeSettings();
+  });
+
+  if (aiBtn) aiBtn.addEventListener("click", function () {
+    var s = loadAi();
+    if (!s.enabled) { alert("AI 点评未启用：请点工具栏「⚙️ AI 设置」勾选启用并填入你的 API Key。"); return; }
+    if (!s.apiKey || !s.baseUrl || !s.model) { alert("AI 点评配置不完整：请点「⚙️ AI 设置」补全 API Base URL / Key / 模型名。"); return; }
+
+    var stemEl = document.getElementById("randomModalQuestion");
+    var stem = stemEl ? stemEl.innerText.trim() : "";
+    var answer = (myAnswer && myAnswer.value.trim()) || "";
+    if (!answer) {
+      var tc = document.getElementById("transcriptContent");
+      answer = tc ? tc.innerText.trim() : "";
+    }
+    if (!answer) { alert("还没有可点评的内容：请先录音转写，或在「我的作答」里写下你的回答。"); return; }
+
+    resultBox.style.display = "block";
+    resultBox.innerHTML = '<div class="ai-review-loading">⏳ AI 点评中…（取决于你的网络与模型速度）</div>';
+    aiBtn.disabled = true;
+
+    var sys = "你是经验丰富的辅警招聘面试考官。请基于结构化面试的评分要点，对考生的口头作答进行点评：1) 内容要点是否完整准确；2) 逻辑结构与表达；3) 针对性改进建议；4) 给出 0-100 的模拟评分并说明扣分点。语气专业、具体、可操作。";
+    var user = "【题目】\n" + stem + "\n\n【考生作答】\n" + answer;
+
+    var url = s.baseUrl.replace(/\/+$/, "") + "/chat/completions";
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
+      body: JSON.stringify({ model: s.model, messages: [{ role: "system", content: sys }, { role: "user", content: user }], temperature: 0.7 })
+    })
+      .then(function (r) {
+        if (!r.ok) return r.text().then(function (t) { throw new Error("HTTP " + r.status + "：" + t.slice(0, 200)); });
+        return r.json();
+      })
+      .then(function (data) {
+        var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+        if (!txt) { resultBox.innerHTML = '<div class="ai-review-err">⚠️ 模型返回为空，可能是模型名在该平台未开通。请到「⚙️ AI 设置」换一个模型。</div>'; return; }
+        resultBox.innerHTML = '<div class="ai-review-head2">🤖 AI 点评结果</div><div class="ai-review-body">' + escapeHtml(txt).replace(/\n/g, "<br>") + '</div>';
+      })
+      .catch(function (err) {
+        resultBox.innerHTML = '<div class="ai-review-err">⚠️ AI 点评失败：' + escapeHtml(err.message) + '<br><br>排查：① Key 是否正确（去平台控制台复制完整 sk- 开头 Key）；② 账户是否有额度；③ 模型是否可访问；④ 浏览器能否访问该 API 域名（国内直连优先选硅基流动）。</div>';
+      })
+      .finally(function () { aiBtn.disabled = false; });
+  });
+
+  // 换一题时清空上次的「我的作答」与点评结果
+  var _origShow = window.showRandomQuestion;
+  if (typeof _origShow === "function") {
+    window.showRandomQuestion = function () {
+      if (myAnswer) myAnswer.value = "";
+      if (resultBox) { resultBox.style.display = "none"; resultBox.innerHTML = ""; }
+      return _origShow.apply(this, arguments);
+    };
+  }
+})();

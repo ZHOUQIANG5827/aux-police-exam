@@ -6,19 +6,32 @@ window.SITE_CONFIG = {
   "cover": "cover.png?v=2",
   "themeColor": "#1e3a5f",
   "contact": "",
-  "xianyuCode": "RCJ9527",
-  "promoTitle": "作者 · rcj9527",
-  "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。",
-  "rewardImage": "wechat-reward.png?v=2",
-  "rewardTitle": "打赏作者 · 支持开源",
-  "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
-  "footerText": "© 辅警真题卡组 · 开源离线版",
+  "xianyuCode": "",
+  "promoTitle": "",
+  "promoText": "",
+  "rewardImage": "",
+  "rewardTitle": "",
+  "rewardDesc": "",
+  "footerText": "© 辅警真题卡组 · 在线开源版",
   "timerSeconds": 180,
-  "enabledModules": { "promo": true, "xianyu": true, "reward": false, "progress": true, "themeToggle": true, "record": false },
+  "enabledModules": {
+    "promo": false,
+    "xianyu": false,
+    "reward": false,
+    "progress": true,
+    "themeToggle": true,
+    "record": false
+  },
   "defaultPage": "written",
   "examType": "paper",
   "examYear": "2024-2026",
   "realQuestions": true,
   "realQuestionsNote": "本题库为广东省公安机关警务辅助人员招聘考试通用真题（与惠州同源广东省标），适用于东莞 / 佛山 / 珠海 / 广州等广东多城辅警笔试，内容为真实省标真题、非按城市拼凑洗白。",
-  "modules": { "mockExam": false, "targeted": true, "random": true, "written": true, "interview": false }
+  "modules": {
+    "mockExam": false,
+    "targeted": true,
+    "random": true,
+    "written": true,
+    "interview": false
+  }
 };

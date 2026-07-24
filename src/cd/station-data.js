@@ -1,4 +1,54 @@
-window.SITE_CONFIG = {"siteTitle": "成都辅警练习题库", "siteEmoji": "🐼", "subtitle": "笔试练习题库 · 公开练习卷整理 · 离线可用", "logo": "", "cover": "cover.png?v=2", "themeColor": "#1e3a5f", "contact": "", "xianyuCode": "RCJ9527", "promoTitle": "作者 · rcj9527", "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。", "rewardImage": "wechat-reward.png?v=2", "rewardTitle": "打赏作者 · 支持开源", "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕", "footerText": "© 成都辅警练习题库 · 开源离线版", "timerSeconds": 180, "enabledModules": {"promo": true, "xianyu": true, "reward": true, "progress": true, "themeToggle": true, "record": true}, "defaultPage": "written", "examType": "practice", "examYear": "2024-2026", "realQuestions": false, "realQuestionsNote": "本站为成都辅警笔试练习题库，题目依据公开考试大纲与公开练习卷（如考考公务员 kkgwy 等）整理，非官方真题；用于备考练习，助你熟悉考点与题型分布。", "modules": {"mockExam": true, "targeted": true, "random": true, "written": true, "interview": true}, "datasets": [{"mode": "written", "globalName": "DATA_WRITTEN", "json": "data-written.json", "js": "data-written.js"}, {"mode": "interview", "globalName": "DATA_INTERVIEW", "json": "data-interview.json", "js": "data-interview.js"}]};
+window.SITE_CONFIG = {
+  "siteTitle": "成都辅警练习题库",
+  "siteEmoji": "🐼",
+  "subtitle": "笔试练习题库 · 公开练习卷整理 · 离线可用",
+  "logo": "",
+  "cover": "cover.png?v=2",
+  "themeColor": "#1e3a5f",
+  "contact": "",
+  "xianyuCode": "",
+  "promoTitle": "",
+  "promoText": "",
+  "rewardImage": "",
+  "rewardTitle": "",
+  "rewardDesc": "",
+  "footerText": "© 辅警真题卡组 · 在线开源版",
+  "timerSeconds": 180,
+  "enabledModules": {
+    "promo": false,
+    "xianyu": false,
+    "reward": false,
+    "progress": true,
+    "themeToggle": true,
+    "record": true
+  },
+  "defaultPage": "written",
+  "examType": "practice",
+  "examYear": "2024-2026",
+  "realQuestions": false,
+  "realQuestionsNote": "本站为成都辅警笔试练习题库，题目依据公开考试大纲与公开练习卷（如考考公务员 kkgwy 等）整理，非官方真题；用于备考练习，助你熟悉考点与题型分布。",
+  "modules": {
+    "mockExam": true,
+    "targeted": true,
+    "random": true,
+    "written": true,
+    "interview": true
+  },
+  "datasets": [
+    {
+      "mode": "written",
+      "globalName": "DATA_WRITTEN",
+      "json": "data-written.json",
+      "js": "data-written.js"
+    },
+    {
+      "mode": "interview",
+      "globalName": "DATA_INTERVIEW",
+      "json": "data-interview.json",
+      "js": "data-interview.js"
+    }
+  ]
+};
 window.DATA_WRITTEN = [
 {
 "batch": "法律基础",

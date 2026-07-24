@@ -40,6 +40,7 @@
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
       <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
       <button class="action-btn" id="focusModeBtn">🖥️ 全屏刷题</button>
+      <button class="action-btn" id="aiSettingsBtn" title="AI 点评设置（自备 Key）">⚙️ AI 设置</button>
       <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版</button>
       <button class="action-btn reward-btn" id="rewardBtn">💝 打赏作者</button>
       <span class="result-count" id="resultCount"></span>
@@ -174,11 +175,20 @@
         <button class="record-ctrl-btn idle" id="recordCtrlBtn">🎙️ 开始录音演练</button>
         <audio class="local-audio-player" id="localAudioPlayer" controls></audio>
         <button class="record-ctrl-btn download-record-btn" id="downloadRecordBtn" type="button" style="display:none;">💾 下载录音(MP3)</button>
-        <div class="transcript-box" id="transcriptBox">
-          <div class="transcript-title">📝 语音转文字实时预览</div>
-          <div class="transcript-content" id="transcriptContent"></div>
-          <div class="transcript-note" id="transcriptNote">当前浏览器不支持语音转文字，仅保留录音回听功能</div>
-        </div>
+          <div class="transcript-box" id="transcriptBox">
+            <div class="transcript-title">📝 语音转文字实时预览</div>
+            <div class="transcript-content" id="transcriptContent"></div>
+            <div class="transcript-note" id="transcriptNote">当前浏览器不支持语音转文字，仅保留录音回听功能</div>
+          </div>
+          <div class="ai-review-zone" id="aiReviewZone">
+            <div class="ai-review-head">
+              <span class="ai-review-title">🤖 AI 点评（自备 Key · 仅本机）</span>
+              <button class="ai-review-btn" id="aiReviewBtn" type="button">🤖 AI 点评</button>
+            </div>
+            <textarea class="ai-myanswer" id="myAnswer" placeholder="这里会自动填入你刚才的口述转写；也可手动修改，或直接粘贴你的作答要点，再点「🤖 AI 点评」"></textarea>
+            <div class="ai-review-result" id="aiReviewResult" style="display:none;"></div>
+            <div class="ai-review-note">💡 建议用<b>离线版</b>做 AI 点评（数据不出本机更安心）；线上也能用，但建议<b>定期更换 API Key</b>。Key 仅存你本机浏览器，不会上传。</div>
+          </div>
       </div>
 
       <div class="random-modal-badges" id="randomModalBadges"></div>
@@ -193,6 +203,28 @@
       <button class="random-modal-btn random-modal-btn-reveal" id="randomModalSubmit" style="display:none;">✅ 提交答案</button>
       <button class="random-modal-btn random-modal-btn-close" id="randomModalDone">✕</button>
     </div>
+  </div>
+</div>
+<!-- ===== AI 点评设置（自备 Key，仅本机） ===== -->
+<div class="ai-settings-overlay" id="aiSettingsOverlay">
+  <div class="ai-settings-modal">
+    <div class="ai-settings-title">🤖 AI 点评设置（自备 Key）</div>
+    <p class="ai-settings-sub">AI 点评需你自己的大模型 API Key，<b>仅保存在本机浏览器</b>，不会上传，也不会被他人看到。</p>
+    <label class="ai-chk"><input type="checkbox" id="aiEnabled"> ✅ 启用 AI 点评</label>
+    <label class="ai-field">API Base URL
+      <input class="ai-input" id="aiBaseUrl" placeholder="https://api.siliconflow.cn/v1">
+    </label>
+    <label class="ai-field">API Key（sk- 开头）
+      <input class="ai-input" id="aiApiKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off">
+    </label>
+    <label class="ai-field">模型名
+      <input class="ai-input" id="aiModel" placeholder="deepseek-ai/DeepSeek-V3 或 Qwen/Qwen2.5-7B-Instruct">
+    </label>
+    <div class="ai-settings-actions">
+      <button class="ai-btn ghost" id="aiSettingsClose" type="button">关闭</button>
+      <button class="ai-btn primary" id="aiSettingsSave" type="button">保存</button>
+    </div>
+    <div class="ai-settings-hint">📘 <a href="/docs/国内大模型免费API获取教程.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a><br>💡 建议用离线版做 AI 点评；线上也能用，但建议定期更换 API Key。</div>
   </div>
 </div>
 <script src="station-data.js"></script>

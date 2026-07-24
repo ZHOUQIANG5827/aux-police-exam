@@ -6,19 +6,32 @@ window.SITE_CONFIG = {
   "cover": "cover.png?v=2",
   "themeColor": "#1e3a5f",
   "contact": "",
-  "xianyuCode": "RCJ9527",
-  "promoTitle": "作者 · rcj9527",
-  "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。",
-  "rewardImage": "wechat-reward.png?v=2",
-  "rewardTitle": "打赏作者 · 支持开源",
-  "rewardDesc": "如果这个开源题库对你有帮助，请作者喝杯奶茶 ☕",
-  "footerText": "© 辅警真题卡组 · 开源离线版",
+  "xianyuCode": "",
+  "promoTitle": "",
+  "promoText": "",
+  "rewardImage": "",
+  "rewardTitle": "",
+  "rewardDesc": "",
+  "footerText": "© 辅警真题卡组 · 在线开源版",
   "timerSeconds": 180,
-  "enabledModules": { "promo": true, "xianyu": true, "reward": false, "progress": true, "themeToggle": true, "record": false },
+  "enabledModules": {
+    "promo": false,
+    "xianyu": false,
+    "reward": false,
+    "progress": true,
+    "themeToggle": true,
+    "record": false
+  },
   "defaultPage": "written",
   "examType": "computer",
   "examYear": "2024-2026",
   "realQuestions": true,
   "realQuestionsNote": "惠州辅警真实考试官方真题，无拼凑与洗白内容。",
-  "modules": { "mockExam": true, "targeted": true, "random": true, "written": true, "interview": true }
+  "modules": {
+    "mockExam": true,
+    "targeted": true,
+    "random": true,
+    "written": true,
+    "interview": true
+  }
 };
