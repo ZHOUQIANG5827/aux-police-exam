@@ -18,7 +18,7 @@
   "vars": {
     "ALLOW_IPS": "",                       // 后台设：作者本人 IP 白名单，逗号分隔，如 "1.2.3.4,5.6.7.8"
     "DAILY_LIMIT": "30",                   // 可选覆盖：每个访客每日最多浏览页数
-    "VIP_SECRET": "rcj9527-vip-change-me"  // 可选覆盖：?vip=该串 一次即永久免限制（见函数内说明）
+    "VIP_SECRET": "rcj9527-vip-KZ9qu6kWkSH1uujsbn_3_QL6"  // 可选覆盖：?vip=该串 一次即永久免限制（见函数内说明）
   }
   // —— 真·按 IP 硬限制（KV）：functions/_middleware.js 读取 env.VISIT_KV ——
   // 未绑定 KV 时函数自动回退「Cookie 软限制」，不影响现有部署。绑定后自动切换为按 IP 硬限制。

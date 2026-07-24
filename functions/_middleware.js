@@ -42,7 +42,7 @@ export async function onRequest(context) {
 
   // 配置（硬编码默认值，确保部署即生效；若 Cloudflare 后台设了同名环境变量则优先覆盖）
   // ⚠️ VIP_SECRET 写在公开仓库里，属「软豁免」；真正私有豁免请用 ALLOW_IPS。
-  const VIP_SECRET = (env && env.VIP_SECRET) || "rcj9527-vip-change-me";
+  const VIP_SECRET = (env && env.VIP_SECRET) || "rcj9527-vip-KZ9qu6kWkSH1uujsbn_3_QL6";
   const DAILY_LIMIT = parseInt((env && env.DAILY_LIMIT) || "30", 10);
   const allowIps = (env && env.ALLOW_IPS)
     ? (env.ALLOW_IPS).split(",").map((s) => s.trim()).filter(Boolean)
