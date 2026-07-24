@@ -6,22 +6,15 @@ window.SITE_CONFIG = {
   "cover": "cover.png?v=2",
   "themeColor": "#1e3a5f",
   "contact": "",
-  "xianyuCode": "",
+  "xianyuCode": "RCJ9527",
   "promoTitle": "",
-  "promoText": "",
+  "promoText": "本题库为线上开源项目，已包含全部题库，<b>双击浏览器即用、零安装</b>。离线版本，不受网络限制、可自由修改，进阶可选 <b>Anki 记忆卡组</b> 辅助背诵。去闲鱼搜 <b>RCJ9527</b>。",
   "rewardImage": "",
   "rewardTitle": "",
   "rewardDesc": "",
   "footerText": "© 辅警真题卡组 · 在线开源版",
   "timerSeconds": 180,
-  "enabledModules": {
-    "promo": false,
-    "xianyu": false,
-    "reward": false,
-    "progress": true,
-    "themeToggle": true,
-    "record": true
-  },
+  "enabledModules": {"promo":true,"xianyu":true,"reward":true,"progress":true,"themeToggle":true,"record":true},
   "defaultPage": "interview",
   "datasets": [
     {

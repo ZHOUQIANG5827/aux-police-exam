@@ -23,22 +23,15 @@ window.SITE_CONFIG = {
   "cover": "cover.png?v=2",
   "themeColor": "#1e3a5f",
   "contact": "",
-  "xianyuCode": "",
+  "xianyuCode": "RCJ9527",
   "promoTitle": "",
-  "promoText": "",
+  "promoText": "线上预览版网络可能不稳定，建议用离线版（双击即用、可自由修改）。需要完整题库或私人定制，去🔍闲鱼搜索用户名 <b>RCJ9527</b>。",
   "rewardImage": "",
   "rewardTitle": "",
   "rewardDesc": "",
   "footerText": "© 辅警真题卡组 · 在线开源版",
   "timerSeconds": 180,
-  "enabledModules": {
-    "promo": false,
-    "xianyu": false,
-    "reward": false,
-    "progress": true,
-    "themeToggle": true,
-    "record": true
-  },
+  "enabledModules": {"promo":true,"xianyu":true,"reward":true,"progress":true,"themeToggle":true,"record":true},
   "defaultPage": "interview",
   "datasets": [
     {
