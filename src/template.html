@@ -40,7 +40,7 @@
       <button class="action-btn" id="collapseAll">⏫ 折叠全部</button>
       <button class="action-btn" id="markModeBtn">🟢 只看未掌握</button>
       <button class="action-btn" id="focusModeBtn">🖥️ 全屏刷题</button>
-      <button class="action-btn" id="aiSettingsBtn" title="AI 点评设置（自备 Key）">⚙️ AI 设置</button>
+      <button class="action-btn" id="aiSettingsBtn" title="语音 & AI 点评设置（自备 Key）">⚙️ 语音 & AI 设置</button>
       <button class="action-btn download-offline-btn" id="downloadOfflineBtn">🔑 获取完整版</button>
       <button class="action-btn reward-btn" id="rewardBtn">💝 打赏作者</button>
       <span class="result-count" id="resultCount"></span>
@@ -205,11 +205,37 @@
     </div>
   </div>
 </div>
-<!-- ===== AI 点评设置（自备 Key，仅本机） ===== -->
+<!-- ===== 语音 & AI 点评设置（自备 Key，仅本机） ===== -->
 <div class="ai-settings-overlay" id="aiSettingsOverlay">
   <div class="ai-settings-modal">
-    <div class="ai-settings-title">🤖 AI 点评设置（自备 Key）</div>
-    <p class="ai-settings-sub">AI 点评需你自己的大模型 API Key，<b>仅保存在本机浏览器</b>，不会上传，也不会被他人看到。</p>
+    <div class="ai-settings-title">🎙️ 语音 & AI 点评设置（自备 Key）</div>
+    <p class="ai-settings-sub">语音转写和 AI 点评需你自己的 API Key，<b>Key 仅保存在本机浏览器</b>，不会上传给任何人。</p>
+
+    <div class="ai-section-title">🎙️ 语音转写引擎</div>
+    <div class="ai-engine-opt">
+      <label><input type="radio" name="aiAsrEngine" value="webspeech"> 🌐 浏览器内置（免费，部分手机/微信不支持）</label>
+      <label><input type="radio" name="aiAsrEngine" value="cloud"> ☁️ 云端 API（国内直连·推荐）</label>
+    </div>
+    <div class="ai-settings-hint" style="border:none;padding:0;margin:8px 0 12px;">
+      浏览器内置无需 Key，但 iOS Safari / 微信内置常无法转写；云端 API 需配置 Key，几乎全平台可用。
+    </div>
+
+    <div id="aiAsrCloudPanel">
+      <label class="ai-field">API Base URL
+        <input class="ai-input" id="aiAsrBaseUrl" placeholder="https://api.siliconflow.cn/v1">
+      </label>
+      <label class="ai-field">API Key
+        <input class="ai-input" id="aiAsrApiKey" type="password" placeholder="sk-...（仅存本机）" autocomplete="off">
+      </label>
+      <label class="ai-field">模型名
+        <input class="ai-input" id="aiAsrModel" placeholder="FunAudioLLM/SenseVoiceSmall">
+      </label>
+      <div class="ai-settings-hint" style="border:none;padding:0;margin:8px 0 12px;">
+        推荐硅基流动 SenseVoice：<code>https://api.siliconflow.cn/v1</code> + <code>FunAudioLLM/SenseVoiceSmall</code>
+      </div>
+    </div>
+
+    <div class="ai-section-title">🤖 AI 点评</div>
     <label class="ai-chk"><input type="checkbox" id="aiEnabled"> ✅ 启用 AI 点评</label>
     <label class="ai-field">API Base URL
       <input class="ai-input" id="aiBaseUrl" placeholder="https://api.siliconflow.cn/v1">
@@ -220,11 +246,19 @@
     <label class="ai-field">模型名
       <input class="ai-input" id="aiModel" placeholder="deepseek-ai/DeepSeek-V3 或 Qwen/Qwen2.5-7B-Instruct">
     </label>
+
     <div class="ai-settings-actions">
+      <button class="ai-btn ghost" id="aiTestBtn" type="button">🧪 测试连接</button>
+      <span id="aiTestResult" class="ai-test-result"></span>
+    </div>
+    <div class="ai-settings-actions" style="margin-top:0;">
       <button class="ai-btn ghost" id="aiSettingsClose" type="button">关闭</button>
       <button class="ai-btn primary" id="aiSettingsSave" type="button">保存</button>
     </div>
-    <div class="ai-settings-hint">📘 <a href="/docs/国内大模型免费API获取教程.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a><br>💡 建议用离线版做 AI 点评；线上也能用，但建议定期更换 API Key。</div>
+    <div class="ai-settings-hint">
+      📘 <a href="/docs/国内大模型免费API获取教程.html" target="_blank" rel="noopener">国内大模型免费 API 获取教程</a><br>
+      💡 建议用离线版做 AI 点评；线上也能用，但建议定期更换 API Key。
+    </div>
   </div>
 </div>
 <!--STATION_DATA-->

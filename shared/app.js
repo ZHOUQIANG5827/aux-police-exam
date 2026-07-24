@@ -634,9 +634,18 @@ function initAudioRecorderSystem() {
         gainNode.connect(audioCtx.destination);
         isRecording = true;
         recordBtn.textContent = "⏹️ 停止录音并保存(MP3)"; recordBtn.className = "record-ctrl-btn recording";
-        finalTranscript = ""; transcriptContent.innerHTML = ""; transcriptBox.classList.add("show"); transcriptNote.style.display = "none";
-        speechRecognizer = initSpeechRecognizer();
-        if (speechRecognizer) { try { speechRecognizer.start(); } catch (e1) {} }
+        finalTranscript = ""; transcriptContent.innerHTML = ""; transcriptBox.classList.add("show");
+        // 根据设置决定用浏览器内置转写还是云端 ASR
+        var _asrPref = { engine: "webspeech" };
+        try { var _tmp = JSON.parse(localStorage.getItem("rcj_web_asr_v1") || "{}"); if (_tmp.asrEngine) _asrPref.engine = _tmp.asrEngine; } catch (_e) {}
+        if (_asrPref.engine === "cloud") {
+          transcriptNote.style.display = "block";
+          transcriptNote.textContent = "🎙️ 录音中…停止后将调用云端 API 转写（请确保已配置 Key）";
+        } else {
+          transcriptNote.style.display = "none";
+          speechRecognizer = initSpeechRecognizer();
+          if (speechRecognizer) { try { speechRecognizer.start(); } catch (e1) {} }
+        }
       }).catch(function (err) {
         alert("麦克风调用失败！请确保已授予麦克风权限，或在 HTTPS 线上安全环境打开网站。本地双击部分浏览器受安全策略限制不可直接调用录音。");
       });
@@ -680,6 +689,8 @@ function stopAndEncodeRecording() {
   downloadRecordBtn.style.display = "inline-block";
   recordBtn.textContent = "🎙️ 开始录音演练"; recordBtn.className = "record-ctrl-btn idle";
   if (speechRecognizer) { try { speechRecognizer.onend = null; speechRecognizer.stop(); } catch (e8) {} }
+  // 若使用云端 ASR，把 MP3 发过去转写
+  try { if (window.__rcjRunCloudAsr && lastAudioBlob) window.__rcjRunCloudAsr(lastAudioBlob); } catch (_asr) {}
 }
 
 function resetAudioRecorderUI() {
@@ -1446,31 +1457,90 @@ window.addEventListener("DOMContentLoaded", function () {
   _idle(function () { buildFilterRows(); updateStats(); });
 });
 
-/* ===================== AI 点评（自备 Key，仅本机） ===================== */
+/* ===================== 语音 & AI 点评（自备 Key，仅本机） ===================== */
 (function () {
-  var AI_KEY = "rcj_ai_settings";
-  function loadAi() { try { return JSON.parse(localStorage.getItem(AI_KEY)) || {}; } catch (e) { return {}; } }
-  function saveAi(s) { try { localStorage.setItem(AI_KEY, JSON.stringify(s)); } catch (e) {} }
+  var ASR_KEY = "rcj_web_asr_v1";
+  var OLD_AI_KEY = "rcj_ai_settings";
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
 
+  function normalizeBaseUrl(u) {
+    u = (u || "").trim();
+    if (!u) return "";
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    return u.replace(/\/+$/, "");
+  }
+
+  function fetchWithTimeout2(url, opts, ms) {
+    ms = ms || 30000;
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () { reject(new Error("请求超时（" + Math.round(ms / 1000) + "秒未响应）")); }, ms);
+      var controller = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      var innerTimer = controller ? setTimeout(function () { try { controller.abort(); } catch (_e) {} }, ms) : null;
+      fetch(url, controller ? Object.assign({}, opts, { signal: controller.signal }) : opts)
+        .then(function (res) { clearTimeout(timer); if (innerTimer) clearTimeout(innerTimer); resolve(res); })
+        .catch(function (err) { clearTimeout(timer); if (innerTimer) clearTimeout(innerTimer); reject(err); });
+    });
+  }
+
+  function loadAsr() {
+    var def = { asrEngine: "webspeech", asr: { baseUrl: "", key: "", model: "" }, llm: { enabled: false, baseUrl: "", key: "", model: "" } };
+    try {
+      var s = localStorage.getItem(ASR_KEY);
+      if (s) {
+        var p = JSON.parse(s);
+        if (p.asr) p.asr = Object.assign(def.asr, p.asr);
+        if (p.llm) p.llm = Object.assign(def.llm, p.llm);
+        return Object.assign(def, p);
+      }
+      // 迁移旧版 AI 点评设置
+      var old = localStorage.getItem(OLD_AI_KEY);
+      if (old) {
+        var o = JSON.parse(old);
+        def.llm = { enabled: !!o.enabled, baseUrl: o.baseUrl || "", key: o.apiKey || "", model: o.model || "" };
+        def.asr.baseUrl = o.baseUrl || "";
+        def.asr.key = o.apiKey || "";
+        return def;
+      }
+    } catch (e) {}
+    return def;
+  }
+  function saveAsr(s) { try { localStorage.setItem(ASR_KEY, JSON.stringify(s)); } catch (e) {} }
+
   var ov = document.getElementById("aiSettingsOverlay");
   var btn = document.getElementById("aiSettingsBtn");
   var saveBtn = document.getElementById("aiSettingsSave");
   var closeBtn = document.getElementById("aiSettingsClose");
+  var testBtn = document.getElementById("aiTestBtn");
   var aiBtn = document.getElementById("aiReviewBtn");
   var myAnswer = document.getElementById("myAnswer");
   var resultBox = document.getElementById("aiReviewResult");
+  var transcriptContent = document.getElementById("transcriptContent");
+  var transcriptNote = document.getElementById("transcriptNote");
+
+  function syncAsrPanel() {
+    var eng = (document.querySelector('input[name="aiAsrEngine"]:checked') || { value: "webspeech" }).value;
+    var p = document.getElementById("aiAsrCloudPanel");
+    if (p) p.style.display = (eng === "cloud") ? "block" : "none";
+  }
 
   function openSettings() {
-    var s = loadAi();
-    document.getElementById("aiEnabled").checked = !!s.enabled;
-    document.getElementById("aiBaseUrl").value = s.baseUrl || "";
-    document.getElementById("aiApiKey").value = s.apiKey || "";
-    document.getElementById("aiModel").value = s.model || "";
+    var s = loadAsr();
+    var r = document.querySelector('input[name="aiAsrEngine"][value="' + (s.asrEngine || "webspeech") + '"]');
+    if (r) r.checked = true;
+    document.getElementById("aiAsrBaseUrl").value = s.asr.baseUrl || "";
+    document.getElementById("aiAsrApiKey").value = s.asr.key || "";
+    document.getElementById("aiAsrModel").value = s.asr.model || "";
+    document.getElementById("aiEnabled").checked = !!s.llm.enabled;
+    document.getElementById("aiBaseUrl").value = s.llm.baseUrl || "";
+    document.getElementById("aiApiKey").value = s.llm.key || "";
+    document.getElementById("aiModel").value = s.llm.model || "";
+    document.getElementById("aiTestResult").textContent = "";
+    syncAsrPanel();
     ov.classList.add("show");
   }
   function closeSettings() { ov.classList.remove("show"); }
@@ -1478,25 +1548,131 @@ window.addEventListener("DOMContentLoaded", function () {
   if (btn) btn.addEventListener("click", openSettings);
   if (closeBtn) closeBtn.addEventListener("click", closeSettings);
   if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) closeSettings(); });
+  document.querySelectorAll('input[name="aiAsrEngine"]').forEach(function (r) { r.addEventListener("change", syncAsrPanel); });
 
   if (saveBtn) saveBtn.addEventListener("click", function () {
     var s = {
-      enabled: document.getElementById("aiEnabled").checked,
-      baseUrl: document.getElementById("aiBaseUrl").value.trim(),
-      apiKey: document.getElementById("aiApiKey").value.trim(),
-      model: document.getElementById("aiModel").value.trim()
+      asrEngine: (document.querySelector('input[name="aiAsrEngine"]:checked') || { value: "webspeech" }).value,
+      asr: {
+        baseUrl: document.getElementById("aiAsrBaseUrl").value.trim(),
+        key: document.getElementById("aiAsrApiKey").value.trim(),
+        model: document.getElementById("aiAsrModel").value.trim()
+      },
+      llm: {
+        enabled: document.getElementById("aiEnabled").checked,
+        baseUrl: document.getElementById("aiBaseUrl").value.trim(),
+        key: document.getElementById("aiApiKey").value.trim(),
+        model: document.getElementById("aiModel").value.trim()
+      }
     };
-    if (s.enabled && !s.baseUrl) { alert("已启用 AI 点评，但缺少 API Base URL（例如 https://api.siliconflow.cn/v1）"); return; }
-    if (s.enabled && !s.apiKey) { alert("已启用 AI 点评，但缺少 API Key"); return; }
-    if (s.enabled && !s.model) { alert("已启用 AI 点评，但缺少模型名"); return; }
-    saveAi(s);
+    if (s.asrEngine === "cloud") {
+      if (!s.asr.baseUrl) { alert("已选择「云端 API」转写，必须填写 API Base URL（例如 https://api.siliconflow.cn/v1）"); return; }
+      if (!s.asr.key) { alert("已选择「云端 API」转写，必须填写 API Key"); return; }
+      if (!s.asr.model) { alert("已选择「云端 API」转写，必须填写模型名（例如 FunAudioLLM/SenseVoiceSmall）"); return; }
+    }
+    if (s.llm.enabled && !s.llm.baseUrl) { alert("已启用 AI 点评，但缺少 API Base URL"); return; }
+    if (s.llm.enabled && !s.llm.key) { alert("已启用 AI 点评，但缺少 API Key"); return; }
+    if (s.llm.enabled && !s.llm.model) { alert("已启用 AI 点评，但缺少模型名"); return; }
+    saveAsr(s);
     closeSettings();
   });
 
+  // 测试连接：两步探测 /models + /chat/completions
+  if (testBtn) testBtn.addEventListener("click", function () {
+    var rawUrl = document.getElementById("aiBaseUrl").value.trim();
+    var key = (document.getElementById("aiApiKey").value || "").trim();
+    var model = (document.getElementById("aiModel").value || "").trim();
+    var resEl = document.getElementById("aiTestResult");
+    if (!key) { resEl.style.color = "#dc2626"; resEl.textContent = "❌ 请先填 API Key"; return; }
+    if (!model) { resEl.style.color = "#dc2626"; resEl.textContent = "❌ 请先填模型名"; return; }
+    if (!rawUrl) { resEl.style.color = "#dc2626"; resEl.textContent = "❌ 请先填 API Base URL（需 https:// 开头）"; return; }
+    var baseUrl = normalizeBaseUrl(rawUrl);
+    var modelsUrl = baseUrl + "/models";
+    var chatUrl = baseUrl + "/chat/completions";
+    resEl.style.color = "#6b7280"; resEl.textContent = "⏳ 第一步：探测 /models ...";
+    testBtn.disabled = true;
+    var settled = false;
+    function finish(color, text) { if (settled) return; settled = true; resEl.style.color = color; resEl.textContent = text; testBtn.disabled = false; }
+    function explain(err, step) {
+      var msg = String(err.message || err || "");
+      if (/timeout|超时|timed out/i.test(msg)) return "❌ " + step + " 超时：请检查 URL、本机外网连接、代理/防火墙。";
+      if (/Failed to fetch|NetworkError|Network request failed|Failed to load/i.test(msg)) return "❌ " + step + " 网络失败：请检查 URL 是否以 https:// 开头、本机能否访问外网。";
+      if (/CORS|cross-origin|blocked by CORS/i.test(msg)) return "❌ " + step + " 跨域被拦截：线上环境一般正常，本地 file:// 打开可能受限。";
+      return "❌ " + step + " 失败：" + msg;
+    }
+    function checkHttp(res, url) {
+      if (res.ok) return res;
+      return res.text().then(function (body) {
+        var text = (body || "").slice(0, 200);
+        if (res.status === 401) throw new Error("HTTP 401：API Key 无效、已过期，或被限制访问该端点。");
+        if (res.status === 403) throw new Error("HTTP 403：没有模型 " + model + " 的访问权限。");
+        if (res.status === 404) throw new Error("HTTP 404：URL 路径不对（" + url + "）。");
+        if (res.status === 429) throw new Error("HTTP 429：请求太频繁或余额不足。");
+        throw new Error("HTTP " + res.status + " " + text);
+      });
+    }
+    fetchWithTimeout2(modelsUrl, { method: "GET", mode: "cors", headers: { "Accept": "application/json", "Authorization": "Bearer " + key } }, 6000)
+      .then(function (res) { return checkHttp(res, modelsUrl); })
+      .then(function () {
+        resEl.textContent = "⏳ 第二步：验证 Key+模型 /chat/completions ...";
+        return fetchWithTimeout2(chatUrl, {
+          method: "POST", mode: "cors",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+          body: JSON.stringify({ model: model, messages: [{ role: "user", content: "你好" }], max_tokens: 5, stream: false })
+        }, 10000);
+      })
+      .then(function (res) { return checkHttp(res, chatUrl); })
+      .then(function (res) { return res.json(); })
+      .then(function (j) {
+        var ans = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+        if (ans) finish("#059669", "✅ 连接成功！模型回复：" + ans.slice(0, 30));
+        else finish("#b45309", "⚠️ 连接成功但返回为空（模型名可能不对）");
+      })
+      .catch(function (err) { finish("#dc2626", explain(err, err.stepName || "验证 /chat/completions")); });
+  });
+
+  function renderTranscript(text) {
+    text = (text || "").trim();
+    if (transcriptContent) transcriptContent.innerHTML = escapeHtml(text);
+    if (myAnswer) myAnswer.value = text;
+    if (transcriptNote) { transcriptNote.style.display = "none"; }
+  }
+
+  // 云端 ASR：把 MP3 blob 发到 /audio/transcriptions
+  function runCloudAsr(blob) {
+    var s = loadAsr();
+    if (s.asrEngine !== "cloud" || !s.asr.key) return;
+    if (transcriptNote) {
+      transcriptNote.style.display = "block";
+      transcriptNote.textContent = "⏳ 正在调用云端语音识别...";
+    }
+    var fd = new FormData();
+    fd.append("file", blob, "audio.mp3");
+    fd.append("model", s.asr.model || "whisper-1");
+    var url = normalizeBaseUrl(s.asr.baseUrl) + "/audio/transcriptions";
+    fetchWithTimeout2(url, { method: "POST", mode: "cors", headers: { "Authorization": "Bearer " + s.asr.key }, body: fd }, 30000)
+      .then(function (res) {
+        if (!res.ok) return res.text().then(function (tx) { throw new Error("HTTP " + res.status + " " + tx.slice(0, 200)); });
+        return res.json();
+      })
+      .then(function (j) {
+        var text = (j && j.text) ? j.text.trim() : "";
+        renderTranscript(text);
+      })
+      .catch(function (err) {
+        if (transcriptNote) {
+          transcriptNote.style.display = "block";
+          transcriptNote.textContent = "⚠️ 云端识别失败：" + err.message + "（请填支持 /audio/transcriptions 的服务，推荐硅基流动 SenseVoice）";
+        }
+      });
+  }
+  window.__rcjRunCloudAsr = runCloudAsr;
+
+  // AI 点评
   if (aiBtn) aiBtn.addEventListener("click", function () {
-    var s = loadAi();
-    if (!s.enabled) { alert("AI 点评未启用：请点工具栏「⚙️ AI 设置」勾选启用并填入你的 API Key。"); return; }
-    if (!s.apiKey || !s.baseUrl || !s.model) { alert("AI 点评配置不完整：请点「⚙️ AI 设置」补全 API Base URL / Key / 模型名。"); return; }
+    var s = loadAsr();
+    if (!s.llm.enabled) { alert("AI 点评未启用：请点工具栏「⚙️ 语音 & AI 设置」勾选启用并填入 API Key。"); return; }
+    if (!s.llm.key || !s.llm.baseUrl || !s.llm.model) { alert("AI 点评配置不完整：请补全 API Base URL / Key / 模型名。"); return; }
 
     var stemEl = document.getElementById("randomModalQuestion");
     var stem = stemEl ? stemEl.innerText.trim() : "";
@@ -1511,26 +1687,26 @@ window.addEventListener("DOMContentLoaded", function () {
     resultBox.innerHTML = '<div class="ai-review-loading">⏳ AI 点评中…（取决于你的网络与模型速度）</div>';
     aiBtn.disabled = true;
 
-    var sys = "你是经验丰富的辅警招聘面试考官。请基于结构化面试的评分要点，对考生的口头作答进行点评：1) 内容要点是否完整准确；2) 逻辑结构与表达；3) 针对性改进建议；4) 给出 0-100 的模拟评分并说明扣分点。语气专业、具体、可操作。";
+    var sys = "你是深圳市公安局辅警招聘结构化面试的资深考官，具备多年一线测评经验。考生会针对抽取的题目做口头作答（已通过语音转写文字，可能有口语化、重复、卡顿，请忽略语音瑕疵，聚焦内容质量）。\n\n请结合题目、题型与参考答案要点，给出专业、可操作的点评，严格按以下四段结构输出：\n\n①【亮点】考生作答中哪怕极少的到位之处也要肯定，给信心。\n\n②【不足与标准示范】逐条指出遗漏或偏差；每条不足后紧跟一段『考官标准作答』片段作对照（标注『参考示范：』），让考生知道正确说法长什么样。若考生作答极短（如只说了一句套话就停），请直接在开头给出该题一段完整的标准作答模板，再分析不足。\n\n③【评分】按深圳辅警面试核心维度各打 0-10 分并给总分（满分自定需说明）：\n- 综合分析能力（能否抓核心矛盾、逻辑清晰）\n- 岗位匹配与职业认知（对辅警作为纪律部队辅助力量、协助执法、服务群众的职责理解）\n- 应急应变 / 计划组织协调（按题型适用维度给分，不适用注明『本题不考察』）\n- 语言表达（口述流畅度、条理性、用词）\n每个维度后补一句『达到 8 分需做到：…』。\n\n④【改进建议】给 1-2 条可立即执行的动作（如开口先表态定调，用『我对此深表…』强行起头打破卡壳）。\n\n要求：紧扣『深圳辅警』身份，点评中适当点出辅警纪律部队属性、协助执法与服务群众定位，引导考生把作答与岗位结合；具体有针对性，避免空话；考生未覆盖的参考答案要点必须明确指出；语气像真考官——专业直接能戳痛点，但给示范不给打击。";
     var user = "【题目】\n" + stem + "\n\n【考生作答】\n" + answer;
 
-    var url = s.baseUrl.replace(/\/+$/, "") + "/chat/completions";
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.apiKey },
-      body: JSON.stringify({ model: s.model, messages: [{ role: "system", content: sys }, { role: "user", content: user }], temperature: 0.7 })
-    })
+    var url = normalizeBaseUrl(s.llm.baseUrl) + "/chat/completions";
+    fetchWithTimeout2(url, {
+      method: "POST", mode: "cors",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.llm.key },
+      body: JSON.stringify({ model: s.llm.model, messages: [{ role: "system", content: sys }, { role: "user", content: user }], temperature: 0.6, max_tokens: 2000 })
+    }, 30000)
       .then(function (r) {
         if (!r.ok) return r.text().then(function (t) { throw new Error("HTTP " + r.status + "：" + t.slice(0, 200)); });
         return r.json();
       })
       .then(function (data) {
         var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
-        if (!txt) { resultBox.innerHTML = '<div class="ai-review-err">⚠️ 模型返回为空，可能是模型名在该平台未开通。请到「⚙️ AI 设置」换一个模型。</div>'; return; }
+        if (!txt) { resultBox.innerHTML = '<div class="ai-review-err">⚠️ 模型返回为空，可能是模型名在该平台未开通。请换一个模型。</div>'; return; }
         resultBox.innerHTML = '<div class="ai-review-head2">🤖 AI 点评结果</div><div class="ai-review-body">' + escapeHtml(txt).replace(/\n/g, "<br>") + '</div>';
       })
       .catch(function (err) {
-        resultBox.innerHTML = '<div class="ai-review-err">⚠️ AI 点评失败：' + escapeHtml(err.message) + '<br><br>排查：① Key 是否正确（去平台控制台复制完整 sk- 开头 Key）；② 账户是否有额度；③ 模型是否可访问；④ 浏览器能否访问该 API 域名（国内直连优先选硅基流动）。</div>';
+        resultBox.innerHTML = '<div class="ai-review-err">⚠️ AI 点评失败：' + escapeHtml(err.message) + '<br><br>排查：① Key 是否正确；② 账户是否有额度；③ 模型是否可访问；④ 浏览器能否访问该 API 域名（国内直连优先选硅基流动）。</div>';
       })
       .finally(function () { aiBtn.disabled = false; });
   });
@@ -1545,3 +1721,4 @@ window.addEventListener("DOMContentLoaded", function () {
     };
   }
 })();
+

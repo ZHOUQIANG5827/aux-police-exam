@@ -578,3 +578,10 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 .ai-btn.primary{background:var(--primary);color:#fff}
 .ai-settings-hint{font-size:12px;color:var(--text-secondary);line-height:1.7;border-top:1px dashed var(--border);padding-top:10px}
 .ai-settings-hint a{color:var(--primary-dark);font-weight:700}
+.ai-section-title{font-size:13px;font-weight:800;color:var(--primary-dark);margin:16px 0 8px;border-top:1px dashed var(--border);padding-top:12px}
+.ai-section-title:first-of-type{margin-top:4px;border-top:none;padding-top:0}
+.ai-engine-opt{display:flex;flex-wrap:wrap;gap:10px 18px;margin:8px 0 6px}
+.ai-engine-opt label{font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.ai-engine-opt input[type=radio]{margin:0}
+.ai-test-result{font-size:12px;color:var(--text-secondary);line-height:1.5;flex:1;min-width:120px}
+#aiAsrCloudPanel{display:none}
