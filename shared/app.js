@@ -1288,7 +1288,14 @@ function submitExam() {
     var html = '<div class="exam-result-score">' + correct + ' / ' + total + '</div>'
       + '<div class="exam-result-detail">客观题正确率 <b>' + pct + '%</b>　' + grade + '　（答错 ' + wrong + ' 题，已用 ❌ 标出）</div>';
     if (examTypingOn) html += gradeTyping();
+    html += '<div class="exam-ai-analysis" id="examAiAnalysis">'
+      + '<div class="exam-ai-head">🤖 AI 智能分析本次作答</div>'
+      + '<button type="button" class="exam-ai-btn" id="examAiAnalyzeBtn">🤖 开始 AI 分析</button>'
+      + '<div class="exam-ai-result" id="examAiResult" style="display:none"></div>'
+      + '</div>';
     examResult.innerHTML = html;
+    window.__rcjExamAiAutoRan = false;
+    if (window.__rcjExamAiAuto) window.__rcjExamAiAuto();
   }
   examResult.style.display = "block";
   window.scrollTo({ top: 0 });
@@ -1528,6 +1535,13 @@ window.addEventListener("DOMContentLoaded", function () {
     if (p) p.style.display = (eng === "cloud") ? "block" : "none";
   }
 
+  function refreshAiUiByMode() {
+    var vs = document.getElementById("aiVoiceSection");
+    if (vs) vs.style.display = (MODE === "interview") ? "block" : "none";
+    var title = document.querySelector(".ai-settings-title");
+    if (title) title.textContent = (MODE === "interview") ? "🎙️ 语音 & AI 点评设置（自备 Key）" : "🤖 AI 分析设置（自备 Key）";
+    if (btn) btn.textContent = (MODE === "interview") ? "⚙️ 语音 & AI 设置" : "⚙️ AI 分析设置";
+  }
   function openSettings() {
     var s = loadAsr();
     var r = document.querySelector('input[name="aiAsrEngine"][value="' + (s.asrEngine || "webspeech") + '"]');
@@ -1541,11 +1555,13 @@ window.addEventListener("DOMContentLoaded", function () {
     document.getElementById("aiModel").value = s.llm.model || "";
     document.getElementById("aiTestResult").textContent = "";
     syncAsrPanel();
+    refreshAiUiByMode();
     ov.classList.add("show");
   }
   function closeSettings() { ov.classList.remove("show"); }
 
   if (btn) btn.addEventListener("click", openSettings);
+  refreshAiUiByMode();
   if (closeBtn) closeBtn.addEventListener("click", closeSettings);
   if (ov) ov.addEventListener("click", function (e) { if (e.target === ov) closeSettings(); });
   document.querySelectorAll('input[name="aiAsrEngine"]').forEach(function (r) { r.addEventListener("change", syncAsrPanel); });
@@ -1720,5 +1736,89 @@ window.addEventListener("DOMContentLoaded", function () {
       return _origShow.apply(this, arguments);
     };
   }
+
+  // ===== 笔试：提交套卷后 AI 智能分析 =====
+  function isQCorrect(q, sel) {
+    if (!sel || !sel.length) return false;
+    if (q.type === "multiple" || q.type === "multi") {
+      return normAnsArr(q.answer).sort().join("") === sel.map(function (x) { return String(x).trim(); }).sort().join("") && sel.length > 0;
+    } else if (q.type === "judge" || q.type === "bool") {
+      var selText = ""; (q.options || []).forEach(function (o) { if (sel.indexOf(o.letter) !== -1) selText = o.text; });
+      return (selText === String(q.answer).trim());
+    }
+    return (sel.length === 1 && String(sel[0]).trim() === String(q.answer).trim());
+  }
+  function optText(q, letters) {
+    var out = []; (q.options || []).forEach(function (o) { if (letters.indexOf(o.letter) !== -1) out.push(o.letter + ". " + o.text); });
+    return out.join("；") || "（未作答）";
+  }
+  function buildExamAiPrompt() {
+    var list = examPaperList || [];
+    var TYPE_LABEL = { single: "单选题", multi: "多选题", bool: "判断题" };
+    var byType = {}; var wrong = [];
+    list.forEach(function (q) {
+      var sel = examSelections[q._idx] || [];
+      var t = normType(q.type);
+      var lab = TYPE_LABEL[t] || q.type;
+      if (!byType[lab]) byType[lab] = { total: 0, correct: 0 };
+      byType[lab].total++;
+      if (isQCorrect(q, sel)) { byType[lab].correct++; }
+      else {
+        var stem = (q.stem || "").replace(/\s+/g, " ").slice(0, 200);
+        wrong.push("- [" + lab + "] " + stem + (stem.length >= 200 ? "…" : "")
+          + "\n  你的答案：" + optText(q, sel)
+          + "\n  正确答案：" + optText(q, normAnsArr(q.answer))
+          + (q.explanation ? "\n  解析：" + String(q.explanation).replace(/\s+/g, " ").slice(0, 160) : ""));
+      }
+    });
+    var typeLines = [];
+    for (var k in byType) { var b = byType[k]; var p = b.total ? Math.round(b.correct / b.total * 100) : 0; typeLines.push(k + " " + b.correct + "/" + b.total + "（正确率 " + p + "%）"); }
+    var totalN = list.length, correctN = list.length - wrong.length;
+    var pctAll = totalN ? Math.round(correctN / totalN * 100) : 0;
+    return "【本次模考概览】\n总分 " + correctN + "/" + totalN + "（客观题正确率 " + pctAll + "%）\n各题型：\n" + typeLines.join("\n") + "\n\n【错题清单】（共 " + wrong.length + " 题）\n" + (wrong.length ? wrong.join("\n\n") : "无");
+  }
+  window.__rcjExamAiAnalyze = function () {
+    var s = loadAsr();
+    if (!(s.llm && s.llm.enabled)) { alert("AI 分析未启用：请点工具栏「⚙️ 语音 & AI 设置」勾选启用并填入 API Key。"); return; }
+    if (!s.llm.key || !s.llm.baseUrl || !s.llm.model) { alert("AI 分析配置不完整：请补全 API Base URL / Key / 模型名。"); return; }
+    var resEl = document.getElementById("examAiResult");
+    var btn = document.getElementById("examAiAnalyzeBtn");
+    if (!resEl) return;
+    resEl.style.display = "block";
+    resEl.innerHTML = '<div class="ai-review-loading">⏳ AI 分析中…（取决于你的网络与模型速度）</div>';
+    if (btn) btn.disabled = true;
+    var sys = "你是辅警笔试备考的智能教练，具备多年辅警/公安招考题库教研经验。用户刚提交了一套模拟卷的客观题作答数据，请你基于数据给出专业、可操作的分析，严格按以下四段结构输出：\n\n①【总体表现】用一句话总结本次模考水平，点出与合格线（通常 60%）的差距。\n\n②【题型强弱】结合各题型正确率，指出最薄弱的题型与最强题型，说明可能原因（如多选题漏选/错选、判断题概念混淆）。\n\n③【错因归类】把错题归为 2-4 类（如：法律条文记忆模糊、公安基础理论不清、审题粗心、时事政治盲区），每条给一句说明。\n\n④【针对性提分建议】给 2-3 条可立即执行的动作（如：重点刷『法律基础知识』模块的多选题、建立错题本每周复盘、判断题先用排除法）。\n\n要求：紧扣辅警笔试常见模块（法律基础知识、公安基础理论与实务、时事政治、职业道德与纪律要求、公文处理/计算机基础等）；具体有针对性，避免空话；不得承诺包过或通过率；语气专业且鼓励。";
+    var user = buildExamAiPrompt();
+    var url = normalizeBaseUrl(s.llm.baseUrl) + "/chat/completions";
+    fetchWithTimeout2(url, {
+      method: "POST", mode: "cors",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + s.llm.key },
+      body: JSON.stringify({ model: s.llm.model, messages: [{ role: "system", content: sys }, { role: "user", content: user }], temperature: 0.6, max_tokens: 2200 })
+    }, 35000)
+      .then(function (r) {
+        if (!r.ok) return r.text().then(function (t) { throw new Error("HTTP " + r.status + "：" + t.slice(0, 200)); });
+        return r.json();
+      })
+      .then(function (data) {
+        var txt = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+        if (!txt) { resEl.innerHTML = '<div class="ai-review-err">⚠️ 模型返回为空，可能是模型名在该平台未开通。请换一个模型。</div>'; return; }
+        resEl.innerHTML = '<div class="ai-review-head2">🤖 AI 智能分析</div><div class="ai-review-body">' + escapeHtml(txt).replace(/\n/g, "<br>") + '</div>';
+      })
+      .catch(function (err) {
+        resEl.innerHTML = '<div class="ai-review-err">⚠️ AI 分析失败：' + escapeHtml(err.message) + '<br><br>排查：① Key 是否正确；② 账户是否有额度；③ 模型是否可访问；④ 浏览器能否访问该 API 域名（国内直连优先选硅基流动）。</div>';
+      })
+      .finally(function () { if (btn) btn.disabled = false; });
+  };
+  window.__rcjExamAiAuto = function () {
+    if (window.__rcjExamAiAutoRan) return;
+    var s = loadAsr();
+    if (!(s.llm && s.llm.enabled && s.llm.key && s.llm.baseUrl && s.llm.model)) return;
+    window.__rcjExamAiAutoRan = true;
+    window.__rcjExamAiAnalyze();
+  };
+  // 点击「开始 AI 分析」按钮（事件委托，兼容结果区重渲染）
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.id === "examAiAnalyzeBtn") { window.__rcjExamAiAutoRan = false; window.__rcjExamAiAnalyze(); }
+  });
 })();
 
