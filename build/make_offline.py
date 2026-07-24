@@ -35,6 +35,15 @@ def main():
     css = open(css_path, encoding="utf-8").read()
     js = open(js_path, encoding="utf-8").read()
 
+    # 0) 内联城市数据脚本 station-data.js（含 SITE_CONFIG / DATA_WRITTEN / DATA_INTERVIEW）。
+    #    离线版必须把数据打进单文件，否则 file:// 打开时加载不到、变成空题壳。
+    station_data_path = os.path.join(ROOT, city, "station-data.js")
+    if os.path.exists(station_data_path):
+        station_data_js = open(station_data_path, encoding="utf-8").read()
+    else:
+        station_data_js = None
+        print(f"⚠️ 警告：找不到 {city}/station-data.js，题库数据将缺失，离线版会是空壳！")
+
     # 1) 内联 CSS（替换外链 link 标签）
     html = html.replace(
         '<link rel="stylesheet" href="../shared/app.css">',
@@ -60,19 +69,35 @@ def main():
     else:
         print("⚠️ 警告：找不到 shared/lame.min.js，MP3 录音将不可用。")
 
-    # 3) 健全性检查：不应再残留 external shared 引用
-    leftover = "../shared/" in html
+    # 2.5b) 内联城市数据脚本 station-data.js（必须放在 app.js 之前执行）
+    if station_data_js is not None:
+        # 防御：题库文本理论上不含 </script，仍做转义避免提前闭合 script 标签
+        station_data_js_safe = (
+            station_data_js.replace("</script", "<\\/script")
+                           .replace("</SCRIPT", "<\\/SCRIPT")
+        )
+        html = re.sub(
+            r'<script src="station-data\.js"></script>',
+            lambda m: f"<script>\n{station_data_js_safe}\n</script>",
+            html,
+        )
+    else:
+        print("⚠️ 警告：未内联 station-data.js，离线版将无题库数据。")
+
+    # 3) 健全性检查：不应再残留 external 引用
+    leftover = ("../shared/" in html) or ('src="station-data.js"' in html)
     if leftover:
-        print("⚠️ 警告：生成的文件里仍有 ../shared/ 外链未完全内联，请检查。")
+        print("⚠️ 警告：生成的文件里仍有外链未完全内联，请检查。")
 
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     open(out, "w", encoding="utf-8").write(html)
 
     print(f"✅ 已生成离线版: {out}")
     print(f"   大小: {os.path.getsize(out):,} 字节")
-    print(f"   内联校验: 含 DATA_WRITTEN={'window.DATA_WRITTEN' in html}  "
-          f"含 app.js={'render(' in html}  "
-          f"仍含外链shared={leftover}")
+    print(f"   内联校验: 含DATA_WRITTEN={'window.DATA_WRITTEN' in html}  "
+          f"含SITE_CONFIG={'window.SITE_CONFIG' in html}  "
+          f"含app.js={'render(' in html}  "
+          f"仍含外链={leftover}")
 
 
 if __name__ == "__main__":
