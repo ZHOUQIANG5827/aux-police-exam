@@ -1525,7 +1525,10 @@ window.addEventListener("DOMContentLoaded", function () {
         var p = JSON.parse(s);
         if (p.asr) p.asr = Object.assign(def.asr, p.asr);
         if (p.llm) p.llm = Object.assign(def.llm, p.llm);
-        return Object.assign(def, p);
+        var merged = Object.assign(def, p);
+        // sanitize: 矫正缺失/非法的 asrEngine，避免脏 localStorage 导致弹层显示异常
+        if (!merged.asrEngine || typeof merged.asrEngine !== "string") merged.asrEngine = "webspeech";
+        return merged;
       }
       // 迁移旧版 AI 点评设置
       var old = localStorage.getItem(OLD_AI_KEY);
@@ -1567,7 +1570,10 @@ window.addEventListener("DOMContentLoaded", function () {
   }
   function openSettings() {
     var s = loadAsr();
-    var r = document.querySelector('input[name="aiAsrEngine"][value="' + (s.asrEngine || "webspeech") + '"]');
+    var eng = s.asrEngine || "webspeech";
+    var r = document.querySelector('input[name="aiAsrEngine"][value="' + eng + '"]');
+    // 兜底：若残留非法 engine 找不到对应 radio，矫正回 webspeech 并重新查找
+    if (!r) { eng = "webspeech"; r = document.querySelector('input[name="aiAsrEngine"][value="webspeech"]'); s.asrEngine = "webspeech"; }
     if (r) r.checked = true;
     document.getElementById("aiAsrBaseUrl").value = s.asr.baseUrl || "";
     document.getElementById("aiAsrApiKey").value = s.asr.key || "";
