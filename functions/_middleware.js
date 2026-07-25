@@ -35,6 +35,73 @@ const LIMIT_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
   <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
 </div></body></html>`;
 
+// ============ 定时下线（考虑服务器成本，到点自动锁站，逼白嫖党转离线付费版）============
+// 下线时间（毫秒时间戳）。默认 2026-07-25 20:00 (GMT+8)。
+// 想改时间：直接改这里再 push，或在 Cloudflare 后台设环境变量 OFFLINE_AT 覆盖（无需改代码）。
+const OFFLINE_AT_DEFAULT = 1784980800000;
+
+// —— 到期后的「已停服」页面（全内联，不依赖任何外部资源；仍带闲鱼引流位）——
+const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>免费在线版已停止服务</title>
+<style>
+  body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#eef2f7;color:#1e3a5f;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
+  .box{max-width:460px;background:#fff;padding:36px 30px;border-radius:18px;box-shadow:0 10px 36px rgba(30,58,95,.12);text-align:center}
+  .emoji{font-size:46px;line-height:1}
+  .t{font-size:22px;font-weight:800;margin:14px 0 12px}
+  .d{font-size:14px;color:#4a5568;line-height:1.85}
+  .d b{color:#1e3a5f}
+  .b{display:inline-block;margin-top:22px;background:#1e3a5f;color:#fff;padding:12px 22px;border-radius:11px;text-decoration:none;font-size:14px;font-weight:600}
+  .b:hover{opacity:.92}
+  .tip{margin-top:14px;font-size:12px;color:#94a3b8}
+</style></head><body><div class="box">
+  <div class="emoji">🙏</div>
+  <h1 class="t">免费在线版已停止服务</h1>
+  <p class="d">考虑到服务器的持续运营成本，本<b>免费在线体验版</b>已于 <b>2026年7月25日 20:00</b> 停止服务，感谢一路以来的支持。<br><br>
+  需要<b>全量真题 + AI 智能点评（录音即出分）+ 离线无广告永久版</b>（一次获取、断网可用、无每日次数限制），请去闲鱼搜 <b>RCJ9527</b> 获取完整版。</p>
+  <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 获取完整版 →</a>
+  <div class="tip">已购买离线版的同学不受影响，双击本地 HTML 即可继续刷题。</div>
+</div></body></html>`;
+
+// —— 到期前注入到每个在线页面顶部的「倒计时横幅」（红色，实时倒计时，促转化）——
+function bannerHtml(offlineAt) {
+  return '<style>'
+    + '#rcjOfflineBar{position:fixed;top:0;left:0;right:0;z-index:2147483600;'
+    + 'background:linear-gradient(90deg,#e11d48,#b91c1c);color:#fff;'
+    + 'font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;'
+    + 'font-size:13px;line-height:1.5;padding:8px 12px;text-align:center;'
+    + 'box-shadow:0 2px 10px rgba(0,0,0,.18)}'
+    + '#rcjOfflineBar b{font-weight:800}'
+    + '#rcjOfflineBar #rcjOfflineCd{font-variant-numeric:tabular-nums;'
+    + 'background:rgba(255,255,255,.18);padding:1px 7px;border-radius:6px;margin:0 2px}'
+    + '#rcjOfflineBar a{color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap}'
+    + '@media(max-width:520px){#rcjOfflineBar{font-size:12px;padding:7px 10px}}'
+    + '</style>'
+    + '<div id="rcjOfflineBar">⏰ 考虑到服务器成本，本免费在线版将于 <b>今晚 20:00</b> 停止服务 · 剩余 '
+    + '<b id="rcjOfflineCd">--:--:--</b> · 需长期使用请获取离线完整版（闲鱼搜 '
+    + '<a href="https://www.goofish.com/" target="_blank" rel="noopener">RCJ9527</a>）</div>'
+    + '<script>(function(){var T=' + offlineAt + ';'
+    + 'function p(n){return n<10?"0"+n:""+n;}'
+    + 'function tick(){var d=T-Date.now();'
+    + 'if(d<=0){location.reload();return;}'
+    + 'var h=Math.floor(d/3600000),m=Math.floor(d%3600000/60000),s=Math.floor(d%60000/1000);'
+    + 'var el=document.getElementById("rcjOfflineCd");if(el)el.textContent=p(h)+":"+p(m)+":"+p(s);}'
+    + 'function boot(){var bar=document.getElementById("rcjOfflineBar");if(!bar)return;'
+    + 'tick();setInterval(tick,1000);'
+    + 'try{document.body.style.paddingTop=((bar.offsetHeight||40))+"px";}catch(e){}}'
+    + 'if(document.body){boot();}else{document.addEventListener("DOMContentLoaded",boot);}'
+    + '})();</script>';
+}
+
+// 用 HTMLRewriter 把横幅注入 HTML 响应（保留原响应头，含 Set-Cookie）
+function injectBanner(res, offlineAt) {
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("text/html")) return res;
+  return new HTMLRewriter()
+    .on("body", { element(el) { el.append(bannerHtml(offlineAt), { html: true }); } })
+    .transform(res);
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -64,10 +131,24 @@ export async function onRequest(context) {
   const ip = request.headers.get("cf-connecting-ip") || "";
   if (ip && allowIps.includes(ip)) return next();
 
-  // —— 3) 仅统计 HTML 页面导航，跳过静态资源与子请求 ——
   const isStatic = /\.(js|css|png|jpe?g|gif|svg|json|webp|mp3|mp4|woff2?|ttf|map|ico)$/i.test(
     url.pathname
   );
+
+  // —— ★ 定时下线：到点后，非作者的 HTML 页面导航一律返回「已停服」页；
+  //    静态资源放行（停服页全内联、不依赖它们，放行也无妨）。作者(VIP/ALLOW_IPS)上面已放行，不受影响。——
+  const OFFLINE_AT = parseInt((env && env.OFFLINE_AT) || String(OFFLINE_AT_DEFAULT), 10);
+  if (Date.now() >= OFFLINE_AT) {
+    if (!isStatic && request.method === "GET") {
+      return new Response(OFFLINE_HTML, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
+    return next();
+  }
+
+  // —— 3) 仅统计 HTML 页面导航，跳过静态资源与子请求 ——
   if (isStatic || request.method !== "GET") return next();
 
   // —— 4) 每日访问计数 ——
@@ -99,7 +180,7 @@ export async function onRequest(context) {
     } catch (e) {
       /* 写失败不挡用户 */
     }
-    return res;
+    return injectBanner(res, OFFLINE_AT);
   }
 
   // ===== 回退：Cookie 软限制（未绑 KV 时）=====
@@ -131,5 +212,5 @@ export async function onRequest(context) {
     "Set-Cookie",
     `rcj_visits=${nextVal}; Path=/; Max-Age=86400; SameSite=Lax; Secure`
   );
-  return res;
+  return injectBanner(res, OFFLINE_AT);
 }
