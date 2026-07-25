@@ -35,10 +35,13 @@ const LIMIT_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
   <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
 </div></body></html>`;
 
-// ============ 定时下线（考虑服务器成本，到点自动锁站，逼白嫖党转离线付费版）============
-// 下线时间（毫秒时间戳）。默认 2026-07-25 20:00 (GMT+8)。
-// 想改时间：直接改这里再 push，或在 Cloudflare 后台设环境变量 OFFLINE_AT 覆盖（无需改代码）。
-const OFFLINE_AT_DEFAULT = 1784980800000;
+// ============ 定时下线（到点自动锁站，逼白嫖党转离线付费版）============
+// 下线时间（毫秒时间戳）。
+//   ★ 0 = 功能关闭（不挂横幅、不锁站）——当前状态：待定，等测试/定稿后再启用。
+//   ★ 启用：改成目标时刻的毫秒时间戳再 push（用 date 命令算，别手算），
+//     或在 Cloudflare 后台设环境变量 OFFLINE_AT 覆盖（无需改代码）。
+//   参考：2026-07-25 20:00 GMT+8 = 1784980800000
+const OFFLINE_AT_DEFAULT = 0;
 
 // —— 到期后的「已停服」页面（全内联，不依赖任何外部资源；仍带闲鱼引流位）——
 const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
@@ -57,7 +60,7 @@ const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf
 </style></head><body><div class="box">
   <div class="emoji">🙏</div>
   <h1 class="t">免费在线版已停止服务</h1>
-  <p class="d">考虑到服务器的持续运营成本，本<b>免费在线体验版</b>已于 <b>2026年7月25日 20:00</b> 停止服务，感谢一路以来的支持。<br><br>
+  <p class="d">本<b>免费在线体验版</b>的开放体验期已结束，在线服务已停止，感谢一路以来的支持。<br><br>
   需要<b>全量真题 + AI 智能点评（录音即出分）+ 离线无广告永久版</b>（一次获取、断网可用、无每日次数限制），请去闲鱼搜 <b>RCJ9527</b> 获取完整版。</p>
   <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 获取完整版 →</a>
   <div class="tip">已购买离线版的同学不受影响，双击本地 HTML 即可继续刷题。</div>
@@ -77,7 +80,7 @@ function bannerHtml(offlineAt) {
     + '#rcjOfflineBar a{color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap}'
     + '@media(max-width:520px){#rcjOfflineBar{font-size:12px;padding:7px 10px}}'
     + '</style>'
-    + '<div id="rcjOfflineBar">⏰ 考虑到服务器成本，本免费在线版将于 <b>今晚 20:00</b> 停止服务 · 剩余 '
+    + '<div id="rcjOfflineBar">⏰ 本站免费开放体验期即将结束 · 剩余 '
     + '<b id="rcjOfflineCd">--:--:--</b> · 需长期使用请获取离线完整版（闲鱼搜 '
     + '<a href="https://www.goofish.com/" target="_blank" rel="noopener">RCJ9527</a>）</div>'
     + '<script>(function(){var T=' + offlineAt + ';'
@@ -95,6 +98,7 @@ function bannerHtml(offlineAt) {
 
 // 用 HTMLRewriter 把横幅注入 HTML 响应（保留原响应头，含 Set-Cookie）
 function injectBanner(res, offlineAt) {
+  if (!offlineAt || offlineAt <= 0) return res; // 功能关闭时不注入横幅
   const ct = res.headers.get("content-type") || "";
   if (!ct.includes("text/html")) return res;
   return new HTMLRewriter()
@@ -137,8 +141,8 @@ export async function onRequest(context) {
 
   // —— ★ 定时下线：到点后，非作者的 HTML 页面导航一律返回「已停服」页；
   //    静态资源放行（停服页全内联、不依赖它们，放行也无妨）。作者(VIP/ALLOW_IPS)上面已放行，不受影响。——
-  const OFFLINE_AT = parseInt((env && env.OFFLINE_AT) || String(OFFLINE_AT_DEFAULT), 10);
-  if (Date.now() >= OFFLINE_AT) {
+  const OFFLINE_AT = parseInt((env && env.OFFLINE_AT) || String(OFFLINE_AT_DEFAULT), 10) || 0;
+  if (OFFLINE_AT > 0 && Date.now() >= OFFLINE_AT) {
     if (!isStatic && request.method === "GET") {
       return new Response(OFFLINE_HTML, {
         status: 200,
