@@ -69,9 +69,8 @@ const TRIAL_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
   <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
 </div></body></html>`;
 
-// —— 试用期内注入页面顶部的提示条（琥珀色，显示剩余天数，促转化不刺眼）——
+// —— 试用期内注入页面顶部的提示条（琥珀色，实时倒计时到分钟，促转化不刺眼）——
 function trialBannerHtml(trialEnd) {
-  const remainDays = Math.max(1, Math.ceil((trialEnd - Date.now()) / 86400000));
   return '<style>'
     + '#rcjTrialBar{position:fixed;top:0;left:0;right:0;z-index:2147483600;'
     + 'background:linear-gradient(90deg,#b45309,#d97706);color:#fff;'
@@ -79,13 +78,22 @@ function trialBannerHtml(trialEnd) {
     + 'font-size:13px;line-height:1.5;padding:7px 12px;text-align:center;'
     + 'box-shadow:0 2px 10px rgba(0,0,0,.15)}'
     + '#rcjTrialBar b{font-weight:800}'
+    + '#rcjTrialBar #rcjTrialCd{font-variant-numeric:tabular-nums;'
+    + 'background:rgba(255,255,255,.18);padding:1px 7px;border-radius:6px;margin:0 2px}'
     + '#rcjTrialBar a{color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap}'
     + '@media(max-width:520px){#rcjTrialBar{font-size:12px;padding:6px 10px}}'
     + '</style>'
-    + '<div id="rcjTrialBar">🎁 免费试用中 · 剩余 <b>' + remainDays + ' 天</b>'
+    + '<div id="rcjTrialBar">🎁 免费试用中 · 剩余 <b id="rcjTrialCd">--</b>'
     + ' · 长期使用请获取离线完整版（闲鱼搜 '
     + '<a href="https://www.goofish.com/" target="_blank" rel="noopener">RCJ9527</a>）</div>'
-    + '<script>(function(){function boot(){var bar=document.getElementById("rcjTrialBar");if(!bar)return;'
+    + '<script>(function(){var T=' + trialEnd + ';'
+    + 'function tick(){var d=T-Date.now();'
+    + 'if(d<=0){location.reload();return;}'
+    + 'var day=Math.floor(d/86400000),h=Math.floor(d%86400000/3600000),m=Math.floor(d%3600000/60000);'
+    + 'var s=(day>0?day+" 天 ":"")+h+" 小时 "+m+" 分";'
+    + 'var el=document.getElementById("rcjTrialCd");if(el)el.textContent=s;}'
+    + 'function boot(){var bar=document.getElementById("rcjTrialBar");if(!bar)return;'
+    + 'tick();setInterval(tick,15000);'
     + 'try{document.body.style.paddingTop=((bar.offsetHeight||34))+"px";}catch(e){}}'
     + 'if(document.body){boot();}else{document.addEventListener("DOMContentLoaded",boot);}'
     + '})();</script>';
