@@ -42,27 +42,24 @@ const LIMIT_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
 //   ★ 想复活：改回 0 再 push，或在 Cloudflare 后台设环境变量 OFFLINE_AT=0 覆盖（无需改代码）。
 const OFFLINE_AT_DEFAULT = 1784957946000;
 
-// —— 到期后的「已停服」页面（全内联，不依赖任何外部资源；仍带闲鱼引流位）——
+// —— 到期后的「升级维护」页面（全内联，不依赖任何外部资源；极简，只留引流）——
 const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>免费在线版已停止服务</title>
+<title>网站升级维护中</title>
 <style>
   body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#eef2f7;color:#1e3a5f;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
-  .box{max-width:460px;background:#fff;padding:36px 30px;border-radius:18px;box-shadow:0 10px 36px rgba(30,58,95,.12);text-align:center}
-  .emoji{font-size:46px;line-height:1}
-  .t{font-size:22px;font-weight:800;margin:14px 0 12px}
-  .d{font-size:14px;color:#4a5568;line-height:1.85}
+  .box{max-width:400px;background:#fff;padding:36px 30px;border-radius:18px;box-shadow:0 10px 36px rgba(30,58,95,.12);text-align:center}
+  .emoji{font-size:42px;line-height:1;margin-bottom:12px}
+  .t{font-size:21px;font-weight:800;margin:0 0 12px}
+  .d{font-size:14px;color:#4a5568;line-height:1.9;margin:0}
   .d b{color:#1e3a5f}
   .b{display:inline-block;margin-top:22px;background:#1e3a5f;color:#fff;padding:12px 22px;border-radius:11px;text-decoration:none;font-size:14px;font-weight:600}
   .b:hover{opacity:.92}
-  .tip{margin-top:14px;font-size:12px;color:#94a3b8}
 </style></head><body><div class="box">
-  <div class="emoji">🙏</div>
-  <h1 class="t">免费在线版已停止服务</h1>
-  <p class="d">本<b>免费在线体验版</b>的开放体验期已结束，在线服务已停止，感谢一路以来的支持。<br><br>
-  需要<b>全量真题 + AI 智能点评（录音即出分）+ 离线无广告永久版</b>（一次获取、断网可用、无每日次数限制），请去闲鱼搜 <b>RCJ9527</b> 获取完整版。</p>
-  <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 获取完整版 →</a>
-  <div class="tip">已购买离线版的同学不受影响，双击本地 HTML 即可继续刷题。</div>
+  <div class="emoji">🛠️</div>
+  <h1 class="t">网站升级维护中</h1>
+  <p class="d">在线版暂停开放。<br><b>离线完整版不受影响</b>，可正常刷题，联网即可使用 AI 点评。<br>获取离线完整版：闲鱼搜 <b>RCJ9527</b></p>
+  <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
 </div></body></html>`;
 
 // —— 到期前注入到每个在线页面顶部的「倒计时横幅」（红色，实时倒计时，促转化）——
@@ -79,7 +76,7 @@ function bannerHtml(offlineAt) {
     + '#rcjOfflineBar a{color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap}'
     + '@media(max-width:520px){#rcjOfflineBar{font-size:12px;padding:7px 10px}}'
     + '</style>'
-    + '<div id="rcjOfflineBar">⏰ 本站免费开放体验期即将结束 · 剩余 '
+    + '<div id="rcjOfflineBar">🛠️ 本站即将进入升级维护、在线版暂停开放 · 剩余 '
     + '<b id="rcjOfflineCd">--:--:--</b> · 需长期使用请获取离线完整版（闲鱼搜 '
     + '<a href="https://www.goofish.com/" target="_blank" rel="noopener">RCJ9527</a>）</div>'
     + '<script>(function(){var T=' + offlineAt + ';'
