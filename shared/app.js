@@ -549,7 +549,11 @@ function startTimerCountdown() {
     textEl.textContent = (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
     fillEl.style.width = (timerRemaining / timerLimit) * 100 + "%";
     if (timerRemaining <= 30) fillEl.classList.add("warning");
-    if (timerRemaining <= 0) { clearInterval(testTimer); textEl.textContent = "00:00 - 时间到！"; }
+    if (timerRemaining <= 0) {
+      clearInterval(testTimer);
+      textEl.textContent = "00:00 - 时间到！";
+      if (isRecording) { try { stopAndEncodeRecording(); rcjToast("⏰ 时间到！录音已自动保存，可点「下载录音(MP3)」"); } catch (e) {} }
+    }
   }, 1000);
 }
 function stopTimerCountdown() { clearInterval(testTimer); }
@@ -604,6 +608,18 @@ function initSpeechRecognizer() {
   return rec;
 }
 
+function rcjToast(msg) {
+  var t = document.getElementById("rcjToast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "rcjToast";
+    t.style.cssText = "position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:rgba(17,24,39,.92);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:99999;max-width:90vw;line-height:1.6;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.3);";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.display = "block";
+  clearTimeout(t._t); t._t = setTimeout(function () { t.style.display = "none"; }, 3600);
+}
+
 function initAudioRecorderSystem() {
   recordBtn.onclick = function () {
     if (!window.lamejs || !window.lamejs.Mp3Encoder) {
@@ -654,17 +670,37 @@ function initAudioRecorderSystem() {
     }
   };
   downloadRecordBtn.onclick = function () {
-    if (!lastAudioBlob) return;
-    var a = document.createElement("a");
+    if (!lastAudioBlob) { rcjToast("还没有可下载的录音，请先点「开始录音演练」，录完再下载"); return; }
     var now = new Date();
     var p = function (n) { return (n < 10 ? "0" : "") + n; };
     var ts = now.getFullYear() + p(now.getMonth() + 1) + p(now.getDate()) + "_" + p(now.getHours()) + p(now.getMinutes()) + p(now.getSeconds());
-    a.href = lastAudioUrl || URL.createObjectURL(lastAudioBlob);
+    var url = lastAudioUrl || URL.createObjectURL(lastAudioBlob);
+    var ua = navigator.userAgent || "";
+    var isIos = /iP(ad|hone|od)/.test(ua);
+    var isWechat = /micromessenger/i.test(ua);
+    if (isWechat) {
+      // 微信内置浏览器禁止 blob 文件下载，引导用系统浏览器打开
+      rcjToast("微信内无法直接下载文件，请点右上角 ⋯ →「在浏览器打开」，再点下载录音");
+      try { window.open(url, "_blank"); } catch (e) {}
+      return;
+    }
+    if (isIos) {
+      // iOS Safari 忽略 download 属性且不支持程序化下载，改在新标签页打开让用户保存
+      try {
+        window.open(url, "_blank");
+        rcjToast("已在新标签页打开录音，请长按音频或点分享 →「存储到文件」");
+      } catch (e) { rcjToast("当前环境下载受限，请在系统浏览器中打开本页后重试"); }
+      return;
+    }
+    // 桌面 / 安卓 Chrome 等：标准下载
+    var a = document.createElement("a");
+    a.href = url;
     a.download = "深圳辅警面试录音_" + ts + ".mp3";
     a.style.display = "none";
     document.body.appendChild(a);
     a.click();
     setTimeout(function () { try { a.remove(); } catch (e3) {} }, 1000);
+    rcjToast("已开始下载录音（MP3）…");
   };
 }
 
