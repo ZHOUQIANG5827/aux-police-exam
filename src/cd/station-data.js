@@ -14,7 +14,7 @@ window.SITE_CONFIG = {
   "rewardDesc": "",
   "footerText": "© 辅警真题卡组 · 在线开源版",
   "timerSeconds": 180,
-  "enabledModules": {"promo":true,"xianyu":true,"reward":true,"progress":true,"themeToggle":true,"record":true},
+  "enabledModules": {"promo":false,"xianyu":true,"reward":true,"progress":true,"themeToggle":true,"record":true},
   "defaultPage": "written",
   "examType": "practice",
   "examYear": "2024-2026",
