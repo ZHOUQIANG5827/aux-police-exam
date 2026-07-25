@@ -35,12 +35,74 @@ const LIMIT_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
   <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
 </div></body></html>`;
 
-// ============ 定时下线（到点自动锁站，逼白嫖党转离线付费版）============
+// ============ 定时下线（到点自动锁站）============
 // 下线时间（毫秒时间戳）。
 //   ★ 0 = 功能关闭（不挂横幅、不锁站）。
-//   ★ 当前状态：已启用，2026-07-25 13:39 GMT+8 起立即停服（用户确认"现在就下线"）。
-//   ★ 想复活：改回 0 再 push，或在 Cloudflare 后台设环境变量 OFFLINE_AT=0 覆盖（无需改代码）。
-const OFFLINE_AT_DEFAULT = 1784957946000;
+//   ★ 当前状态：已关闭——改用「3 天试用期」方案（见下方 TRIAL 逻辑），网站恢复开放。
+//   ★ 想启用：改成目标时刻毫秒时间戳再 push，或 Cloudflare 后台设环境变量 OFFLINE_AT 覆盖。
+const OFFLINE_AT_DEFAULT = 0;
+
+// ============ 3 天试用期（防长期白嫖，不影响新访客体验）============
+// 首次访问时种 rcj_trial Cookie 记录时间戳；满 TRIAL_DAYS 天后 HTML 导航一律返回「试用结束」页。
+//   ★ 天数可在 Cloudflare 后台用环境变量 TRIAL_DAYS 覆盖（无需改代码）。
+//   ★ 软限制：清 Cookie / 换浏览器可重置（与每日限额同级别，足够拦住大部分白嫖党）。
+//   ★ VIP / ALLOW_IPS 豁免；离线版 file:// 打开不经过 Cloudflare，天然免疫。
+const TRIAL_DAYS_DEFAULT = 3;
+
+// —— 试用期结束页（极简，只留引流）——
+const TRIAL_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>免费试用已结束</title>
+<style>
+  body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#eef2f7;color:#1e3a5f;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}
+  .box{max-width:400px;background:#fff;padding:36px 30px;border-radius:18px;box-shadow:0 10px 36px rgba(30,58,95,.12);text-align:center}
+  .emoji{font-size:42px;line-height:1;margin-bottom:12px}
+  .t{font-size:21px;font-weight:800;margin:0 0 12px}
+  .d{font-size:14px;color:#4a5568;line-height:1.9;margin:0}
+  .d b{color:#1e3a5f}
+  .b{display:inline-block;margin-top:22px;background:#1e3a5f;color:#fff;padding:12px 22px;border-radius:11px;text-decoration:none;font-size:14px;font-weight:600}
+  .b:hover{opacity:.92}
+</style></head><body><div class="box">
+  <div class="emoji">⏳</div>
+  <h1 class="t">免费试用已结束</h1>
+  <p class="d">3 天在线试用期已满。<br>需继续使用请获取<b>离线完整版</b>（全量真题·AI 点评·永久使用）。<br>获取方式：闲鱼搜 <b>RCJ9527</b></p>
+  <a class="b" href="https://www.goofish.com/" target="_blank" rel="noopener">去闲鱼搜 RCJ9527 →</a>
+</div></body></html>`;
+
+// —— 试用期内注入页面顶部的提示条（琥珀色，显示剩余天数，促转化不刺眼）——
+function trialBannerHtml(trialEnd) {
+  const remainDays = Math.max(1, Math.ceil((trialEnd - Date.now()) / 86400000));
+  return '<style>'
+    + '#rcjTrialBar{position:fixed;top:0;left:0;right:0;z-index:2147483600;'
+    + 'background:linear-gradient(90deg,#b45309,#d97706);color:#fff;'
+    + 'font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;'
+    + 'font-size:13px;line-height:1.5;padding:7px 12px;text-align:center;'
+    + 'box-shadow:0 2px 10px rgba(0,0,0,.15)}'
+    + '#rcjTrialBar b{font-weight:800}'
+    + '#rcjTrialBar a{color:#fff;text-decoration:underline;font-weight:700;white-space:nowrap}'
+    + '@media(max-width:520px){#rcjTrialBar{font-size:12px;padding:6px 10px}}'
+    + '</style>'
+    + '<div id="rcjTrialBar">🎁 免费试用中 · 剩余 <b>' + remainDays + ' 天</b>'
+    + ' · 长期使用请获取离线完整版（闲鱼搜 '
+    + '<a href="https://www.goofish.com/" target="_blank" rel="noopener">RCJ9527</a>）</div>'
+    + '<script>(function(){function boot(){var bar=document.getElementById("rcjTrialBar");if(!bar)return;'
+    + 'try{document.body.style.paddingTop=((bar.offsetHeight||34))+"px";}catch(e){}}'
+    + 'if(document.body){boot();}else{document.addEventListener("DOMContentLoaded",boot);}'
+    + '})();</script>';
+}
+
+// 给放行的 HTML 响应：种/续 rcj_trial Cookie + 注入试用提示条
+function withTrial(res, trialStart, trialEnd) {
+  res.headers.append(
+    "Set-Cookie",
+    `rcj_trial=${trialStart}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`
+  );
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("text/html")) return res;
+  return new HTMLRewriter()
+    .on("body", { element(el) { el.append(trialBannerHtml(trialEnd), { html: true }); } })
+    .transform(res);
+}
 
 // —— 到期后的「升级维护」页面（全内联，不依赖任何外部资源；极简，只留引流）——
 const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
@@ -151,6 +213,23 @@ export async function onRequest(context) {
   // —— 3) 仅统计 HTML 页面导航，跳过静态资源与子请求 ——
   if (isStatic || request.method !== "GET") return next();
 
+  // —— ★ 3 天试用期检查：首次访问记时间戳，到期返回「试用结束」页 ——
+  const TRIAL_DAYS = parseInt((env && env.TRIAL_DAYS) || String(TRIAL_DAYS_DEFAULT), 10) || 3;
+  let trialStart = 0;
+  {
+    const tm = cookie.match(/rcj_trial=(\d+)/);
+    if (tm) trialStart = parseInt(tm[1], 10) || 0;
+  }
+  // 防作弊小加固：Cookie 里的时间戳若是未来时间（伪造），视为无效重记
+  if (trialStart <= 0 || trialStart > Date.now()) trialStart = Date.now();
+  const trialEnd = trialStart + TRIAL_DAYS * 86400000;
+  if (Date.now() >= trialEnd) {
+    return new Response(TRIAL_HTML, {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+    });
+  }
+
   // —— 4) 每日访问计数 ——
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
   const kv = env && env.VISIT_KV; // 后台绑定 KV(绑定名 VISIT_KV)后存在 → 按 IP 硬限制
@@ -180,7 +259,7 @@ export async function onRequest(context) {
     } catch (e) {
       /* 写失败不挡用户 */
     }
-    return injectBanner(res, OFFLINE_AT);
+    return withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd);
   }
 
   // ===== 回退：Cookie 软限制（未绑 KV 时）=====
@@ -212,5 +291,5 @@ export async function onRequest(context) {
     "Set-Cookie",
     `rcj_visits=${nextVal}; Path=/; Max-Age=86400; SameSite=Lax; Secure`
   );
-  return injectBanner(res, OFFLINE_AT);
+  return withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd);
 }
