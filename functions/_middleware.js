@@ -37,11 +37,10 @@ const LIMIT_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8
 
 // ============ 定时下线（到点自动锁站，逼白嫖党转离线付费版）============
 // 下线时间（毫秒时间戳）。
-//   ★ 0 = 功能关闭（不挂横幅、不锁站）——当前状态：待定，等测试/定稿后再启用。
-//   ★ 启用：改成目标时刻的毫秒时间戳再 push（用 date 命令算，别手算），
-//     或在 Cloudflare 后台设环境变量 OFFLINE_AT 覆盖（无需改代码）。
-//   参考：2026-07-25 20:00 GMT+8 = 1784980800000
-const OFFLINE_AT_DEFAULT = 0;
+//   ★ 0 = 功能关闭（不挂横幅、不锁站）。
+//   ★ 当前状态：已启用，2026-07-25 13:39 GMT+8 起立即停服（用户确认"现在就下线"）。
+//   ★ 想复活：改回 0 再 push，或在 Cloudflare 后台设环境变量 OFFLINE_AT=0 覆盖（无需改代码）。
+const OFFLINE_AT_DEFAULT = 1784957946000;
 
 // —— 到期后的「已停服」页面（全内联，不依赖任何外部资源；仍带闲鱼引流位）——
 const OFFLINE_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
