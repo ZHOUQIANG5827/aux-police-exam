@@ -755,14 +755,37 @@ function randomAnswerHtml(q) {
   if (q.explanation) h += '<div style="margin-top:10px">解析：' + formatAnswer(q.explanation, "") + "</div>";
   return h;
 }
+// 随机抽题范围：优先按当前选中的题型/年份/标签等筛选抽题；筛选为空时回退全库
+function randomPool() {
+  var pool = computeFiltered();
+  return pool.length ? pool : dataset();
+}
+// 当前抽题范围的文字说明（供弹窗顶部显示）
+function randomScopeLabel(count) {
+  var parts = [];
+  activeDimensions().forEach(function (d) {
+    var val = filterState[d.key];
+    if (val && val !== "all") parts.push(dimLabel(d.key, val));
+  });
+  if (currentSearch) parts.push("搜索“" + currentSearch + "”");
+  var scope = parts.length ? parts.join(" · ") : "全部题目";
+  return "🎯 本次抽题范围：" + scope + "（共 " + count + " 题）";
+}
 function showRandomQuestion() {
   resetAudioRecorderUI();
   startTimerCountdown();
   var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove();
-  var data = dataset();
+  var data = randomPool();
   if (!data.length) return;
-  var q = data[Math.floor(Math.random() * data.length)];
+  var q;
+  if (data.length === 1) { q = data[0]; }
+  else {
+    // 多题时避免连续抽到同一题
+    do { q = data[Math.floor(Math.random() * data.length)]; } while (currentRandomQ && q === currentRandomQ);
+  }
   currentRandomQ = q;
+  var scopeEl = document.getElementById("randomModalScope");
+  if (scopeEl) scopeEl.textContent = randomScopeLabel(data.length);
   var submitBtn = document.getElementById("randomModalSubmit");
   if (MODE === "interview") {
     // 面试：默认隐藏答案，点「显示答案」才展开
