@@ -171,6 +171,14 @@
       <div class="timer-box">
         <div class="timer-header"><span>⏳ 考场限时模拟答题</span><span class="timer-right"><span id="timerDigits">03:00</span><button class="timer-reset-btn" id="timerResetBtn" type="button" title="重置计时">🔄 重置</button></span></div>
         <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
+        <div class="timer-duration-row">
+          <span class="timer-duration-label">⏱️ 演练时长</span>
+          <div class="timer-duration-btns" id="timerDurationBtns">
+            <button type="button" data-min="3" class="dur-btn active">3分钟</button>
+            <button type="button" data-min="4" class="dur-btn">4分钟</button>
+            <button type="button" data-min="5" class="dur-btn">5分钟</button>
+          </div>
+        </div>
       </div>
       <div class="audio-recorder-zone" id="audioRecorderZone">
         <button class="record-ctrl-btn idle" id="recordCtrlBtn">🎙️ 开始录音演练</button>

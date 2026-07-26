@@ -537,8 +537,11 @@ document.getElementById("collapseAll").addEventListener("click", function () { d
 
 // 全真考场倒计时
 var testTimer = null, timerLimit = CONFIG.timerSeconds, timerRemaining = CONFIG.timerSeconds;
+var userTimerSeconds = CONFIG.timerSeconds;            // 录音/演练时长（可调整为 3/4/5 分钟）
+var RECORD_DURATION_KEY = "rcj_record_duration_min";
 function startTimerCountdown() {
   clearInterval(testTimer);
+  timerLimit = userTimerSeconds;
   timerRemaining = timerLimit;
   var fillEl = document.getElementById("timerBarFill");
   var textEl = document.getElementById("timerDigits");
@@ -908,6 +911,30 @@ function closeRandomModal() { randomModal.classList.remove("show"); stopTimerCou
 document.getElementById("randomModalClose").addEventListener("click", closeRandomModal);
 document.getElementById("randomModalDone").addEventListener("click", closeRandomModal);
 document.getElementById("timerResetBtn").addEventListener("click", startTimerCountdown);
+// 录音/演练时长可调整（3/4/5 分钟），默认 3 分钟，选择后即时重置并记忆偏好
+(function bindTimerDuration() {
+  var box = document.getElementById("timerDurationBtns");
+  if (!box) return;
+  function syncActive(min) {
+    [].forEach.call(box.querySelectorAll(".dur-btn"), function (b) {
+      b.classList.toggle("active", parseInt(b.getAttribute("data-min"), 10) === min);
+    });
+  }
+  var saved = parseInt(localStorage.getItem(RECORD_DURATION_KEY), 10);
+  if (saved === 3 || saved === 4 || saved === 5) {
+    userTimerSeconds = saved * 60;
+    syncActive(saved);
+  }
+  box.addEventListener("click", function (e) {
+    var btn = e.target.closest(".dur-btn");
+    if (!btn) return;
+    var min = parseInt(btn.getAttribute("data-min"), 10);
+    userTimerSeconds = min * 60;
+    try { localStorage.setItem(RECORD_DURATION_KEY, min); } catch (e2) {}
+    syncActive(min);
+    startTimerCountdown();
+  });
+})();
 randomModal.addEventListener("click", function (e) { if (e.target === randomModal) closeRandomModal(); });
 
 // 闲鱼口令
@@ -1465,7 +1492,7 @@ if (CONFIG.rewardDesc)  document.getElementById("rewardDesc").innerHTML = CONFIG
 if (CONFIG.rewardImage) { var _qr = document.getElementById("rewardQr"); _qr.src = CONFIG.rewardImage; _qr.loading = 'lazy'; _qr.decoding = 'async'; }
 
 // 倒计时显示
-document.getElementById("timerDigits").textContent = (function () { var m = Math.floor(CONFIG.timerSeconds / 60), s = CONFIG.timerSeconds % 60; return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); })();
+document.getElementById("timerDigits").textContent = (function () { var m = Math.floor(userTimerSeconds / 60), s = userTimerSeconds % 60; return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); })();
 
 // 页脚（logo + 文案 + 联系 + 版本）
 var _footer = document.querySelector('.footer');

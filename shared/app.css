@@ -547,6 +547,12 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 .timer-right { display: flex; align-items: center; gap: 8px; }
 .timer-reset-btn { font-size: 12px; font-weight: 600; color: var(--primary-light); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; cursor: pointer; transition: all .15s; }
 .timer-reset-btn:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.timer-duration-row { display: flex; align-items: center; gap: 10px; margin-top: 9px; min-height: 30px; }
+.timer-duration-label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.timer-duration-btns { display: inline-flex; gap: 6px; }
+.dur-btn { font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; cursor: pointer; transition: all .15s; }
+.dur-btn:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.dur-btn.active { color: #fff; background: var(--primary-light); border-color: var(--primary-light); }
 .download-record-btn { background: var(--primary-light); color: #fff; border: none; }
 .download-record-btn:hover { filter: brightness(1.05); }
 
