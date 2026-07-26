@@ -1205,7 +1205,7 @@ function exitExamMode() {
   examView.style.display = "none";
   document.getElementById("questionsList").style.display = "";
   var tb = document.querySelector(".toolbar"); if (tb) tb.style.display = "";
-  if (_mPromo) document.getElementById("promoBanner").style.display = "";
+  if (_mPromo) document.getElementById("promoBanner").style.display = "flex";
   render();
 }
 function startExamTimer(minutes){

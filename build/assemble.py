@@ -16,12 +16,39 @@ assemble.py —— 由公共模板生成各城市 index.html。
   python build/assemble.py            # 生成全部三站
   python build/assemble.py sz         # 仅生成深圳站
 """
-import os, sys, json, re
+import os, sys, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CITIES = ["sz", "hz", "gd", "ms", "cd"]
 TPL = os.path.join(ROOT, "src/template.html")
 BRAND_TITLE = "RCJ Exam Template"
+
+VARS = ["SITE_CONFIG", "DATA_WRITTEN", "DATA_INTERVIEW"]
+
+def compress_station_data(js_text):
+    """压缩 station-data.js 中的 JSON 数据块，去掉空白与换行，减小传输体积。"""
+    pos = 0
+    parts = []
+    for var in VARS:
+        marker = f"window.{var} = "
+        start = js_text.find(marker, pos)
+        if start == -1:
+            continue
+        next_window = js_text.find("window.", start + len(marker))
+        end = next_window if next_window != -1 else len(js_text)
+        rhs = js_text[start + len(marker):end].strip()
+        if rhs.endswith(";"):
+            rhs = rhs[:-1].strip()
+        try:
+            data = json.loads(rhs)
+            compressed = json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+        except Exception as e:
+            print(f"  [warn] {var} 压缩失败，保留原样: {e}")
+            compressed = rhs
+        parts.append(js_text[pos:start] + f"window.{var}={compressed};")
+        pos = end
+    parts.append(js_text[pos:])
+    return "".join(parts)
 
 def main():
     tpl = open(TPL, encoding="utf-8").read()
@@ -32,6 +59,7 @@ def main():
             print(f"[skip] {c}: 缺少 {data_path}")
             continue
         data = open(data_path, encoding="utf-8").read().strip()
+        data = compress_station_data(data)
         title = BRAND_TITLE
         # 数据外置：HTML 仅引用 station-data.js，避免 1.5MB 内联拖慢首屏（配合 _headers 长缓存）
         data_out = os.path.join(ROOT, c, "station-data.js")
