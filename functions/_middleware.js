@@ -172,6 +172,32 @@ function injectBanner(res, offlineAt) {
     .transform(res);
 }
 
+// ============ 访客统计 & 爬虫过滤 ============
+// 命中已知爬虫 / 空 UA → 视为「非真人」，跳过试用 / 限额计数（仍正常返回页面，不影响收录）。
+function isBot(req) {
+  const ua = (req.headers.get("user-agent") || "").toLowerCase();
+  if (!ua) return true; // 空 UA 几乎都是脚本 / 工具
+  const bad = ["bot", "crawler", "spider", "slurp", "bingpreview", "facebookexternalhit",
+    "python-requests", "curl", "wget", "go-http-client", "okhttp", "headless", "phantomjs",
+    "puppeteer", "selenium", "axios", "java/", "libwww", "scrapy", "httpclient", "zgrab",
+    "masscan", "nmap", "semrush", "ahrefs", "mj12bot", "dotbot", "petalbot", "applebot",
+    "yandex", "baiduspider", "googlebot", "censys", "archive", "whatsapp", "telegrambot"];
+  return bad.some((b) => ua.includes(b));
+}
+
+// 若 Cloudflare 后台设了 GA4_ID 环境变量，则向每个 HTML 页面注入 Google Analytics（GA4），
+// 用于查看真实「独立访客数 / 活跃用户 / 新老用户」——Cloudflare Web Analytics 免费版无此指标。
+// ⚠️ ID 放环境变量（不进公开仓库），更安全；未设置则不注入（零副作用）。
+function injectGa4(res, ga4Id) {
+  if (!ga4Id) return res;
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("text/html")) return res;
+  const s = '<script async src="https://www.googletagmanager.com/gtag/js?id=' + ga4Id + '"></script>'
+    + '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}'
+    + 'gtag("js",new Date());gtag("config","' + ga4Id + '");</script>';
+  return new HTMLRewriter().on("head", { element(el) { el.append(s, { html: true }); } }).transform(res);
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -185,6 +211,7 @@ export async function onRequest(context) {
     ? (env.ALLOW_IPS).split(",").map((s) => s.trim()).filter(Boolean)
     : [];
   const limit = DAILY_LIMIT;
+  const ga4Id = (env && env.GA4_ID) || ""; // 留空则不注入 GA4
 
   // —— 1) 作者豁免：VIP 密钥一次性种 Cookie ——
   if (VIP_SECRET && url.searchParams.get("vip") === VIP_SECRET) {
@@ -220,6 +247,9 @@ export async function onRequest(context) {
 
   // —— 3) 仅统计 HTML 页面导航，跳过静态资源与子请求 ——
   if (isStatic || request.method !== "GET") return next();
+
+  // —— 3.5) 爬虫 / 空 UA：跳过试用与限额计数（仍正常返回页面）——
+  if (isBot(request)) return next();
 
   // —— ★ 3 天试用期检查：首次访问记时间戳，到期返回「试用结束」页 ——
   const TRIAL_DAYS = parseInt((env && env.TRIAL_DAYS) || String(TRIAL_DAYS_DEFAULT), 10) || 3;
@@ -267,7 +297,7 @@ export async function onRequest(context) {
     } catch (e) {
       /* 写失败不挡用户 */
     }
-    return withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd);
+    return injectGa4(withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd), ga4Id);
   }
 
   // ===== 回退：Cookie 软限制（未绑 KV 时）=====
@@ -299,5 +329,5 @@ export async function onRequest(context) {
     "Set-Cookie",
     `rcj_visits=${nextVal}; Path=/; Max-Age=86400; SameSite=Lax; Secure`
   );
-  return withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd);
+  return injectGa4(withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd), ga4Id);
 }
