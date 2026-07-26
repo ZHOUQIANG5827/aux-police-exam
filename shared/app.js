@@ -554,8 +554,14 @@ function startTimerCountdown() {
     if (timerRemaining <= 30) fillEl.classList.add("warning");
     if (timerRemaining <= 0) {
       clearInterval(testTimer);
-      textEl.textContent = "00:00 - 时间到！";
-      if (isRecording) { try { stopAndEncodeRecording(); rcjToast("⏰ 时间到！录音已自动保存，可点「下载录音(MP3)」"); } catch (e) {} }
+      textEl.textContent = "00:00 · 已超时";
+      fillEl.style.width = "0%";
+      // 时间到不强制停止录音：用户仍可在规定时间后继续作答、录音，点「停止」才结束
+      if (isRecording) {
+        rcjToast("⏰ 规定时间已到，仍可继续录音，结束后点「停止」或「下载录音(MP3)」");
+      } else {
+        rcjToast("⏰ 时间到！如需练习可重置计时器");
+      }
     }
   }, 1000);
 }
