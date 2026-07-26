@@ -16,7 +16,7 @@ assemble.py —— 由公共模板生成各城市 index.html。
   python build/assemble.py            # 生成全部三站
   python build/assemble.py sz         # 仅生成深圳站
 """
-import os, sys, json
+import os, sys, json, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CITIES = ["sz", "hz", "gd", "ms", "cd"]
@@ -24,6 +24,16 @@ TPL = os.path.join(ROOT, "src/template.html")
 BRAND_TITLE = "RCJ Exam Template"
 
 VARS = ["SITE_CONFIG", "DATA_WRITTEN", "DATA_INTERVIEW"]
+
+def get_asset_version():
+    """取当前 git commit short hash 作为 CSS/JS 版本号，强制浏览器刷新缓存。"""
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT, stderr=subprocess.DEVNULL
+        ).decode("utf-8").strip()
+    except Exception:
+        return "1"
 
 def compress_station_data(js_text):
     """压缩 station-data.js 中的 JSON 数据块，去掉空白与换行，减小传输体积。"""
@@ -52,6 +62,11 @@ def compress_station_data(js_text):
 
 def main():
     tpl = open(TPL, encoding="utf-8").read()
+    ver = get_asset_version()
+    # 给公共 CSS/JS 加版本号，避免用户浏览器长期缓存旧资源
+    tpl = (tpl
+           .replace('href="../shared/app.css"', f'href="../shared/app.css?v={ver}"')
+           .replace('src="../shared/app.js"', f'src="../shared/app.js?v={ver}"'))
     targets = sys.argv[1:] or CITIES
     for c in targets:
         data_path = os.path.join(ROOT, "src", c, "station-data.js")
