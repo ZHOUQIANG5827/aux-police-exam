@@ -555,12 +555,12 @@ body.focus-mode .focus-toggle { background: var(--danger); }
 .timer-right { display: flex; align-items: center; gap: 8px; }
 .timer-reset-btn { font-size: 12px; font-weight: 600; color: var(--primary-light); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; cursor: pointer; transition: all .15s; }
 .timer-reset-btn:hover { border-color: var(--primary-light); background: var(--primary-bg); }
-.timer-duration-row { display: flex; align-items: center; gap: 10px; margin-top: 9px; min-height: 30px; }
-.timer-duration-label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.timer-duration-row { display: flex; align-items: center; gap: 10px; margin-top: 9px; min-height: 32px; }
+.timer-duration-label { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .timer-duration-btns { display: inline-flex; gap: 6px; }
-.dur-btn { font-size: 12px; font-weight: 600; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 3px 12px; cursor: pointer; transition: all .15s; }
-.dur-btn:hover { border-color: var(--primary-light); background: var(--primary-bg); }
-.dur-btn.active { color: #fff; background: var(--primary-light); border-color: var(--primary-light); }
+.dur-btn { font-size: 12px; font-weight: 700; color: var(--text-secondary); background: #fff; border: 1.5px solid var(--border); border-radius: 999px; padding: 4px 13px; cursor: pointer; transition: all .15s; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.dur-btn:hover { color: var(--primary-light); border-color: var(--primary-light); background: var(--primary-bg); }
+.dur-btn.active { color: #fff !important; background: linear-gradient(90deg, var(--primary-light), #818cf8) !important; border-color: var(--primary-light) !important; box-shadow: 0 2px 6px rgba(99,102,241,.28); }
 .download-record-btn { background: var(--primary-light); color: #fff; border: none; }
 .download-record-btn:hover { filter: brightness(1.05); }
 
@@ -1744,8 +1744,14 @@ function startTimerCountdown() {
     if (timerRemaining <= 30) fillEl.classList.add("warning");
     if (timerRemaining <= 0) {
       clearInterval(testTimer);
-      textEl.textContent = "00:00 - 时间到！";
-      if (isRecording) { try { stopAndEncodeRecording(); rcjToast("⏰ 时间到！录音已自动保存，可点「下载录音(MP3)」"); } catch (e) {} }
+      textEl.textContent = "00:00 · 已超时";
+      fillEl.style.width = "0%";
+      // 时间到不强制停止录音：用户仍可在规定时间后继续作答、录音，点「停止」才结束
+      if (isRecording) {
+        rcjToast("⏰ 规定时间已到，仍可继续录音，结束后点「停止」或「下载录音(MP3)」");
+      } else {
+        rcjToast("⏰ 时间到！如需练习可重置计时器");
+      }
     }
   }, 1000);
 }

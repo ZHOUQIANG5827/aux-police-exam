@@ -44,15 +44,16 @@ def main():
         station_data_js = None
         print(f"⚠️ 警告：找不到 {city}/station-data.js，题库数据将缺失，离线版会是空壳！")
 
-    # 1) 内联 CSS（替换外链 link 标签）
-    html = html.replace(
-        '<link rel="stylesheet" href="../shared/app.css">',
+    # 1) 内联 CSS（替换外链 link 标签；兼容 assemble.py 追加的 ?v=hash 版本号）
+    html = re.sub(
+        r'<link rel="stylesheet" href="\.\./shared/app\.css[^"]*">',
         f"<style>\n{css}\n</style>",
+        html,
     )
 
     # 2) 内联 JS（正则替换 script src 标签，内容本身是安全的：不含 </script 字面量）
     html = re.sub(
-        r'<script src="\.\./shared/app\.js"></script>',
+        r'<script src="\.\./shared/app\.js[^"]*"></script>',
         lambda m: f"<script>\n{js}\n</script>",
         html,
     )
@@ -62,7 +63,7 @@ def main():
     if os.path.exists(lame_path):
         lame_js = open(lame_path, encoding="utf-8").read()
         html = re.sub(
-            r'<script src="\.\./shared/lame\.min\.js"></script>',
+            r'<script src="\.\./shared/lame\.min\.js[^"]*"></script>',
             lambda m: f"<script>\n{lame_js}\n</script>",
             html,
         )
