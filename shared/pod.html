@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>面试对练舱 · 1v1 语音对练</title>
-<link rel="stylesheet" href="pod.css?v=20260728g">
+<link rel="stylesheet" href="pod.css?v=20260728h">
 </head>
 <body>
 <div class="pod">
@@ -26,17 +26,34 @@
         <span>💬 陪练留言墙 / 约练</span>
         <button class="mini-btn" id="wallRefresh">↻ 刷新</button>
       </div>
+      <div class="wall-tabs" id="wallTabs">
+        <button class="tab active" data-f="all">全部</button>
+        <button class="tab" data-f="meet">约练</button>
+        <button class="tab" data-f="msg">留言</button>
+      </div>
       <div class="wall-list" id="wallList"><div class="wall-empty">加载中…</div></div>
       <div class="wall-form">
-        <input class="wf-input" id="wfName" placeholder="昵称（选填）" maxlength="20">
+        <input class="wf-input" id="wfName" placeholder="昵称（选填，自动记住）" maxlength="20">
         <div class="wf-type">
           <label><input type="radio" name="wfType" value="msg" checked> 留言</label>
           <label><input type="radio" name="wfType" value="meet"> 约练</label>
         </div>
-        <textarea class="wf-text" id="wfText" placeholder="想说点什么？例如：求一位搭子互练综合分析题 / 今晚8点约练结构化，VX:xxx" maxlength="300"></textarea>
+        <textarea class="wf-text" id="wfText" placeholder="想说点什么？例如：求一位搭子互练综合分析题 / 今晚想约练结构化面试" maxlength="300"></textarea>
         <div class="wf-extra" id="wfExtra" style="display:none;">
-          <input class="wf-input" id="wfMeetAt" placeholder="约练时间，如 07-30 20:00" maxlength="30">
-          <input class="wf-input" id="wfContact" placeholder="联系方式（选填）" maxlength="40">
+          <label class="wf-label">约练时间</label>
+          <input class="wf-input" id="wfMeetAt" type="datetime-local">
+          <label class="wf-label">岗位方向</label>
+          <select class="wf-input" id="wfDirection">
+            <option value="">不限定</option>
+            <option value="结构化面试">结构化面试</option>
+            <option value="公安素质测试">公安素质测试</option>
+            <option value="综合分析题">综合分析题</option>
+            <option value="应急应变题">应急应变题</option>
+            <option value="人际沟通题">人际沟通题</option>
+            <option value="体测陪练">体测陪练</option>
+            <option value="其他">其他</option>
+          </select>
+          <input class="wf-input" id="wfContact" placeholder="联系方式（选填，如 VX:xxx）" maxlength="40">
         </div>
         <button class="big-btn" id="wfPost">发布到留言墙</button>
       </div>
@@ -137,6 +154,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="peerjs.min.js?v=20260728c"></script>
-<script src="pod.js?v=20260728g"></script>
+<script src="pod.js?v=20260728h"></script>
 </body>
 </html>

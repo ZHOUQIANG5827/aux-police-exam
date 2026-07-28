@@ -43,7 +43,7 @@
    "candPanel","candQuestion","candTimer","candScore","candDeduct",
    "examPanel","qSelect","sendQBtn","examAnswer","durRow","durInput","startBtn","stopBtn","resetBtn","checklist","examScore",
    "micBtn","recBtn","dlBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast",
-   "wallPanel","wallList","wallErr","wallRefresh","wfName","wfText","wfExtra","wfMeetAt","wfContact","wfPost"
+   "wallPanel","wallList","wallErr","wallRefresh","wfName","wfText","wfExtra","wfMeetAt","wfContact","wfDirection","wallTabs","wfPost"
   ].forEach(function (k) { el[k] = $(k); });
 
   var peer = null, conn = null, localStream = null, micOn = false, remoteStream = null;
@@ -505,6 +505,7 @@
         el.wfExtra.style.display = (t && t.value === "meet") ? "block" : "none";
       });
     });
+    bindWallControls();
     el.copyBtn.addEventListener("click", function () {
       var url = location.origin + location.pathname + "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -794,6 +795,23 @@
 
   // ---------- 留言墙 / 约练（KV 后端） ----------
   var wallTimer = null;
+  var lastWallItems = [];
+  var wallFilter = "all";
+  var respondedIds = (function () {
+    try { return JSON.parse(localStorage.getItem("pod_responded") || "[]"); } catch (e) { return []; }
+  })();
+  function myUid() {
+    var u = "";
+    try { u = localStorage.getItem("pod_uid"); } catch (e) {}
+    if (!u) { u = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); try { localStorage.setItem("pod_uid", u); } catch (e) {} }
+    return u;
+  }
+  function rememberResponded(id) {
+    if (respondedIds.indexOf(id) < 0) {
+      respondedIds.push(id);
+      try { localStorage.setItem("pod_responded", JSON.stringify(respondedIds)); } catch (e) {}
+    }
+  }
   function escapeHtml(s) {
     return (s || "").replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -806,36 +824,65 @@
     if (s < 86400) return Math.floor(s / 3600) + "小时前";
     return Math.floor(s / 86400) + "天前";
   }
+  function fmtMeetISO(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    var p = function (n) { return (n < 10 ? "0" + n : "" + n); };
+    return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  function isExpired(iso) {
+    if (!iso) return false;
+    var d = new Date(iso);
+    return !isNaN(d.getTime()) && d.getTime() < Date.now();
+  }
   function renderWall(items) {
+    lastWallItems = items || [];
     el.wallList.innerHTML = "";
-    if (!items || !items.length) {
-      el.wallList.innerHTML = '<div class="wall-empty">还没有留言，来发第一条吧～</div>';
+    var list = lastWallItems.filter(function (it) { return wallFilter === "all" || it.type === wallFilter; });
+    if (!list.length) {
+      el.wallList.innerHTML = '<div class="wall-empty">' +
+        (lastWallItems.length ? "该分类下还没有内容，切换或发一条吧～" : "还没有留言，来发第一条吧～") + '</div>';
       return;
     }
-    items.forEach(function (it) {
+    list.forEach(function (it) {
       var d = document.createElement("div"); d.className = "wall-item";
+      if (it.type === "meet" && isExpired(it.meetAtISO)) d.className += " wi-expired";
       var badge = it.type === "meet"
         ? '<span class="wi-badge meet">约练</span>'
         : '<span class="wi-badge msg">留言</span>';
       var meta = "";
       if (it.type === "meet") {
         var m = [];
-        if (it.meetAt) m.push("⏰ " + escapeHtml(it.meetAt));
+        if (it.meetAtISO) m.push("⏰ " + escapeHtml(fmtMeetISO(it.meetAtISO)) + (isExpired(it.meetAtISO) ? "（已过期）" : ""));
+        else if (it.meetAt) m.push("⏰ " + escapeHtml(it.meetAt));
+        if (it.direction) m.push("🎯 " + escapeHtml(it.direction));
         if (it.contact) m.push("📞 " + escapeHtml(it.contact));
         if (m.length) meta = '<div class="wi-meta">' + m.join("　") + "</div>";
       } else if (it.contact) {
         meta = '<div class="wi-meta">📞 ' + escapeHtml(it.contact) + "</div>";
+      }
+      var respHtml = "";
+      if (it.type === "meet") {
+        var cnt = it.resp || 0;
+        var mine = respondedIds.indexOf(it.id) >= 0;
+        respHtml = '<button class="wi-resp' + (mine ? " done" : "") + '" data-id="' + it.id + '">' +
+          (mine ? "已响应✓ " : "🙋 我想一起 ") + "(" + cnt + ")</button>";
       }
       d.innerHTML =
         '<div class="wi-top">' + badge +
         '<span class="wi-name">' + escapeHtml(it.name) + '</span>' +
         '<span class="wi-time">' + relTime(it.createdAt) + '</span>' +
         '<span class="wi-del" title="删除">✕</span></div>' +
-        '<div class="wi-text">' + escapeHtml(it.text) + '</div>' + meta;
+        '<div class="wi-text">' + escapeHtml(it.text) + '</div>' + meta + respHtml;
       d.querySelector(".wi-del").addEventListener("click", function () { deleteWall(it.id); });
+      if (it.type === "meet") {
+        d.querySelector(".wi-resp").addEventListener("click", function () { respondWall(it.id); });
+      }
       el.wallList.appendChild(d);
     });
   }
+  function applyWallFilter() { renderWall(lastWallItems); }
   function showWallErr(msg) { el.wallErr.textContent = msg; el.wallErr.style.display = "block"; }
   function fetchWall() {
     fetch("/api/wall?city=" + encodeURIComponent(CITY), { cache: "no-store" })
@@ -853,11 +900,18 @@
     var type = t ? t.value : "msg";
     var text = el.wfText.value.trim();
     if (!text) { toast("先写点内容"); return; }
+    var meetAtISO = "";
+    if (type === "meet" && el.wfMeetAt.value) {
+      var dt = new Date(el.wfMeetAt.value);
+      if (!isNaN(dt.getTime())) meetAtISO = dt.toISOString();
+    }
     var payload = {
-      city: CITY, type: type,
+      city: CITY, type: type, action: "post",
       name: el.wfName.value.trim(),
       text: text,
-      meetAt: (type === "meet") ? el.wfMeetAt.value.trim() : "",
+      meetAt: (type === "meet") ? (fmtMeetISO(meetAtISO) || el.wfMeetAt.value) : "",
+      meetAtISO: meetAtISO,
+      direction: (type === "meet") ? el.wfDirection.value : "",
       contact: el.wfContact.value.trim()
     };
     el.wfPost.disabled = true; el.wfPost.textContent = "发布中…";
@@ -870,13 +924,52 @@
       .then(function (d) {
         el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙";
         if (d.ok) {
-          el.wfText.value = ""; el.wfMeetAt.value = ""; el.wfContact.value = "";
+          el.wfText.value = ""; el.wfMeetAt.value = ""; el.wfDirection.value = "";
           toast("已发布到留言墙"); fetchWall();
         } else if (d.error === "KV_NOT_BOUND") {
           showWallErr("留言墙存储未启用：请在 Cloudflare 后台绑定 KV（VISIT_KV）。");
+        } else if (d.error === "RATE_LIMIT") {
+          toast("发帖太频繁，请 " + (d.left || 60) + " 秒后再发");
+        } else if (d.error === "DUP") {
+          toast("刚才发过相同内容啦，稍等会儿再发");
+        } else if (d.error === "BAD_WORD") {
+          toast("内容含敏感词，已拦截");
         } else { toast("发布失败：" + (d.error || "未知错误")); }
       })
       .catch(function () { el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙"; toast("发布失败（网络）"); });
+  }
+  function respondWall(id) {
+    if (respondedIds.indexOf(id) >= 0) { toast("你已经响应过这条啦"); return; }
+    fetch("/api/wall", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ city: CITY, action: "respond", id: id, uid: myUid() })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          rememberResponded(id);
+          toast("已响应，当前 " + (d.resp || 0) + " 人想一起");
+          fetchWall();
+        } else if (d.error === "NOT_FOUND") { toast("该约练已不存在"); fetchWall(); }
+        else toast("响应失败：" + (d.error || "未知"));
+      })
+      .catch(function () { toast("响应失败（网络）"); });
+  }
+  function bindWallControls() {
+    try {
+      el.wfName.value = localStorage.getItem("pod_wfName") || "";
+      el.wfContact.value = localStorage.getItem("pod_wfContact") || "";
+    } catch (e) {}
+    el.wfName.addEventListener("input", function () { try { localStorage.setItem("pod_wfName", el.wfName.value.trim()); } catch (e) {} });
+    el.wfContact.addEventListener("input", function () { try { localStorage.setItem("pod_wfContact", el.wfContact.value.trim()); } catch (e) {} });
+    Array.prototype.forEach.call(document.querySelectorAll("#wallTabs .tab"), function (b) {
+      b.addEventListener("click", function () {
+        wallFilter = b.getAttribute("data-f") || "all";
+        Array.prototype.forEach.call(document.querySelectorAll("#wallTabs .tab"), function (x) { x.classList.toggle("active", x === b); });
+        applyWallFilter();
+      });
+    });
   }
   function deleteWall(id) {
     var pwd = prompt("删除该留言需输入口令（见页面底部备注）：", "");

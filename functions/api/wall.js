@@ -1,11 +1,16 @@
 /* 陪练留言墙 / 约练 API（Cloudflare Pages Functions）
  * GET  /api/wall?city=sz        -> 返回该城市留言墙列表（最新在前）
- * POST /api/wall                -> 追加一条（留言 msg 或 约练 meet）
+ * POST /api/wall                -> 发帖 / 响应约练
+ *   body.action 缺省或 "post"   -> 追加一条（留言 msg 或 约练 meet）
+ *   body.action = "respond"     -> 对某条约练帖响应「我想一起」（按匿名 uid 去重计数）
+ * DELETE /api/wall              -> 删除（管理员口令）
  * 存储：env.VISIT_KV（与访问计数共用同一命名空间），key = pod_wall_<city>
  * 未绑定 KV 时返回 503 {ok:false,error:"KV_NOT_BOUND"}，前端展示降级提示。
  */
 const MAX_ITEMS = 100;
 const CITIES = ["sz", "hz", "gd", "ms", "cd", "wh"];
+const RATE_LIMIT_SEC = 60;          // 同一 IP 发帖间隔限制
+const SENSITIVE = ["赌博", "色情", "代考", "炸药", "炸弹", "毒品", "诈骗", "办证", "招嫖", "代刷", "枪"];
 
 function sanitize(s, max) {
   s = (s || "").toString().trim();
@@ -37,6 +42,13 @@ async function readList(kv, city) {
     return [];
   }
 }
+function hasSensitive(s) {
+  s = (s || "").toLowerCase();
+  for (var i = 0; i < SENSITIVE.length; i++) {
+    if (s.indexOf(SENSITIVE[i]) >= 0) return SENSITIVE[i];
+  }
+  return null;
+}
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -54,25 +66,59 @@ export async function onRequestPost(context) {
   } catch (e) {
     return json({ ok: false, error: "BAD_JSON" }, 400);
   }
+  if (body && body.action === "respond") return doRespond(context, body);
+  return doPost(context, body);
+}
+
+async function doPost(context, body) {
   const city = cityOf(body.city);
+  const kv = context.env && context.env.VISIT_KV;
+  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+
+  // 频率限制（按客户端 IP）
+  const ip = context.request.headers.get("cf-connecting-ip") || "unknown";
+  try {
+    const rlKey = "wall_rl_" + ip;
+    const last = await kv.get(rlKey);
+    const now = Date.now();
+    if (last && now - Number(last) < RATE_LIMIT_SEC * 1000) {
+      const left = Math.ceil((RATE_LIMIT_SEC * 1000 - (now - Number(last))) / 1000);
+      return json({ ok: false, error: "RATE_LIMIT", left: left }, 429);
+    }
+    await kv.put(rlKey, String(now), { expirationTtl: RATE_LIMIT_SEC });
+  } catch (e) { /* 限速失败不阻断发帖 */ }
+
   const name = sanitize(body.name, 20) || "匿名考生";
   const type = body.type === "meet" ? "meet" : "msg";
   const text = sanitize(body.text, 300);
   if (!text) return json({ ok: false, error: "EMPTY_TEXT" }, 400);
-  const meetAt = sanitize(body.meetAt, 30);
-  const contact = sanitize(body.contact, 40);
+
+  const hit = hasSensitive(text) || hasSensitive(name);
+  if (hit) return json({ ok: false, error: "BAD_WORD", word: hit }, 400);
+
+  // 去重：最近 5 条内同昵称+同内容视为重复
+  let items = await readList(kv, city);
+  const tail = items.slice(-5);
+  for (var i = 0; i < tail.length; i++) {
+    if (tail[i].name === name && tail[i].text === text &&
+        Date.now() - (tail[i].createdAt || 0) < 5 * 60 * 1000) {
+      return json({ ok: false, error: "DUP" }, 400);
+    }
+  }
+
   const item = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
     name: name,
     type: type,
     text: text,
-    meetAt: meetAt,
-    contact: contact,
+    meetAt: sanitize(body.meetAt, 30),
+    meetAtISO: sanitize(body.meetAtISO, 30),
+    direction: sanitize(body.direction, 20),
+    contact: sanitize(body.contact, 40),
+    resp: 0,
+    respUsers: [],
     createdAt: Date.now(),
   };
-  const kv = context.env && context.env.VISIT_KV;
-  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
-  let items = await readList(kv, city);
   items.push(item);
   if (items.length > MAX_ITEMS) items = items.slice(items.length - MAX_ITEMS);
   try {
@@ -81,6 +127,32 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "WRITE_FAIL" }, 500);
   }
   return json({ ok: true, item: item });
+}
+
+async function doRespond(context, body) {
+  const city = cityOf(body.city);
+  const id = sanitize(body.id, 40);
+  const uid = sanitize(body.uid, 40) || "anon";
+  const kv = context.env && context.env.VISIT_KV;
+  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  let items = await readList(kv, city);
+  let found = null;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].id === id) { found = items[i]; break; }
+  }
+  if (!found) return json({ ok: false, error: "NOT_FOUND" }, 404);
+  found.respUsers = found.respUsers || [];
+  if (found.respUsers.indexOf(uid) >= 0) {
+    return json({ ok: true, already: true, resp: found.resp || 0, item: found });
+  }
+  found.respUsers.push(uid);
+  found.resp = (found.resp || 0) + 1;
+  try {
+    await kv.put("pod_wall_" + city, JSON.stringify(items), { expirationTtl: 2592000 });
+  } catch (e) {
+    return json({ ok: false, error: "WRITE_FAIL" }, 500);
+  }
+  return json({ ok: true, resp: found.resp, item: found });
 }
 
 export async function onRequestDelete(context) {
