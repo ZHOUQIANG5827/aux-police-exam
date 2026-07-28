@@ -1558,7 +1558,7 @@ window.addEventListener("DOMContentLoaded", function () {
       podBtn.hidden = false;
       podBtn.addEventListener("click", function () {
         var seg = (location.pathname.split("/")[1] || "sz").replace(/[^a-z]/gi, "");
-        window.open("/shared/pod.html?city=" + (seg || "sz"), "_blank");
+        window.open("/shared/pod?city=" + (seg || "sz"), "_blank");
       });
     }
   } catch (e) {}
