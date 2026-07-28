@@ -39,7 +39,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var el = {};
   ["landing","room","connState","createBtn","roomNo","copyBtn","leaveBtn","roleRow","roleNow",
-   "matchBtn","cancelMatchBtn","matchView","matchHint",
+   "matchBtn","cancelMatchBtn","retryMatchBtn","matchToCreateBtn","matchView","matchHint",
    "candPanel","candQuestion","candTimer","candScore","candDeduct",
    "examPanel","qSelect","sendQBtn","examAnswer","durRow","durInput","startBtn","stopBtn","resetBtn","checklist","examScore",
    "micBtn","recBtn","dlBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast",
@@ -58,6 +58,9 @@
   var lobbyPeer = null, lobbyConn = null;
   var lobbyWaiters = [];                    // 大厅主持收到的访客连接
   var lobbyActive = false, lobbyEntered = false, lobbyReconnect = null, lobbyHostEnter = null, matchHintTimer = null;
+  var lobbyReconnectAttempts = 0;           // 大厅重连次数（超限提示降级）
+  var lobbyMatchTimeout = null;             // 主持等 ack 的超时
+  var lobbyHeartbeat = null, lobbyLastPong = 0; // 大厅心跳保活
 
   // ---------- 工具 ----------
   function log(msg, cls) {
@@ -486,6 +489,13 @@
     el.leaveBtn.addEventListener("click", leaveRoom);
     el.matchBtn.addEventListener("click", enterLobby);
     el.cancelMatchBtn.addEventListener("click", leaveLobby);
+    if (el.retryMatchBtn) el.retryMatchBtn.addEventListener("click", function () { leaveLobby(); enterLobby(); });
+    if (el.matchToCreateBtn) el.matchToCreateBtn.addEventListener("click", function () {
+      leaveLobby();
+      el.landing.style.display = "none";
+      el.room.style.display = "block";
+      setupPeer();
+    });
     // 留言墙 / 约练
     el.wfPost.addEventListener("click", postWall);
     el.wallRefresh.addEventListener("click", fetchWall);
@@ -511,26 +521,39 @@
   function showMatchView() {
     el.landing.style.display = "none"; el.room.style.display = "none";
     el.matchView.style.display = "block";
-    el.matchHint.textContent = "系统正在为你寻找在线练习伙伴，通常几秒到几十秒。";
+    updateMatchHint("系统正在为你寻找在线练习伙伴，通常几秒到几十秒。");
     if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
     matchHintTimer = setTimeout(function () {
-      if (lobbyActive) el.matchHint.textContent = "暂时没找到伙伴，可继续等待，或取消改用「创建房间」发链接给熟人。";
+      if (lobbyActive) updateMatchHint("暂时没找到伙伴，可继续等待，或点下方「创建房间」发链接给熟人。");
     }, 30000);
+  }
+  function updateMatchHint(text) {
+    if (el.matchHint) el.matchHint.textContent = text;
   }
   function enterLobby() {
     lobbyActive = true; lobbyEntered = false; lobbyHostEnter = null;
+    lobbyReconnectAttempts = 0;
     showMatchView(); attemptLobbyHost();
   }
   function attemptLobbyHost() {
+    clearLobbyTimers();
     try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
     lobbyPeer = new Peer(LOBBY_ID, { debug: 1 });
     lobbyPeer.on("open", function (id) {
+      lobbyLastPong = Date.now();
       setConn("匹配大厅已连接", "warn");
+      updateMatchHint("已进入匹配大厅，正在寻找练习伙伴…");
       log("进入匹配大厅：" + id + (id === LOBBY_ID ? "（你是主持，负责撮合）" : ""));
+      startLobbyHeartbeat();
     });
     lobbyPeer.on("connection", handleLobbyJoin);
     lobbyPeer.on("call", function (call) { try { call.close(); } catch (e) {} }); // 大厅不传语音
-    lobbyPeer.on("disconnected", function () { setConn("大厅断开，重连中…", "err"); try { lobbyPeer.reconnect(); } catch (e) {} });
+    lobbyPeer.on("disconnected", function () {
+      setConn("大厅断开，重连中…", "err");
+      updateMatchHint("大厅连接断开，正在重连…");
+      try { lobbyPeer.reconnect(); } catch (e) {}
+      scheduleLobbyReconnect();
+    });
     lobbyPeer.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
     lobbyPeer.on("error", function (err) {
       if (err && err.type === "unavailable-id") { log("已有主持，转为访客连接", "warn"); becomeLobbyClient(); }
@@ -538,11 +561,38 @@
       else { log("大厅错误：" + (err && err.type), "err"); }
     });
   }
+  function startLobbyHeartbeat() {
+    stopLobbyHeartbeat();
+    lobbyHeartbeat = setInterval(function () {
+      if (!lobbyActive) return;
+      // 向所有大厅连接发心跳（主持端发给访客，访客端发给主持）
+      var target = lobbyConn || (lobbyWaiters && lobbyWaiters[0] && lobbyWaiters[0].conn);
+      if (target && target.open) { try { target.send({ t: "ping", ts: Date.now() }); } catch (e) {} }
+      // 20 秒无响应认为大厅已死，主动重连
+      if (lobbyLastPong && Date.now() - lobbyLastPong > 20000) {
+        log("大厅心跳超时，主动重连", "err");
+        scheduleLobbyReconnect();
+      }
+    }, 8000);
+  }
+  function stopLobbyHeartbeat() {
+    if (lobbyHeartbeat) { clearInterval(lobbyHeartbeat); lobbyHeartbeat = null; }
+  }
   function becomeLobbyClient() {
+    clearLobbyTimers();
     try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
     lobbyPeer = new Peer({ debug: 1 });
-    lobbyPeer.on("open", connectLobbyHost);
-    lobbyPeer.on("disconnected", function () { try { lobbyPeer.reconnect(); } catch (e) {} });
+    lobbyPeer.on("open", function (id) {
+      lobbyLastPong = Date.now();
+      startLobbyHeartbeat();
+      connectLobbyHost();
+    });
+    lobbyPeer.on("disconnected", function () {
+      setConn("大厅断开，重连中…", "err");
+      updateMatchHint("大厅连接断开，正在重连…");
+      try { lobbyPeer.reconnect(); } catch (e) {}
+      scheduleLobbyReconnect();
+    });
     lobbyPeer.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
     lobbyPeer.on("error", function (err) {
       if (err && err.type === "peer-unavailable") scheduleLobbyReconnect();
@@ -551,71 +601,133 @@
   }
   function connectLobbyHost() {
     setConn("正在匹配…", "warn");
+    updateMatchHint("正在接入匹配大厅…");
     try {
       var c = lobbyPeer.connect(LOBBY_ID, { reliable: true });
       if (c) { lobbyConn = c; bindLobbyConn(c); }
     } catch (e) { scheduleLobbyReconnect(); }
   }
   function bindLobbyConn(c) {
-    c.on("open", function () { try { c.send({ t: "join", id: lobbyPeer.id }); } catch (e) {} log("已向大厅登记，等待撮合…"); });
-    c.on("data", onLobbyData);
+    c.on("open", function () {
+      try { c.send({ t: "join", id: lobbyPeer.id }); } catch (e) {}
+      lobbyLastPong = Date.now();
+      updateMatchHint("已向大厅登记，等待撮合…");
+      log("已向大厅登记，等待撮合…");
+    });
+    c.on("data", function (d) {
+      if (d && d.t === "ping") { lobbyLastPong = Date.now(); try { c.send({ t: "pong", ts: d.ts }); } catch (e) {} return; }
+      if (d && d.t === "pong") { lobbyLastPong = Date.now(); return; }
+      onLobbyData(d);
+    });
     c.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
     c.on("error", function () { if (lobbyActive) scheduleLobbyReconnect(); });
   }
   function handleLobbyJoin(c) {
     c.on("data", function (d) {
       if (!d) return;
+      if (d.t === "ping") { try { c.send({ t: "pong", ts: d.ts }); } catch (e) {} return; }
+      if (d.t === "pong") { lobbyLastPong = Date.now(); return; }
       if (d.t === "join") {
-        lobbyWaiters.push(c);
-        if (lobbyWaiters.length >= 1) pairLobby();
+        // 防止同一访客多次 join
+        for (var i = 0; i < lobbyWaiters.length; i++) { if (lobbyWaiters[i].conn === c) return; }
+        lobbyWaiters.push({ conn: c, joinedAt: Date.now(), id: d.id });
+        if (!lobbyHostEnter) pairLobby();
       } else if (d.t === "ack") {
+        if (lobbyMatchTimeout) { clearTimeout(lobbyMatchTimeout); lobbyMatchTimeout = null; }
         enterLobbySession(lobbyHostEnter);
+      }
+    });
+    c.on("close", function () {
+      // 移除已关闭的 waiter；如果正是当前撮合对象，释放撮合状态让后续访客可匹配
+      for (var i = 0; i < lobbyWaiters.length; i++) {
+        if (lobbyWaiters[i].conn === c) {
+          lobbyWaiters.splice(i, 1);
+          if (lobbyHostEnter && lobbyWaiters.length === 0) {
+            if (lobbyMatchTimeout) { clearTimeout(lobbyMatchTimeout); lobbyMatchTimeout = null; }
+            lobbyHostEnter = null;
+            log("当前伙伴离开，继续等待下一位…", "warn");
+          }
+          break;
+        }
       }
     });
   }
   function pairLobby() {
-    if (lobbyHostEnter) return; // 已撮合，避免重复
-    if (lobbyWaiters.length < 1) return;
-    var clientConn = lobbyWaiters[0];
+    if (lobbyHostEnter || lobbyWaiters.length < 1) return;
+    var waiter = lobbyWaiters[0];
+    var clientConn = waiter.conn;
+    if (!clientConn || !clientConn.open) {
+      lobbyWaiters.shift();
+      pairLobby(); // 跳过失效连接
+      return;
+    }
     var sessionRoom = genRoom();
     var clientRole = Math.random() < 0.5 ? "examiner" : "candidate";
     var hostRole = clientRole === "examiner" ? "candidate" : "examiner";
     lobbyHostEnter = { room: sessionRoom, isHost: true, role: hostRole };
-    try { clientConn.send({ t: "match", room: sessionRoom, role: clientRole }); } catch (e) {}
-    log("已撮合，进入练习房：" + sessionRoom);
-    setTimeout(function () { if (lobbyHostEnter) enterLobbySession(lobbyHostEnter); }, 1500); // ack 丢失兜底
+    try {
+      clientConn.send({ t: "match", room: sessionRoom, role: clientRole });
+      log("已撮合，等待对方确认…");
+      updateMatchHint("已找到伙伴，等待对方确认…");
+    } catch (e) {
+      lobbyHostEnter = null;
+      lobbyWaiters.shift();
+      pairLobby();
+      return;
+    }
+    // 8 秒内未收到 ack：释放该访客，尝试下一个
+    lobbyMatchTimeout = setTimeout(function () {
+      lobbyMatchTimeout = null;
+      lobbyHostEnter = null;
+      try { clientConn.close(); } catch (e) {}
+      lobbyWaiters.shift();
+      pairLobby();
+    }, 8000);
   }
   function onLobbyData(d) {
     if (!d) return;
     if (d.t === "match") {
       try { if (lobbyConn && lobbyConn.open) lobbyConn.send({ t: "ack" }); } catch (e) {}
+      updateMatchHint("已匹配成功，正在进入房间…");
       enterLobbySession({ room: d.room, isHost: false, role: d.role });
     }
   }
   function enterLobbySession(enter) {
     if (!enter || lobbyEntered) return;
     lobbyEntered = true; lobbyActive = false;
-    if (lobbyReconnect) { clearTimeout(lobbyReconnect); lobbyReconnect = null; }
-    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    clearLobbyTimers();
     try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
     lobbyPeer = null; lobbyConn = null; lobbyWaiters = []; lobbyHostEnter = null;
     startSession(enter.room, enter.isHost, enter.role);
   }
   function leaveLobby() {
     lobbyActive = false; lobbyEntered = false; lobbyHostEnter = null;
-    if (lobbyReconnect) { clearTimeout(lobbyReconnect); lobbyReconnect = null; }
-    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    lobbyReconnectAttempts = 0;
+    clearLobbyTimers();
     try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
     lobbyPeer = null; lobbyConn = null; lobbyWaiters = [];
     el.matchView.style.display = "none"; el.landing.style.display = "block";
     setConn("未连接", "");
   }
+  function clearLobbyTimers() {
+    if (lobbyReconnect) { clearTimeout(lobbyReconnect); lobbyReconnect = null; }
+    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    if (lobbyMatchTimeout) { clearTimeout(lobbyMatchTimeout); lobbyMatchTimeout = null; }
+    stopLobbyHeartbeat();
+  }
   function scheduleLobbyReconnect() {
     if (!lobbyActive || lobbyReconnect) return;
+    lobbyReconnectAttempts++;
     lobbyReconnect = setTimeout(function () {
       lobbyReconnect = null;
       if (!lobbyActive) return;
-      log("重新进入匹配大厅…"); attemptLobbyHost();
+      if (lobbyReconnectAttempts > 5) {
+        log("匹配大厅多次重连失败", "err");
+        updateMatchHint("匹配服务当前不太稳定，建议点「创建房间」把链接发给熟人练习。");
+        return;
+      }
+      log("重新进入匹配大厅…（第 " + lobbyReconnectAttempts + " 次）");
+      attemptLobbyHost();
     }, 1500);
   }
   function startSession(room, isHost, role) {

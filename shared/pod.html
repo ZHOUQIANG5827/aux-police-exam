@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>面试对练舱 · 1v1 语音对练</title>
-<link rel="stylesheet" href="pod.css?v=20260728d">
+<link rel="stylesheet" href="pod.css?v=20260728e">
 </head>
 <body>
 <div class="pod">
@@ -48,7 +48,11 @@
     <h2>🔍 正在匹配搭子…</h2>
     <div class="spinner"></div>
     <p class="muted" id="matchHint">系统正在为你寻找在线练习伙伴，通常几秒到几十秒。</p>
-    <button class="mini-btn" id="cancelMatchBtn">取消匹配</button>
+    <div class="match-actions">
+      <button class="mini-btn" id="cancelMatchBtn">取消匹配</button>
+      <button class="mini-btn alt" id="retryMatchBtn">重新匹配</button>
+      <button class="mini-btn" id="matchToCreateBtn">创建房间（发给熟人）</button>
+    </div>
   </section>
 
   <!-- 房间 -->
@@ -132,6 +136,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="peerjs.min.js?v=20260728c"></script>
-<script src="pod.js?v=20260728d"></script>
+<script src="pod.js?v=20260728e"></script>
 </body>
 </html>
