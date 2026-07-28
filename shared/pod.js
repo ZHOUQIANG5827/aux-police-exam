@@ -39,6 +39,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var el = {};
   ["landing","room","connState","createBtn","roomNo","copyBtn","leaveBtn","roleRow","roleNow",
+   "matchBtn","cancelMatchBtn","matchView","matchHint",
    "candPanel","candQuestion","candTimer","candScore","candDeduct",
    "examPanel","qSelect","sendQBtn","examAnswer","durRow","startBtn","stopBtn","resetBtn","checklist","examScore",
    "micBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast"
@@ -47,6 +48,13 @@
   var peer = null, conn = null, localStream = null, micOn = false;
   var timerInt = null, reconnectTimer = null, reconnectDelay = 1000;
   var calledPeerId = null; // 防止双向语音重复呼叫的守卫
+
+  // ---------- 随机匹配大厅（纯 P2P，无后端） ----------
+  var LOBBY_ID = "rcjpod-" + CITY;        // 同城市共用一个大厅 PeerID
+  var pendingRole = "";                    // 匹配成功后预置的面试身份
+  var lobbyPeer = null, lobbyConn = null;
+  var lobbyWaiters = [];                    // 大厅主持收到的访客连接
+  var lobbyActive = false, lobbyEntered = false, lobbyReconnect = null, lobbyHostEnter = null, matchHintTimer = null;
 
   // ---------- 工具 ----------
   function log(msg, cls) {
@@ -314,7 +322,8 @@
         ROOM = id; STORE_KEY = "podCache_" + ROOM; HOST_MARK = "podHost_" + ROOM;
         try { localStorage.setItem(HOST_MARK, "1"); } catch (e) {}
         loadCache(); // 房主刷新后恢复之前缓存的打分/身份
-        if (state.role) setRole(state.role);
+        if (pendingRole) { setRole(pendingRole); pendingRole = ""; }
+        else if (state.role) setRole(state.role);
         el.roomNo.textContent = ROOM;
         var url = "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
         history.replaceState(null, "", url);
@@ -370,9 +379,12 @@
     c.on("open", function () {
       setConn("已连接", "ok"); log("数据通道已打开");
       calledPeerId = null;
-      if (state.role) send({ t: "hello", role: state.role });
-      if (state.role === "candidate") send({ t: "req" });
-      else if (state.role === "examiner") sendState();
+      if (pendingRole) { setRole(pendingRole); pendingRole = ""; }
+      else {
+        if (state.role) send({ t: "hello", role: state.role });
+        if (state.role === "candidate") send({ t: "req" });
+        else if (state.role === "examiner") sendState();
+      }
       if (micOn) callPeer(IS_HOST ? (c.peer) : ROOM);
     });
     c.on("data", onData);
@@ -448,6 +460,8 @@
     });
     el.micBtn.addEventListener("click", startMic);
     el.leaveBtn.addEventListener("click", leaveRoom);
+    el.matchBtn.addEventListener("click", enterLobby);
+    el.cancelMatchBtn.addEventListener("click", leaveLobby);
     el.copyBtn.addEventListener("click", function () {
       var url = location.origin + location.pathname + "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -458,6 +472,128 @@
     Array.prototype.forEach.call(document.querySelectorAll(".role-btn"), function (b) {
       b.addEventListener("click", function () { setRole(b.getAttribute("data-role")); });
     });
+  }
+
+  // ---------- 随机匹配大厅（纯 P2P，无后端） ----------
+  function showMatchView() {
+    el.landing.style.display = "none"; el.room.style.display = "none";
+    el.matchView.style.display = "block";
+    el.matchHint.textContent = "系统正在为你寻找在线练习伙伴，通常几秒到几十秒。";
+    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    matchHintTimer = setTimeout(function () {
+      if (lobbyActive) el.matchHint.textContent = "暂时没找到伙伴，可继续等待，或取消改用「创建房间」发链接给熟人。";
+    }, 30000);
+  }
+  function enterLobby() {
+    lobbyActive = true; lobbyEntered = false; lobbyHostEnter = null;
+    showMatchView(); attemptLobbyHost();
+  }
+  function attemptLobbyHost() {
+    try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
+    lobbyPeer = new Peer(LOBBY_ID, { debug: 1 });
+    lobbyPeer.on("open", function (id) {
+      setConn("匹配大厅已连接", "warn");
+      log("进入匹配大厅：" + id + (id === LOBBY_ID ? "（你是主持，负责撮合）" : ""));
+    });
+    lobbyPeer.on("connection", handleLobbyJoin);
+    lobbyPeer.on("call", function (call) { try { call.close(); } catch (e) {} }); // 大厅不传语音
+    lobbyPeer.on("disconnected", function () { setConn("大厅断开，重连中…", "err"); try { lobbyPeer.reconnect(); } catch (e) {} });
+    lobbyPeer.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
+    lobbyPeer.on("error", function (err) {
+      if (err && err.type === "unavailable-id") { log("已有主持，转为访客连接", "warn"); becomeLobbyClient(); }
+      else if (err && err.type === "peer-unavailable") { scheduleLobbyReconnect(); }
+      else { log("大厅错误：" + (err && err.type), "err"); }
+    });
+  }
+  function becomeLobbyClient() {
+    try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
+    lobbyPeer = new Peer({ debug: 1 });
+    lobbyPeer.on("open", connectLobbyHost);
+    lobbyPeer.on("disconnected", function () { try { lobbyPeer.reconnect(); } catch (e) {} });
+    lobbyPeer.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
+    lobbyPeer.on("error", function (err) {
+      if (err && err.type === "peer-unavailable") scheduleLobbyReconnect();
+      else log("访客连接错误：" + (err && err.type), "err");
+    });
+  }
+  function connectLobbyHost() {
+    setConn("正在匹配…", "warn");
+    try {
+      var c = lobbyPeer.connect(LOBBY_ID, { reliable: true });
+      if (c) { lobbyConn = c; bindLobbyConn(c); }
+    } catch (e) { scheduleLobbyReconnect(); }
+  }
+  function bindLobbyConn(c) {
+    c.on("open", function () { try { c.send({ t: "join", id: lobbyPeer.id }); } catch (e) {} log("已向大厅登记，等待撮合…"); });
+    c.on("data", onLobbyData);
+    c.on("close", function () { if (lobbyActive) scheduleLobbyReconnect(); });
+    c.on("error", function () { if (lobbyActive) scheduleLobbyReconnect(); });
+  }
+  function handleLobbyJoin(c) {
+    c.on("data", function (d) {
+      if (!d) return;
+      if (d.t === "join") {
+        lobbyWaiters.push(c);
+        if (lobbyWaiters.length >= 1) pairLobby();
+      } else if (d.t === "ack") {
+        enterLobbySession(lobbyHostEnter);
+      }
+    });
+  }
+  function pairLobby() {
+    if (lobbyHostEnter) return; // 已撮合，避免重复
+    if (lobbyWaiters.length < 1) return;
+    var clientConn = lobbyWaiters[0];
+    var sessionRoom = genRoom();
+    var clientRole = Math.random() < 0.5 ? "examiner" : "candidate";
+    var hostRole = clientRole === "examiner" ? "candidate" : "examiner";
+    lobbyHostEnter = { room: sessionRoom, isHost: true, role: hostRole };
+    try { clientConn.send({ t: "match", room: sessionRoom, role: clientRole }); } catch (e) {}
+    log("已撮合，进入练习房：" + sessionRoom);
+    setTimeout(function () { if (lobbyHostEnter) enterLobbySession(lobbyHostEnter); }, 1500); // ack 丢失兜底
+  }
+  function onLobbyData(d) {
+    if (!d) return;
+    if (d.t === "match") {
+      try { if (lobbyConn && lobbyConn.open) lobbyConn.send({ t: "ack" }); } catch (e) {}
+      enterLobbySession({ room: d.room, isHost: false, role: d.role });
+    }
+  }
+  function enterLobbySession(enter) {
+    if (!enter || lobbyEntered) return;
+    lobbyEntered = true; lobbyActive = false;
+    if (lobbyReconnect) { clearTimeout(lobbyReconnect); lobbyReconnect = null; }
+    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
+    lobbyPeer = null; lobbyConn = null; lobbyWaiters = []; lobbyHostEnter = null;
+    startSession(enter.room, enter.isHost, enter.role);
+  }
+  function leaveLobby() {
+    lobbyActive = false; lobbyEntered = false; lobbyHostEnter = null;
+    if (lobbyReconnect) { clearTimeout(lobbyReconnect); lobbyReconnect = null; }
+    if (matchHintTimer) { clearTimeout(matchHintTimer); matchHintTimer = null; }
+    try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
+    lobbyPeer = null; lobbyConn = null; lobbyWaiters = [];
+    el.matchView.style.display = "none"; el.landing.style.display = "block";
+    setConn("未连接", "");
+  }
+  function scheduleLobbyReconnect() {
+    if (!lobbyActive || lobbyReconnect) return;
+    lobbyReconnect = setTimeout(function () {
+      lobbyReconnect = null;
+      if (!lobbyActive) return;
+      log("重新进入匹配大厅…"); attemptLobbyHost();
+    }, 1500);
+  }
+  function startSession(room, isHost, role) {
+    ROOM = room; IS_HOST = !!isHost;
+    STORE_KEY = "podCache_" + room; HOST_MARK = "podHost_" + room;
+    try { if (isHost) localStorage.setItem(HOST_MARK, "1"); else localStorage.removeItem(HOST_MARK); } catch (e) {}
+    pendingRole = role || "";
+    el.matchView.style.display = "none"; el.landing.style.display = "none";
+    el.room.style.display = "block";
+    el.wxHint.innerHTML = "📌 微信内点开可能不支持语音，可点右上角 ⋯ 选「在浏览器打开」。<br>🔊 双方都点一下「开启麦克风」才能互相听到。";
+    setupPeer();
   }
 
   // ---------- 初始化 ----------
