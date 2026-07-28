@@ -51,6 +51,7 @@
   var calledPeerId = null; // 防止双向语音重复呼叫的守卫
   // 语音混录（下载用）
   var audioCtx = null, mixedDest = null, recorder = null, recChunks = [], lastBlob = null, recOn = false;
+  var mixedStreams = []; // 已接入混音的流，避免重复 connect 导致音量叠加/回声
 
   // ---------- 随机匹配大厅（纯 P2P，无后端） ----------
   var LOBBY_ID = "rcjpod-" + CITY;        // 同城市共用一个大厅 PeerID
@@ -433,6 +434,9 @@
     peer = null; conn = null; calledPeerId = null;
     if (localStream) { localStream.getTracks().forEach(function (t) { t.stop(); }); localStream = null; }
     remoteStream = null; micOn = false;
+    if (audioCtx) { try { audioCtx.suspend(); } catch (e) {} } // 挂起 AudioContext，省电且防脏状态
+    mixedStreams = [];
+    el.micBtn.textContent = "🎤 开启麦克风"; el.voiceState.textContent = "未开启";
     el.room.style.display = "none"; el.landing.style.display = "block";
     setConn("未连接", "");
     log("已离开房间");
@@ -705,8 +709,11 @@
     lobbyActive = false; lobbyEntered = false; lobbyHostEnter = null;
     lobbyReconnectAttempts = 0;
     clearLobbyTimers();
+    stopRecording();
     try { if (lobbyPeer && lobbyPeer.destroy) lobbyPeer.destroy(); } catch (e) {}
     lobbyPeer = null; lobbyConn = null; lobbyWaiters = [];
+    if (audioCtx) { try { audioCtx.suspend(); } catch (e) {} }
+    mixedStreams = [];
     el.matchView.style.display = "none"; el.landing.style.display = "block";
     setConn("未连接", "");
   }
@@ -755,6 +762,8 @@
   }
   function connectToMix(stream) {
     if (!stream || !audioCtx || !mixedDest) return;
+    if (mixedStreams.indexOf(stream) >= 0) return; // 已接入则跳过，避免同一路声音被重复叠加
+    mixedStreams.push(stream);
     try { audioCtx.createMediaStreamSource(stream).connect(mixedDest); } catch (e) {}
   }
   function startRecording() {
