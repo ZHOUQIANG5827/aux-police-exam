@@ -2,6 +2,8 @@
  * 架构：PeerJS（默认云信令）。房号=房主 PeerID，搭子凭 ?room= 直连。
  * 特性：URL 秒连 / 考生·考官分工 / 题库+倒计时镜面同步 / Checklist 零延迟同步
  *       / 断线自动重连(disconnected+close) / Checklist 双向 localStorage 缓存
+ * 修复记录：① 题库字段 title/answer（原 stem 导致空白）② 房主刷新稳定复用房间号
+ *         ③ 双向语音自动回拨 ④ 考官端参考答案 ⑤ 重置/离开
  */
 (function () {
   "use strict";
@@ -9,7 +11,10 @@
   var qs = new URLSearchParams(location.search);
   var CITY = (qs.get("city") || "sz");
   var ROOM = (qs.get("room") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
-  var IS_HOST = !ROOM;
+
+  // 房主判定：无 room= 即新房主；有 room= 且本地标记过“我是该房房主”则仍为房主（刷新复用）
+  var HOST_MARK = "podHost_" + (ROOM || "draft");
+  var IS_HOST = !ROOM ? true : (localStorage.getItem(HOST_MARK) === "1");
   var STORE_KEY = "podCache_" + (ROOM || "draft");
 
   var DURATION_DEFAULT = 180;
@@ -33,14 +38,15 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var el = {};
-  ["landing","room","connState","createBtn","roomNo","copyBtn","roleRow","roleNow",
+  ["landing","room","connState","createBtn","roomNo","copyBtn","leaveBtn","roleRow","roleNow",
    "candPanel","candQuestion","candTimer","candScore","candDeduct",
-   "examPanel","qSelect","sendQBtn","durRow","startBtn","stopBtn","checklist","examScore",
+   "examPanel","qSelect","sendQBtn","examAnswer","durRow","startBtn","stopBtn","resetBtn","checklist","examScore",
    "micBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast"
   ].forEach(function (k) { el[k] = $(k); });
 
-  var peer = null, conn = null, localStream = null, micOn = false, calling = false;
+  var peer = null, conn = null, localStream = null, micOn = false;
   var timerInt = null, reconnectTimer = null, reconnectDelay = 1000;
+  var calledPeerId = null; // 防止双向语音重复呼叫的守卫
 
   // ---------- 工具 ----------
   function log(msg, cls) {
@@ -163,7 +169,7 @@
     el.candScore.textContent = sc;
     var items = CHECKLIST.filter(function (c) { return state.checks[c.id]; });
     el.candDeduct.textContent = items.length
-      ? ("已扣：" + items.map(function (c) { return c.label + "(-" + c.score + ")"; }).join("、"))
+      ? ("已扣：" + items.map(function (c) { return c.label + "(-" + c.score + ")" }).join("、"))
       : "暂无扣分";
   }
   function renderChecklist() {
@@ -176,7 +182,6 @@
         state.checks[c.id] = cb.checked;
         updateExamScore(); updateCandScore(); saveCache();
         send({ t: "check", id: c.id, on: cb.checked });
-        if (!state.started && state.role === "examiner") { /* 未开始时也实时同步 */ }
       });
       var span = document.createElement("span");
       span.textContent = c.label + "（-" + c.score + "）";
@@ -189,6 +194,8 @@
 
   // ---------- 题库 ----------
   var QUESTIONS = [];
+  function qText(q) { return ((q && (q.title || q.stem)) || "").replace(/<[^>]+>/g, ""); }
+  function qAns(q) { return ((q && (q.answer || q.a)) || "").replace(/<[^>]+>/g, ""); }
   function loadQuestions(cb) {
     var s = document.createElement("script");
     s.src = "../" + CITY + "/station-data.js?pod=" + Date.now();
@@ -207,17 +214,26 @@
     QUESTIONS.forEach(function (q, i) {
       var o = document.createElement("option");
       o.value = i;
-      var t = (q.stem || "").replace(/<[^>]+>/g, "");
+      var t = qText(q);
       o.textContent = (i + 1) + ". " + (t.length > 26 ? t.slice(0, 26) + "…" : t);
       el.qSelect.appendChild(o);
     });
   }
   function showCandQuestion() {
     if (state.qIndex >= 0 && QUESTIONS[state.qIndex]) {
-      var t = (QUESTIONS[state.qIndex].stem || "").replace(/<[^>]+>/g, "");
-      el.candQuestion.textContent = t;
+      el.candQuestion.textContent = qText(QUESTIONS[state.qIndex]);
     } else {
       el.candQuestion.textContent = "等待考官发题…";
+    }
+  }
+  function showExamAnswer() {
+    var i = (typeof el.qSelect.value === "string") ? parseInt(el.qSelect.value, 10) : el.qSelect.value;
+    if (QUESTIONS[i]) {
+      el.examAnswer.textContent = qAns(QUESTIONS[i]);
+      el.examAnswer.classList.remove("empty");
+    } else {
+      el.examAnswer.textContent = "选择题目后，此处显示参考答案（供你对照评分）";
+      el.examAnswer.classList.add("empty");
     }
   }
 
@@ -235,8 +251,7 @@
     });
     if (role === "examiner") {
       el.examPanel.style.display = "block"; el.candPanel.style.display = "none";
-      renderChecklist();
-      markDurActive();
+      renderChecklist(); markDurActive(); showExamAnswer();
       if (state.qIndex >= 0) showCandQuestion();
       updateExamScore();
     } else {
@@ -264,29 +279,27 @@
       localStream = stream; el.localAudio.srcObject = stream;
       micOn = true; el.voiceState.textContent = "已开启"; el.micBtn.textContent = "🎤 麦克风已开";
       log("麦克风已开启");
-      ensureCall();
+      callPeer(IS_HOST ? (conn && conn.peer) : ROOM);
     }).catch(function (e) {
       toast("无法开启麦克风：" + (e && e.message ? e.message : e));
       log("麦克风失败：" + (e && e.message ? e.message : e), "err");
     });
   }
-  function ensureCall() {
-    if (!localStream || !conn || !conn.open || calling) return;
-    var targetId = IS_HOST ? (conn.peer || ROOM) : ROOM;
-    if (!targetId) return;
-    calling = true;
+  // 向对端发起语音（守卫：同一对端只呼叫一次，避免双向互呼死循环）
+  function callPeer(targetId) {
+    if (!localStream || !peer || !peer.open || !targetId || targetId === calledPeerId) return;
     try {
       var call = peer.call(targetId, localStream);
-      if (call) bindCall(call); else calling = false;
-    } catch (e) { calling = false; }
+      if (call) { bindCall(call); calledPeerId = targetId; }
+    } catch (e) { log("呼叫失败：" + e, "err"); }
   }
   function bindCall(call) {
     call.on("stream", function (remoteStream) {
       el.remoteAudio.srcObject = remoteStream;
       log("已收到对方语音");
     });
-    call.on("close", function () { calling = false; });
-    call.on("error", function () { calling = false; });
+    call.on("close", function () { calledPeerId = null; });
+    call.on("error", function () { calledPeerId = null; });
   }
 
   // ---------- PeerJS 连接 ----------
@@ -298,7 +311,10 @@
       log((IS_HOST ? "房主 Peer 就绪：" : "已连信令：") + id);
       setConn("已连信令", "warn");
       if (IS_HOST) {
-        ROOM = id; STORE_KEY = "podCache_" + ROOM; saveCache();
+        ROOM = id; STORE_KEY = "podCache_" + ROOM; HOST_MARK = "podHost_" + ROOM;
+        try { localStorage.setItem(HOST_MARK, "1"); } catch (e) {}
+        loadCache(); // 房主刷新后恢复之前缓存的打分/身份
+        if (state.role) setRole(state.role);
         el.roomNo.textContent = ROOM;
         var url = "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
         history.replaceState(null, "", url);
@@ -309,10 +325,12 @@
     });
     peer.on("connection", function (c) {
       conn = c; bindConn(c); log("搭子已连接（数据）"); setConn("已连接", "ok");
+      if (micOn) callPeer(c.peer);
     });
     peer.on("call", function (call) {
-      if (localStream) call.answer(localStream); else call.answer();
+      call.answer(localStream || undefined);
       bindCall(call);
+      if (localStream && call.peer !== calledPeerId) callPeer(call.peer); // 自动回拨，形成双向语音
     });
     peer.on("disconnected", function () {
       setConn("信令断开，重连中…", "err"); log("Peer 断开，尝试重连", "err");
@@ -325,7 +343,10 @@
     peer.on("error", function (err) {
       if (err && err.type === "unavailable-id") {
         log("房号被占用，重新生成", "err");
-        if (IS_HOST) { ROOM = genRoom(); setupPeer(); }
+        if (IS_HOST) {
+          try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
+          ROOM = genRoom(); setupPeer();
+        }
         return;
       }
       if (err && err.type === "peer-unavailable") {
@@ -348,16 +369,16 @@
   function bindConn(c) {
     c.on("open", function () {
       setConn("已连接", "ok"); log("数据通道已打开");
-      calling = false;
+      calledPeerId = null;
       if (state.role) send({ t: "hello", role: state.role });
       if (state.role === "candidate") send({ t: "req" });
       else if (state.role === "examiner") sendState();
-      if (micOn) ensureCall();
+      if (micOn) callPeer(IS_HOST ? (c.peer) : ROOM);
     });
     c.on("data", onData);
     c.on("close", function () {
       setConn("对端断开，重连中…", "err"); log("数据通道关闭", "err");
-      conn = null; scheduleReconnect();
+      conn = null; calledPeerId = null; scheduleReconnect();
     });
     c.on("error", function () { log("数据通道错误", "err"); });
   }
@@ -369,6 +390,7 @@
     reconnectTimer = setTimeout(function () {
       reconnectTimer = null;
       log("尝试重连（延迟 " + delay + "ms）");
+      calledPeerId = null;
       if (IS_HOST) {
         try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
         setupPeer();
@@ -380,15 +402,27 @@
     }, delay);
   }
 
+  function leaveRoom() {
+    try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
+    try { localStorage.removeItem(HOST_MARK); } catch (e) {}
+    peer = null; conn = null; calledPeerId = null;
+    if (localStream) { localStream.getTracks().forEach(function (t) { t.stop(); }); localStream = null; }
+    micOn = false;
+    el.room.style.display = "none"; el.landing.style.display = "block";
+    setConn("未连接", "");
+    log("已离开房间");
+  }
+
   // ---------- 考官控制 ----------
   function bindControls() {
     el.sendQBtn.addEventListener("click", function () {
       if (!QUESTIONS.length) { toast("题库未加载"); return; }
       state.qIndex = parseInt(el.qSelect.value, 10) || 0;
-      showCandQuestion(); saveCache();
+      showCandQuestion(); showExamAnswer(); saveCache();
       send({ t: "q", i: state.qIndex });
       toast("已发题给搭子");
     });
+    el.qSelect.addEventListener("change", function () { showExamAnswer(); });
     Array.prototype.forEach.call(el.durRow.querySelectorAll(".dur-btn"), function (b) {
       b.addEventListener("click", function () {
         state.durationSec = parseInt(b.getAttribute("data-d"), 10);
@@ -407,7 +441,13 @@
       el.startBtn.style.display = "inline-block"; el.stopBtn.style.display = "none";
       send({ t: "stop" }); saveCache();
     });
+    el.resetBtn.addEventListener("click", function () {
+      state.checks = {}; renderChecklist(); updateCandScore(); saveCache();
+      send({ t: "reset" });
+      toast("评分已重置");
+    });
     el.micBtn.addEventListener("click", startMic);
+    el.leaveBtn.addEventListener("click", leaveRoom);
     el.copyBtn.addEventListener("click", function () {
       var url = location.origin + location.pathname + "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -423,11 +463,11 @@
   // ---------- 初始化 ----------
   function init() {
     if (ROOM) {
-      IS_HOST = false;
+      IS_HOST = (localStorage.getItem(HOST_MARK) === "1"); // 刷新后可能是房主
       el.landing.style.display = "none";
       el.room.style.display = "block";
       el.roomNo.textContent = ROOM;
-      el.wxHint.innerHTML = "📌 微信内点开可能不支持语音，可点右上角 ⋯ 选「在浏览器打开」获得完整体验。";
+      el.wxHint.innerHTML = "📌 微信内点开可能不支持语音，可点右上角 ⋯ 选「在浏览器打开」。<br>🔊 双方都点一下「开启麦克风」才能互相听到。";
       setupPeer();
     } else {
       el.landing.style.display = "block";
@@ -435,7 +475,7 @@
       el.createBtn.addEventListener("click", function () {
         el.landing.style.display = "none";
         el.room.style.display = "block";
-        el.wxHint.innerHTML = "📌 微信内点开可能不支持语音，可点右上角 ⋯ 选「在浏览器打开」获得完整体验。";
+        el.wxHint.innerHTML = "📌 微信内点开可能不支持语音，可点右上角 ⋯ 选「在浏览器打开」。<br>🔊 双方都点一下「开启麦克风」才能互相听到。";
         setupPeer();
       });
     }

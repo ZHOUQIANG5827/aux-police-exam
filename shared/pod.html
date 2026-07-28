@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>面试对练舱 · 1v1 语音对练</title>
-<link rel="stylesheet" href="pod.css?v=20260728">
+<link rel="stylesheet" href="pod.css?v=20260728b">
 </head>
 <body>
 <div class="pod">
@@ -28,7 +28,10 @@
         <div class="room-label">房间号</div>
         <div class="room-no" id="roomNo">------</div>
       </div>
-      <button class="mini-btn" id="copyBtn">📋 复制链接</button>
+      <div style="display:flex;gap:8px;">
+        <button class="mini-btn" id="copyBtn">📋 复制链接</button>
+        <button class="mini-btn" id="leaveBtn">⏏ 离开</button>
+      </div>
     </div>
 
     <div class="role-row" id="roleRow">
@@ -62,6 +65,7 @@
           <select id="qSelect" class="sel"></select>
           <button class="mini-btn" id="sendQBtn">📤 发题</button>
         </div>
+        <div class="exam-ans" id="examAnswer">选择题目后，此处显示参考答案（供你对照评分）</div>
       </div>
       <div class="block">
         <div class="block-t">演练时长</div>
@@ -76,6 +80,7 @@
       <div class="block">
         <div class="block-t">实时评分 Checklist（勾选即扣分）</div>
         <div id="checklist" class="checklist"></div>
+        <button class="mini-btn" id="resetBtn" style="margin-top:10px;">↺ 重置评分</button>
         <div class="exam-score">考生当前得分：<b id="examScore">100</b></div>
       </div>
     </div>
@@ -93,7 +98,7 @@
   </section>
 </div>
 <div class="toast" id="toast"></div>
-<script src="peerjs.min.js?v=20260728"></script>
-<script src="pod.js?v=20260728"></script>
+<script src="peerjs.min.js?v=20260728b"></script>
+<script src="pod.js?v=20260728b"></script>
 </body>
 </html>
