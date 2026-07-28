@@ -224,6 +224,9 @@ export async function onRequest(context) {
   }
   if (cookie.includes("rcj_vip=1")) return next();
 
+  // —— 0.5) API 直通：/api/ 路径（留言墙等）不做试用/限额/GA4 注入，直接交给对应函数 ——
+  if (url.pathname.startsWith("/api/")) return next();
+
   // —— 2) 作者 IP 白名单（私密豁免，优先级最高）——
   const ip = request.headers.get("cf-connecting-ip") || "";
   if (ip && allowIps.includes(ip)) return next();

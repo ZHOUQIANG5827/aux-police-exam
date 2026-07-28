@@ -41,13 +41,16 @@
   ["landing","room","connState","createBtn","roomNo","copyBtn","leaveBtn","roleRow","roleNow",
    "matchBtn","cancelMatchBtn","matchView","matchHint",
    "candPanel","candQuestion","candTimer","candScore","candDeduct",
-   "examPanel","qSelect","sendQBtn","examAnswer","durRow","startBtn","stopBtn","resetBtn","checklist","examScore",
-   "micBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast"
+   "examPanel","qSelect","sendQBtn","examAnswer","durRow","durInput","startBtn","stopBtn","resetBtn","checklist","examScore",
+   "micBtn","recBtn","dlBtn","voiceState","remoteAudio","localAudio","log","wxHint","toast",
+   "wallPanel","wallList","wallErr","wallRefresh","wfName","wfText","wfExtra","wfMeetAt","wfContact","wfPost"
   ].forEach(function (k) { el[k] = $(k); });
 
-  var peer = null, conn = null, localStream = null, micOn = false;
+  var peer = null, conn = null, localStream = null, micOn = false, remoteStream = null;
   var timerInt = null, reconnectTimer = null, reconnectDelay = 1000;
   var calledPeerId = null; // 防止双向语音重复呼叫的守卫
+  // 语音混录（下载用）
+  var audioCtx = null, mixedDest = null, recorder = null, recChunks = [], lastBlob = null, recOn = false;
 
   // ---------- 随机匹配大厅（纯 P2P，无后端） ----------
   var LOBBY_ID = "rcjpod-" + CITY;        // 同城市共用一个大厅 PeerID
@@ -273,7 +276,10 @@
   }
   function markDurActive() {
     Array.prototype.forEach.call(el.durRow.querySelectorAll(".dur-btn"), function (x) {
-      x.classList.toggle("active", parseInt(x.getAttribute("data-d"), 10) === state.durationSec);
+      var d = parseInt(x.getAttribute("data-d"), 10);
+      var on = d === state.durationSec;
+      x.classList.toggle("active", on);
+      if (on && el.durInput) el.durInput.value = (d / 60);
     });
   }
 
@@ -287,6 +293,7 @@
       localStream = stream; el.localAudio.srcObject = stream;
       micOn = true; el.voiceState.textContent = "已开启"; el.micBtn.textContent = "🎤 麦克风已开";
       log("麦克风已开启");
+      if (audioCtx) connectToMix(localStream); // 若已在录音，把本地语音接进混音
       callPeer(IS_HOST ? (conn && conn.peer) : ROOM);
     }).catch(function (e) {
       toast("无法开启麦克风：" + (e && e.message ? e.message : e));
@@ -302,8 +309,10 @@
     } catch (e) { log("呼叫失败：" + e, "err"); }
   }
   function bindCall(call) {
-    call.on("stream", function (remoteStream) {
-      el.remoteAudio.srcObject = remoteStream;
+    call.on("stream", function (stream) {
+      remoteStream = stream;
+      el.remoteAudio.srcObject = stream;
+      if (audioCtx) connectToMix(stream); // 若已在录音，把对方语音也接进混音
       log("已收到对方语音");
     });
     call.on("close", function () { calledPeerId = null; });
@@ -415,11 +424,12 @@
   }
 
   function leaveRoom() {
+    stopRecording();
     try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
     try { localStorage.removeItem(HOST_MARK); } catch (e) {}
     peer = null; conn = null; calledPeerId = null;
     if (localStream) { localStream.getTracks().forEach(function (t) { t.stop(); }); localStream = null; }
-    micOn = false;
+    remoteStream = null; micOn = false;
     el.room.style.display = "none"; el.landing.style.display = "block";
     setConn("未连接", "");
     log("已离开房间");
@@ -441,6 +451,18 @@
         markDurActive(); saveCache();
       });
     });
+    // 自定义时长：输入框直接决定 state.durationSec（不局限于预设）
+    if (el.durInput) {
+      el.durInput.addEventListener("input", function () {
+        var v = parseFloat(el.durInput.value);
+        if (!isFinite(v) || v <= 0) return;
+        state.durationSec = Math.round(v * 60);
+        Array.prototype.forEach.call(el.durRow.querySelectorAll(".dur-btn"), function (x) {
+          x.classList.toggle("active", parseInt(x.getAttribute("data-d"), 10) === state.durationSec);
+        });
+        saveCache();
+      });
+    }
     el.startBtn.addEventListener("click", function () {
       state.started = true; state.startTs = Date.now();
       el.startBtn.style.display = "none"; el.stopBtn.style.display = "inline-block";
@@ -459,9 +481,20 @@
       toast("评分已重置");
     });
     el.micBtn.addEventListener("click", startMic);
+    el.recBtn.addEventListener("click", toggleRecording);
+    el.dlBtn.addEventListener("click", downloadRecording);
     el.leaveBtn.addEventListener("click", leaveRoom);
     el.matchBtn.addEventListener("click", enterLobby);
     el.cancelMatchBtn.addEventListener("click", leaveLobby);
+    // 留言墙 / 约练
+    el.wfPost.addEventListener("click", postWall);
+    el.wallRefresh.addEventListener("click", fetchWall);
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="wfType"]'), function (r) {
+      r.addEventListener("change", function () {
+        var t = document.querySelector('input[name="wfType"]:checked');
+        el.wfExtra.style.display = (t && t.value === "meet") ? "block" : "none";
+      });
+    });
     el.copyBtn.addEventListener("click", function () {
       var url = location.origin + location.pathname + "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -596,6 +629,142 @@
     setupPeer();
   }
 
+  // ---------- 语音混录 + 下载 ----------
+  function ensureAudioCtx() {
+    if (!audioCtx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      audioCtx = new AC();
+      mixedDest = audioCtx.createMediaStreamDestination();
+    }
+    if (audioCtx.state === "suspended") { try { audioCtx.resume(); } catch (e) {} }
+    return audioCtx;
+  }
+  function connectToMix(stream) {
+    if (!stream || !audioCtx || !mixedDest) return;
+    try { audioCtx.createMediaStreamSource(stream).connect(mixedDest); } catch (e) {}
+  }
+  function startRecording() {
+    if (recOn) return;
+    if (!ensureAudioCtx()) { toast("当前浏览器不支持录音"); return; }
+    if (localStream) connectToMix(localStream);
+    if (remoteStream) connectToMix(remoteStream);
+    if (!mixedDest || !mixedDest.stream) { toast("还没有语音可录（先开双方麦克风）"); return; }
+    try {
+      recChunks = [];
+      var mr = new MediaRecorder(mixedDest.stream);
+      mr.ondataavailable = function (e) { if (e.data && e.data.size) recChunks.push(e.data); };
+      mr.onstop = function () {
+        try { lastBlob = new Blob(recChunks, { type: (recChunks[0] && recChunks[0].type) || "audio/webm" }); } catch (e) {}
+        recOn = false; el.recBtn.classList.remove("rec-on"); el.recBtn.textContent = "⏺ 录音";
+        if (lastBlob && lastBlob.size) toast("录音已就绪，点📥下载");
+      };
+      mr.start();
+      recorder = mr; recOn = true;
+      el.recBtn.classList.add("rec-on"); el.recBtn.textContent = "⏹ 停止录音";
+      toast("开始录音（混合双方语音）");
+    } catch (e) { toast("录音启动失败：" + (e && e.message ? e.message : e)); }
+  }
+  function stopRecording() {
+    if (recorder && recorder.state === "recording") { try { recorder.stop(); } catch (e) {} }
+  }
+  function toggleRecording() { if (recOn) stopRecording(); else startRecording(); }
+  function downloadRecording() {
+    if (!lastBlob || !lastBlob.size) { toast("还没有可下载的录音（先点⏺录音）"); return; }
+    var ext = (lastBlob.type.indexOf("mp4") >= 0) ? "mp4" : "webm";
+    var url = URL.createObjectURL(lastBlob);
+    var a = document.createElement("a");
+    var ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    a.href = url; a.download = "面试对练录音_" + (ROOM || "pod") + "_" + ts + "." + ext;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 4000);
+  }
+
+  // ---------- 留言墙 / 约练（KV 后端） ----------
+  var wallTimer = null;
+  function escapeHtml(s) {
+    return (s || "").replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function relTime(ts) {
+    var s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return s + "秒前";
+    if (s < 3600) return Math.floor(s / 60) + "分钟前";
+    if (s < 86400) return Math.floor(s / 3600) + "小时前";
+    return Math.floor(s / 86400) + "天前";
+  }
+  function renderWall(items) {
+    el.wallList.innerHTML = "";
+    if (!items || !items.length) {
+      el.wallList.innerHTML = '<div class="wall-empty">还没有留言，来发第一条吧～</div>';
+      return;
+    }
+    items.forEach(function (it) {
+      var d = document.createElement("div"); d.className = "wall-item";
+      var badge = it.type === "meet"
+        ? '<span class="wi-badge meet">约练</span>'
+        : '<span class="wi-badge msg">留言</span>';
+      var meta = "";
+      if (it.type === "meet") {
+        var m = [];
+        if (it.meetAt) m.push("⏰ " + escapeHtml(it.meetAt));
+        if (it.contact) m.push("📞 " + escapeHtml(it.contact));
+        if (m.length) meta = '<div class="wi-meta">' + m.join("　") + "</div>";
+      } else if (it.contact) {
+        meta = '<div class="wi-meta">📞 ' + escapeHtml(it.contact) + "</div>";
+      }
+      d.innerHTML =
+        '<div class="wi-top">' + badge +
+        '<span class="wi-name">' + escapeHtml(it.name) + '</span>' +
+        '<span class="wi-time">' + relTime(it.createdAt) + '</span></div>' +
+        '<div class="wi-text">' + escapeHtml(it.text) + '</div>' + meta;
+      el.wallList.appendChild(d);
+    });
+  }
+  function showWallErr(msg) { el.wallErr.textContent = msg; el.wallErr.style.display = "block"; }
+  function fetchWall() {
+    fetch("/api/wall?city=" + encodeURIComponent(CITY), { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) { el.wallErr.style.display = "none"; renderWall(d.items); }
+        else if (d.error === "KV_NOT_BOUND") {
+          showWallErr("留言墙存储未启用：请在 Cloudflare 后台把 KV 命名空间绑定到函数（绑定名 VISIT_KV）。");
+        } else { showWallErr("留言墙加载失败，稍后点刷新重试。"); }
+      })
+      .catch(function () { showWallErr("留言墙加载失败（网络），稍后点刷新重试。"); });
+  }
+  function postWall() {
+    var t = document.querySelector('input[name="wfType"]:checked');
+    var type = t ? t.value : "msg";
+    var text = el.wfText.value.trim();
+    if (!text) { toast("先写点内容"); return; }
+    var payload = {
+      city: CITY, type: type,
+      name: el.wfName.value.trim(),
+      text: text,
+      meetAt: (type === "meet") ? el.wfMeetAt.value.trim() : "",
+      contact: el.wfContact.value.trim()
+    };
+    el.wfPost.disabled = true; el.wfPost.textContent = "发布中…";
+    fetch("/api/wall", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙";
+        if (d.ok) {
+          el.wfText.value = ""; el.wfMeetAt.value = ""; el.wfContact.value = "";
+          toast("已发布到留言墙"); fetchWall();
+        } else if (d.error === "KV_NOT_BOUND") {
+          showWallErr("留言墙存储未启用：请在 Cloudflare 后台绑定 KV（VISIT_KV）。");
+        } else { toast("发布失败：" + (d.error || "未知错误")); }
+      })
+      .catch(function () { el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙"; toast("发布失败（网络）"); });
+  }
+
   // ---------- 初始化 ----------
   function init() {
     if (ROOM) {
@@ -616,6 +785,12 @@
       });
     }
     bindControls();
+    // 留言墙：进入即加载，落地页可见时每 20s 自动刷新（在房间内不浪费请求）
+    fetchWall();
+    if (wallTimer) clearInterval(wallTimer);
+    wallTimer = setInterval(function () {
+      if (el.landing.style.display !== "none") fetchWall();
+    }, 20000);
     loadQuestions(function () {
       renderQuestionOptions();
       if (state.role) setRole(state.role); // 刷新后恢复身份与打分进度

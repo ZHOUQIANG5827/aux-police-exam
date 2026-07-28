@@ -78,3 +78,34 @@ body{
 
 .toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,.94);color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;max-width:88%;text-align:center;z-index:50;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* 自定义时长输入 */
+.dur-custom{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap;}
+.dur-input{width:58px;border:1px solid var(--line);border-radius:8px;padding:6px 7px;font-size:13px;font-weight:700;color:var(--navy);text-align:center;}
+.dur-input:focus{outline:none;border-color:var(--blue);}
+
+/* 录音按钮态 */
+#recBtn.rec-on{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:transparent;animation:podrecpulse 1.1s ease-in-out infinite;}
+@keyframes podrecpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4);}50%{box-shadow:0 0 0 7px rgba(220,38,38,0);}}
+
+/* 留言墙 / 约练 */
+.wall{margin-top:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 4px 18px rgba(30,58,95,.06);}
+.wall-head{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:800;color:var(--navy);margin-bottom:10px;}
+.wall-list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto;margin-bottom:12px;}
+.wall-empty{font-size:12.5px;color:var(--muted);text-align:center;padding:14px 0;}
+.wall-item{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;}
+.wall-item .wi-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.wi-name{font-weight:800;color:var(--navy);font-size:13px;}
+.wi-badge{font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;}
+.wi-badge.msg{background:#e0e7ff;color:#4338ca;}
+.wi-badge.meet{background:#dcfce7;color:#15803d;}
+.wi-time{font-size:11px;color:var(--muted);margin-left:auto;}
+.wi-text{color:var(--txt);line-height:1.6;word-break:break-word;white-space:pre-wrap;}
+.wi-meta{margin-top:5px;font-size:11.5px;color:#475569;background:#eef2f7;border-radius:8px;padding:6px 8px;line-height:1.5;}
+.wall-form{display:flex;flex-direction:column;gap:8px;border-top:1px dashed var(--line);padding-top:12px;}
+.wf-input,.wf-text{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;background:#fff;color:var(--txt);font-family:inherit;width:100%;}
+.wf-text{min-height:62px;resize:vertical;}
+.wf-type{display:flex;gap:16px;font-size:13px;font-weight:700;color:var(--navy);}
+.wf-type label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;}
+.wf-extra{display:flex;flex-direction:column;gap:8px;}
+.wall-err{margin-top:10px;font-size:12.5px;font-weight:700;color:var(--err);background:#fee2e2;border-radius:10px;padding:9px 12px;line-height:1.6;}

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>面试对练舱 · 1v1 语音对练</title>
-<link rel="stylesheet" href="pod.css?v=20260728c">
+<link rel="stylesheet" href="pod.css?v=20260728d">
 </head>
 <body>
 <div class="pod">
@@ -20,6 +20,28 @@
     <button class="big-btn" id="createBtn">➕ 创建房间（发链接给熟人）</button>
     <button class="big-btn alt" id="matchBtn">🎲 随机匹配搭子（陌生人）</button>
     <p class="hint">创建房间：把链接发给搭子，对方点开即连。随机匹配：系统自动给你配一位在线练习伙伴，双方随机分配考官/考生。</p>
+
+    <div class="wall" id="wallPanel">
+      <div class="wall-head">
+        <span>💬 陪练留言墙 / 约练</span>
+        <button class="mini-btn" id="wallRefresh">↻ 刷新</button>
+      </div>
+      <div class="wall-list" id="wallList"><div class="wall-empty">加载中…</div></div>
+      <div class="wall-form">
+        <input class="wf-input" id="wfName" placeholder="昵称（选填）" maxlength="20">
+        <div class="wf-type">
+          <label><input type="radio" name="wfType" value="msg" checked> 留言</label>
+          <label><input type="radio" name="wfType" value="meet"> 约练</label>
+        </div>
+        <textarea class="wf-text" id="wfText" placeholder="想说点什么？例如：求一位搭子互练综合分析题 / 今晚8点约练结构化，VX:xxx" maxlength="300"></textarea>
+        <div class="wf-extra" id="wfExtra" style="display:none;">
+          <input class="wf-input" id="wfMeetAt" placeholder="约练时间，如 07-30 20:00" maxlength="30">
+          <input class="wf-input" id="wfContact" placeholder="联系方式（选填）" maxlength="40">
+        </div>
+        <button class="big-btn" id="wfPost">发布到留言墙</button>
+      </div>
+      <div class="wall-err" id="wallErr" style="display:none;"></div>
+    </div>
   </section>
 
   <section id="matchView" class="card center" style="display:none;">
@@ -76,11 +98,12 @@
         <div class="exam-ans" id="examAnswer">选择题目后，此处显示参考答案（供你对照评分）</div>
       </div>
       <div class="block">
-        <div class="block-t">演练时长</div>
+        <div class="block-t">演练时长（可自定义，不限于 3 分钟）</div>
         <div class="dur-row" id="durRow">
           <button class="dur-btn active" data-d="180">3分钟</button>
-          <button class="dur-btn" data-d="240">4分钟</button>
           <button class="dur-btn" data-d="300">5分钟</button>
+          <button class="dur-btn" data-d="600">10分钟</button>
+          <span class="dur-custom">自定义<input class="dur-input" id="durInput" type="number" min="0.5" max="180" step="0.5" value="3">分钟</span>
         </div>
         <button class="big-btn start-btn" id="startBtn">▶ 开始演练</button>
         <button class="big-btn stop-btn" id="stopBtn" style="display:none;">■ 结束演练</button>
@@ -96,6 +119,8 @@
     <!-- 语音 -->
     <div class="voice-row">
       <button class="mini-btn" id="micBtn">🎤 开启麦克风</button>
+      <button class="mini-btn" id="recBtn">⏺ 录音</button>
+      <button class="mini-btn" id="dlBtn">📥 下载录音</button>
       <span class="voice-state" id="voiceState">未开启</span>
     </div>
     <audio id="remoteAudio" autoplay></audio>
@@ -107,6 +132,6 @@
 </div>
 <div class="toast" id="toast"></div>
 <script src="peerjs.min.js?v=20260728c"></script>
-<script src="pod.js?v=20260728c"></script>
+<script src="pod.js?v=20260728d"></script>
 </body>
 </html>
