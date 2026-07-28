@@ -930,6 +930,8 @@
           showWallErr("留言墙存储未启用：请在 Cloudflare 后台绑定 KV（VISIT_KV）。");
         } else if (d.error === "RATE_LIMIT") {
           toast("发帖太频繁，请 " + (d.left || 60) + " 秒后再发");
+        } else if (d.error === "DAILY_LIMIT") {
+          toast("今日发帖已达上限（20 条/天），明天再来～");
         } else if (d.error === "DUP") {
           toast("刚才发过相同内容啦，稍等会儿再发");
         } else if (d.error === "BAD_WORD") {

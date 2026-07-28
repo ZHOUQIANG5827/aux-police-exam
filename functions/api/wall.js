@@ -7,10 +7,20 @@
  * 存储：env.VISIT_KV（与访问计数共用同一命名空间），key = pod_wall_<city>
  * 未绑定 KV 时返回 503 {ok:false,error:"KV_NOT_BOUND"}，前端展示降级提示。
  */
-const MAX_ITEMS = 100;
+const MAX_ITEMS = 100;              // 单城市保留条数上限（FIFO 裁剪，KV 空间恒定）
 const CITIES = ["sz", "hz", "gd", "ms", "cd", "wh"];
 const RATE_LIMIT_SEC = 60;          // 同一 IP 发帖间隔限制
+const DAILY_IP_LIMIT = 20;         // 同一 IP 单日发帖次数上限（跨城市共享，防刷屏/防 KV 读写额度被耗尽）
 const SENSITIVE = ["赌博", "色情", "代考", "炸药", "炸弹", "毒品", "诈骗", "办证", "招嫖", "代刷", "枪"];
+
+// 当天剩余秒数（用于日配额 key 的 TTL，自然过期不占永久空间）
+function dayLeftSec() {
+  var end = new Date(new Date().toISOString().slice(0, 10) + "T23:59:59Z").getTime();
+  return Math.max(Math.ceil((end - Date.now()) / 1000), 60);
+}
+function dayKeyOf(ip) {
+  return "wall_day_" + new Date().toISOString().slice(0, 10) + "_" + ip;
+}
 
 function sanitize(s, max) {
   s = (s || "").toString().trim();
@@ -77,6 +87,7 @@ async function doPost(context, body) {
 
   // 频率限制（按客户端 IP）
   const ip = context.request.headers.get("cf-connecting-ip") || "unknown";
+  const dayKey = dayKeyOf(ip);
   try {
     const rlKey = "wall_rl_" + ip;
     const last = await kv.get(rlKey);
@@ -87,6 +98,14 @@ async function doPost(context, body) {
     }
     await kv.put(rlKey, String(now), { expirationTtl: RATE_LIMIT_SEC });
   } catch (e) { /* 限速失败不阻断发帖 */ }
+
+  // 单日/IP 配额（防刷屏 + 防 KV 读写额度被耗尽；KV 最终一致，允许少量超量但量级可控）
+  try {
+    const dayCount = Number(await kv.get(dayKey) || "0");
+    if (dayCount >= DAILY_IP_LIMIT) {
+      return json({ ok: false, error: "DAILY_LIMIT", left: dayLeftSec() }, 429);
+    }
+  } catch (e) { /* 计数失败不阻断发帖 */ }
 
   const name = sanitize(body.name, 20) || "匿名考生";
   const type = body.type === "meet" ? "meet" : "msg";
@@ -126,6 +145,11 @@ async function doPost(context, body) {
   } catch (e) {
     return json({ ok: false, error: "WRITE_FAIL" }, 500);
   }
+  // 日配额 +1（TTL 到当天结束，自然过期）
+  try {
+    const dayCount = Number(await kv.get(dayKey) || "0");
+    await kv.put(dayKey, String(dayCount + 1), { expirationTtl: dayLeftSec() });
+  } catch (e) { /* 计数失败不影响已发帖 */ }
   return json({ ok: true, item: item });
 }
 
