@@ -879,7 +879,7 @@
       .catch(function () { el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙"; toast("发布失败（网络）"); });
   }
   function deleteWall(id) {
-    var pwd = prompt("删除该留言需要管理员口令：", "");
+    var pwd = prompt("删除该留言需输入口令（见页面底部备注）：", "");
     if (pwd === null) return;
     fetch("/api/wall?city=" + encodeURIComponent(CITY) + "&id=" + encodeURIComponent(id) + "&admin=" + encodeURIComponent(pwd), { method: "DELETE" })
       .then(function (r) { return r.json(); })
