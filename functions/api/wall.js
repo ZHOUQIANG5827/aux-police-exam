@@ -72,7 +72,7 @@ export async function onRequestPost(context) {
   };
   const kv = context.env && context.env.VISIT_KV;
   if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
-  const items = await readList(kv, city);
+  let items = await readList(kv, city);
   items.push(item);
   if (items.length > MAX_ITEMS) items = items.slice(items.length - MAX_ITEMS);
   try {
