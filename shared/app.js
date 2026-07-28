@@ -1551,6 +1551,17 @@ window.addEventListener("DOMContentLoaded", function () {
   StorageCtrl.updateUI();
   initAudioRecorderSystem();
   render();
+  // 面试对练舱入口（仅开启 podEnabled 的城市显示）
+  try {
+    var podBtn = document.getElementById("podEntryBtn");
+    if (podBtn && CONFIG.podEnabled) {
+      podBtn.hidden = false;
+      podBtn.addEventListener("click", function () {
+        var seg = (location.pathname.split("/")[1] || "sz").replace(/[^a-z]/gi, "");
+        window.open("/shared/pod.html?city=" + (seg || "sz"), "_blank");
+      });
+    }
+  } catch (e) {}
   // 筛选维度与统计需遍历全部题目；题库大时(如惠州2136题)会阻塞首屏渲染，延迟到浏览器空闲执行
   var _idle = window.requestIdleCallback || function (cb) { setTimeout(cb, 120); };
   _idle(function () { buildFilterRows(); updateStats(); });
