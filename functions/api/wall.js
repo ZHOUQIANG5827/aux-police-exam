@@ -19,7 +19,7 @@ function json(obj, status) {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET, POST, OPTIONS",
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
       "access-control-allow-headers": "content-type",
     },
   });
@@ -83,12 +83,33 @@ export async function onRequestPost(context) {
   return json({ ok: true, item: item });
 }
 
+export async function onRequestDelete(context) {
+  const url = new URL(context.request.url);
+  const city = cityOf(url.searchParams.get("city"));
+  const id = sanitize(url.searchParams.get("id"), 40);
+  const admin = url.searchParams.get("admin") || "";
+  const secret = (context.env && context.env.WALL_ADMIN) || "rcj9527";
+  if (admin !== secret) return json({ ok: false, error: "BAD_ADMIN" }, 403);
+  const kv = context.env && context.env.VISIT_KV;
+  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  let items = await readList(kv, city);
+  const before = items.length;
+  items = items.filter(function (x) { return x.id !== id; });
+  if (items.length === before) return json({ ok: false, error: "NOT_FOUND" }, 404);
+  try {
+    await kv.put("pod_wall_" + city, JSON.stringify(items), { expirationTtl: 2592000 });
+  } catch (e) {
+    return json({ ok: false, error: "WRITE_FAIL" }, 500);
+  }
+  return json({ ok: true, removed: before - items.length });
+}
+
 export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
     headers: {
       "access-control-allow-origin": "*",
-      "access-control-allow-methods": "GET, POST, OPTIONS",
+      "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
       "access-control-allow-headers": "content-type",
     },
   });

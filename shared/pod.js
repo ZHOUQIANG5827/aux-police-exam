@@ -829,8 +829,10 @@
       d.innerHTML =
         '<div class="wi-top">' + badge +
         '<span class="wi-name">' + escapeHtml(it.name) + '</span>' +
-        '<span class="wi-time">' + relTime(it.createdAt) + '</span></div>' +
+        '<span class="wi-time">' + relTime(it.createdAt) + '</span>' +
+        '<span class="wi-del" title="删除">✕</span></div>' +
         '<div class="wi-text">' + escapeHtml(it.text) + '</div>' + meta;
+      d.querySelector(".wi-del").addEventListener("click", function () { deleteWall(it.id); });
       el.wallList.appendChild(d);
     });
   }
@@ -875,6 +877,19 @@
         } else { toast("发布失败：" + (d.error || "未知错误")); }
       })
       .catch(function () { el.wfPost.disabled = false; el.wfPost.textContent = "发布到留言墙"; toast("发布失败（网络）"); });
+  }
+  function deleteWall(id) {
+    var pwd = prompt("删除该留言需要管理员口令：", "");
+    if (pwd === null) return;
+    fetch("/api/wall?city=" + encodeURIComponent(CITY) + "&id=" + encodeURIComponent(id) + "&admin=" + encodeURIComponent(pwd), { method: "DELETE" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) { toast("已删除"); fetchWall(); }
+        else if (d.error === "BAD_ADMIN") toast("口令错误，无法删除");
+        else if (d.error === "NOT_FOUND") { toast("该留言已不存在"); fetchWall(); }
+        else toast("删除失败：" + (d.error || "未知错误"));
+      })
+      .catch(function () { toast("删除失败（网络）"); });
   }
 
   // ---------- 初始化 ----------
