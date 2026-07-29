@@ -627,24 +627,33 @@
         });
     });
   }
-  // 确保有一个匹配大厅身份：优先拿真实 PeerJS id，拿不到就用本地随机 id（大厅不依赖 PeerJS cloud）
+  // 匹配大厅身份：直接用本地随机 id（KV 撮合不依赖 PeerJS cloud，peerId 仅作备用）
   function genLobbyId() {
     return "u" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
   }
   function ensureLobbyId() {
     return new Promise(function (resolve) {
+      // 优先复用已就绪的 PeerJS id（仅作日志，便于排查）
       if (peer && peer.id) { resolve(peer.id); return; }
-      if (!window.Peer) { resolve(genLobbyId()); return; }
-      var tmp = new Peer({ debug: 1, config: { iceServers: iceServers() } });
-      var settled = false;
-      function done(id) {
-        if (settled) return; settled = true;
-        if (tmp && !tmp.destroyed) { try { tmp.destroy(); } catch (e) {} }
-        resolve(id || genLobbyId());
+      // 最多给 PeerJS 1 秒机会拿真实 id；拿不到直接随机 id，绝不阻塞大厅
+      if (window.Peer) {
+        try {
+          var tmp = new Peer({ debug: 0, config: { iceServers: iceServers() } });
+          var settled = false;
+          function done(id) {
+            if (settled) return; settled = true;
+            if (tmp && !tmp.destroyed) { try { tmp.destroy(); } catch (e) {} }
+            resolve(id || genLobbyId());
+          }
+          tmp.on("open", function (id) { done(id); });
+          tmp.on("error", function () { done(""); });
+          setTimeout(function () { done(""); }, 1000);
+          return;
+        } catch (e) {
+          // 构造异常则直接走随机 id
+        }
       }
-      tmp.on("open", function (id) { done(id); });
-      tmp.on("error", function () { done(""); });
-      setTimeout(function () { done(""); }, 4000);
+      resolve(genLobbyId());
     });
   }
   var lobbyPollMiss = 0; // 连续未读到 match 次数
