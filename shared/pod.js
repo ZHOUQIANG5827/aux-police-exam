@@ -1,9 +1,8 @@
 /* 面试对练舱 · 1v1 P2P 极简面试对练
- * 架构：PeerJS（默认云信令）。房号=房主 PeerID，搭子凭 ?room= 直连。
+ * 架构：原生 WebRTC + Cloudflare KV 信令（不再依赖 PeerJS 云信令，国内可达/免费）。
+ *       房号=房间 key，信令走 /api/rtc（KV 中转 SDP/ICE）；语音用 RTCPeerConnection 双向 addTrack。
  * 特性：URL 秒连 / 考生·考官分工 / 题库+倒计时镜面同步 / Checklist 零延迟同步
- *       / 断线自动重连(disconnected+close) / Checklist 双向 localStorage 缓存
- * 修复记录：① 题库字段 title/answer（原 stem 导致空白）② 房主刷新稳定复用房间号
- *         ③ 双向语音自动回拨 ④ 考官端参考答案 ⑤ 重置/离开
+ *       / 断线自动重连 / Checklist 双向 localStorage 缓存
  */
 (function () {
   "use strict";
@@ -46,9 +45,9 @@
    "wallPanel","wallList","wallErr","wallRefresh","wfName","wfText","wfExtra","wfMeetAt","wfContact","wfDirection","wallTabs","wfPost"
   ].forEach(function (k) { el[k] = $(k); });
 
-  var peer = null, conn = null, localStream = null, micOn = false, remoteStream = null;
+  var pc = null, conn = null, myTag = "A", localStream = null, micOn = false, remoteStream = null;
   var timerInt = null, reconnectTimer = null, reconnectDelay = 1000;
-  var calledPeerId = null; // 防止双向语音重复呼叫的守卫
+  var isReconnecting = false; // 是否处于重连（setupPeer 内据此跳过重复 toast）
   // 语音混录（下载用）
   var audioCtx = null, mixedDest = null, recorder = null, recChunks = [], lastBlob = null, recOn = false;
   var mixedStreams = []; // 已接入混音的流，避免重复 connect 导致音量叠加/回声
@@ -96,11 +95,13 @@
     } catch (e) {}
   }
 
-  // ---------- 数据传输 ----------
+  // ---------- 数据传输（经 RTCDataChannel，JSON 字符串） ----------
   function send(obj) {
-    if (conn && conn.open) { try { conn.send(obj); } catch (e) {} }
+    if (conn && conn.readyState === "open") { try { conn.send(JSON.stringify(obj)); } catch (e) {} }
   }
-  function onData(data) {
+  function onData(raw) {
+    var data;
+    try { data = (typeof raw === "string") ? JSON.parse(raw) : raw; } catch (e) { return; }
     if (!data || !data.t) return;
     switch (data.t) {
       case "hello":
@@ -108,6 +109,9 @@
         break;
       case "req":
         if (state.role === "examiner") sendState();
+        break;
+      case "renego":
+        if (IS_HOST) makeOffer(); // 访客开了麦克风，房主负责重新协商
         break;
       case "state":
         if (state.role === "candidate") applyState(data.state);
@@ -291,35 +295,19 @@
       micOn = true; el.voiceState.textContent = "已开启"; el.micBtn.textContent = "🎤 麦克风已开";
       log("麦克风已开启");
       if (audioCtx) connectToMix(localStream); // 若已在录音，把本地语音接进混音
-      callPeer(IS_HOST ? (conn && conn.peer) : ROOM);
+      addLocalTracks(); // 把本地麦克风轨道加入 P2P 连接（房主触发重协商；访客通知房主）
+      try { if (!IS_HOST && conn && conn.readyState === "open") send({ t: "renego" }); } catch (e) {}
     }).catch(function (e) {
       toast("无法开启麦克风：" + (e && e.message ? e.message : e));
       log("麦克风失败：" + (e && e.message ? e.message : e), "err");
     });
   }
-  // 向对端发起语音（守卫：同一对端只呼叫一次，避免双向互呼死循环）
-  function callPeer(targetId) {
-    if (!localStream || !peer || !peer.open || !targetId || targetId === calledPeerId) return;
-    try {
-      var call = peer.call(targetId, localStream);
-      if (call) { bindCall(call); calledPeerId = targetId; }
-    } catch (e) { log("呼叫失败：" + e, "err"); }
-  }
-  function bindCall(call) {
-    call.on("stream", function (stream) {
-      remoteStream = stream;
-      el.remoteAudio.srcObject = stream;
-      if (audioCtx) connectToMix(stream); // 若已在录音，把对方语音也接进混音
-      log("已收到对方语音");
-    });
-    call.on("close", function () { calledPeerId = null; });
-    call.on("error", function () { calledPeerId = null; });
-  }
 
-  // ---------- PeerJS 连接 ----------
+  // ---------- 原生 WebRTC 连接 ----------
   function iceServers() {
-    // 公共 STUN + 免费 TURN fallback，提高国内 NAT 穿透成功率
+    // 公共 STUN + 免费 TURN fallback，提高国内 NAT 穿透成功率（含 Cloudflare STUN，国内可达性好）
     return [
+      { urls: "stun:stun.cloudflare.com:3478" },
       { urls: "stun:stun.l.google.com:19302" },
       { urls: "stun:stun1.l.google.com:19302" },
       { urls: "stun:stun2.l.google.com:19302" },
@@ -344,7 +332,7 @@
     connectStartTs = Date.now();
     if (connectWatchdog) clearTimeout(connectWatchdog);
     connectWatchdog = setTimeout(function () {
-      if (!conn || !conn.open) {
+      if (!conn || conn.readyState !== "open") {
         log("连接超时，建议换网络或浏览器", "err");
         setConn("连接超时", "err");
         var tip = isWechatBrowser()
@@ -359,123 +347,170 @@
     if (connectWatchdog) { clearTimeout(connectWatchdog); connectWatchdog = null; }
   }
 
+  // ---------- 原生 WebRTC + KV 信令（不再依赖 PeerJS 云信令） ----------
   function setupPeer() {
-    var opts = { debug: 1, config: { iceServers: iceServers() } };
-    peer = IS_HOST ? new Peer(ROOM || genRoom(), opts) : new Peer(opts);
-    startConnectWatchdog();
     showWxHint();
+    startConnectWatchdog();
+    var wasReconnect = isReconnecting;
+    myTag = IS_HOST ? "A" : "B";
+    sigSince = 0;
+    var cfg = { iceServers: iceServers() };
+    try { pc = new RTCPeerConnection(cfg); } catch (e) {
+      log("无法创建 WebRTC 连接：" + e, "err"); setConn("连接异常", "err"); return;
+    }
+    if (localStream) addLocalTracks();
+    if (IS_HOST) {
+      try { conn = pc.createDataChannel("pod", { ordered: true }); bindDataChannel(conn); } catch (e) {}
+    } else {
+      pc.ondatachannel = function (ev) { conn = ev.channel; bindDataChannel(conn); };
+    }
+    pc.onicecandidate = function (e) {
+      if (e && e.candidate) postSignal("ice", (e.candidate.toJSON ? e.candidate.toJSON() : e.candidate));
+    };
+    pc.ontrack = function (e) {
+      remoteStream = e.streams && e.streams[0];
+      el.remoteAudio.srcObject = remoteStream;
+      if (audioCtx) connectToMix(remoteStream);
+      log("已收到对方语音");
+    };
+    pc.onconnectionstatechange = function () {
+      var st = pc.connectionState;
+      if (st === "connected") { setConn("已连接", "ok"); clearConnectWatchdog(); log("P2P 连接已建立"); }
+      else if (st === "connecting") { setConn("建立连接中…", "warn"); }
+      else if (st === "disconnected") { setConn("连接中断，重连中…", "err"); log("连接中断", "err"); scheduleReconnect(); }
+      else if (st === "failed") { setConn("连接失败，请重开房间", "err"); log("连接失败", "err"); }
+    };
+    // 房主是 offerer：仅在有媒体轨道时才重新协商（初始空 offer 由下方 makeOffer 发出）
+    pc.onnegotiationneeded = function () {
+      if (!IS_HOST) return;
+      var hasTrack = false;
+      try { hasTrack = pc.getSenders().some(function (s) { return s.track; }); } catch (e) {}
+      if (!hasTrack) return;
+      makeOffer();
+    };
 
-    peer.on("open", function (id) {
-      log((IS_HOST ? "房主 Peer 就绪：" : "已连信令：") + id);
-      setConn("已连信令", "warn");
-      if (IS_HOST) {
-        ROOM = id; STORE_KEY = "podCache_" + ROOM; HOST_MARK = "podHost_" + ROOM;
-        try { localStorage.setItem(HOST_MARK, "1"); } catch (e) {}
-        loadCache(); // 房主刷新后恢复之前缓存的打分/身份
+    if (IS_HOST) {
+      ROOM = ROOM || genRoom();
+      STORE_KEY = "podCache_" + ROOM; HOST_MARK = "podHost_" + ROOM;
+      try { localStorage.setItem(HOST_MARK, "1"); } catch (e) {}
+      loadCache();
+      if (!wasReconnect) {
         if (pendingRole) { setRole(pendingRole); pendingRole = ""; }
         else if (state.role) setRole(state.role);
         el.roomNo.textContent = ROOM;
         var url = "?room=" + ROOM + (CITY !== "sz" ? "&city=" + CITY : "");
         history.replaceState(null, "", url);
         toast("房间已创建：" + ROOM + "，把链接发给搭子");
-      } else {
-        connectToHost();
       }
-    });
-    peer.on("connection", function (c) {
-      conn = c; bindConn(c); log("搭子已连接（数据）"); setConn("已连接", "ok");
-      clearConnectWatchdog();
-      if (micOn) callPeer(c.peer);
-    });
-    peer.on("call", function (call) {
-      call.answer(localStream || undefined);
-      bindCall(call);
-      if (localStream && call.peer !== calledPeerId) callPeer(call.peer); // 自动回拨，形成双向语音
-    });
-    peer.on("disconnected", function () {
-      setConn("信令断开，重连中…", "err"); log("Peer 断开，尝试重连", "err");
-      try { peer.reconnect(); } catch (e) {}
-    });
-    peer.on("close", function () {
-      setConn("连接关闭，重建中…", "err"); log("Peer 关闭，重建", "err");
-      scheduleReconnect();
-    });
-    peer.on("error", function (err) {
-      if (err && err.type === "unavailable-id") {
-        log("房号被占用，重新生成", "err");
-        if (IS_HOST) {
-          try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
-          ROOM = genRoom(); setupPeer();
-        }
-        return;
-      }
-      if (err && err.type === "peer-unavailable") {
-        log("房主暂不可达，重试中…", "err"); scheduleReconnect(); return;
-      }
-      log("Peer 错误：" + (err && err.type), "err");
-      setConn("连接异常", "err");
-    });
+      makeOffer(); // 房主立即发 offer（先建数据通道，音频待开麦后重协商）
+    }
+    startSignalingLoop();
+    isReconnecting = false;
   }
 
-  function connectToHost() {
-    if (!ROOM) { setConn("无效房间号", "err"); return; }
-    setConn("连接房主中…", "warn");
-    try {
-      var c = peer.connect(ROOM, { reliable: true });
-      if (c) { conn = c; bindConn(c); }
-    } catch (e) { scheduleReconnect(); }
+  var makingOffer = false, sigSince = 0, sigTimer = null, sigStopped = false;
+  function makeOffer() {
+    if (!pc || makingOffer) return;
+    makingOffer = true;
+    pc.createOffer().then(function (offer) { return pc.setLocalDescription(offer); })
+      .then(function () { return postSignal("offer", pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription); })
+      .catch(function (e) { log("生成 offer 失败：" + e, "err"); })
+      .finally(function () { makingOffer = false; });
   }
-
-  function bindConn(c) {
-    c.on("open", function () {
-      setConn("已连接", "ok"); log("数据通道已打开");
-      clearConnectWatchdog();
-      calledPeerId = null;
+  function addLocalTracks() {
+    if (!pc || !localStream) return;
+    localStream.getTracks().forEach(function (t) { try { pc.addTrack(t, localStream); } catch (e) {} });
+  }
+  function postSignal(type, payload) {
+    if (!ROOM) return;
+    fetch("/api/rtc", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ room: ROOM, tag: myTag, type: type, payload: payload })
+    }).catch(function () {});
+  }
+  function startSignalingLoop() {
+    if (sigTimer) return;
+    sigStopped = false;
+    sigTimer = setInterval(fetchSignal, 2500);
+  }
+  function stopSignalingLoop() {
+    sigStopped = true;
+    if (sigTimer) { clearInterval(sigTimer); sigTimer = null; }
+  }
+  function fetchSignal() {
+    if (sigStopped || !ROOM) return;
+    fetch("/api/rtc?room=" + encodeURIComponent(ROOM) + "&tag=" + myTag + "&since=" + sigSince, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) return;
+        (d.signals || []).forEach(function (s) { applySignal(s); });
+        if (d.seq && d.seq > sigSince) sigSince = d.seq;
+      })
+      .catch(function () {});
+  }
+  function applySignal(s) {
+    if (!pc) return;
+    var RS = window.RTCSessionDescription || RTCSessionDescription;
+    var RIC = window.RTCIceCandidate || RTCIceCandidate;
+    if (s.type === "offer") {
+      pc.setRemoteDescription(new RS(s.payload))
+        .then(function () { return pc.createAnswer(); })
+        .then(function (ans) { return pc.setLocalDescription(ans); })
+        .then(function () { return postSignal("answer", pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription); })
+        .catch(function (e) { log("处理 offer 失败：" + e, "err"); });
+    } else if (s.type === "answer") {
+      pc.setRemoteDescription(new RS(s.payload)).catch(function (e) { log("处理 answer 失败：" + e, "err"); });
+    } else if (s.type === "ice") {
+      try { pc.addIceCandidate(new RIC(s.payload)); } catch (e) {}
+    }
+  }
+  function bindDataChannel(c) {
+    c.onopen = function () {
+      setConn("已连接", "ok"); log("数据通道已打开"); clearConnectWatchdog();
       if (pendingRole) { setRole(pendingRole); pendingRole = ""; }
       else {
         if (state.role) send({ t: "hello", role: state.role });
         if (state.role === "candidate") send({ t: "req" });
         else if (state.role === "examiner") sendState();
       }
-      if (micOn) callPeer(IS_HOST ? (c.peer) : ROOM);
-    });
-    c.on("data", onData);
-    c.on("close", function () {
+    };
+    c.onmessage = function (e) { onData(e.data); };
+    c.onclose = function () {
       setConn("对端断开，重连中…", "err"); log("数据通道关闭", "err");
-      conn = null; calledPeerId = null; scheduleReconnect();
-    });
-    c.on("error", function () { log("数据通道错误", "err"); });
+      conn = null; scheduleReconnect();
+    };
+    c.onerror = function () { log("数据通道错误", "err"); };
   }
-
+  function teardownRTC() {
+    stopSignalingLoop();
+    try { if (conn && conn.close) conn.close(); } catch (e) {}
+    try { if (pc && pc.close) pc.close(); } catch (e) {}
+    pc = null; conn = null;
+  }
   function scheduleReconnect() {
     if (reconnectTimer) return;
+    isReconnecting = true;
     reconnectDelay = Math.min(reconnectDelay * 1.6, 8000);
     var delay = reconnectDelay;
     reconnectTimer = setTimeout(function () {
       reconnectTimer = null;
-      log("尝试重连（延迟 " + delay + "ms）");
-      calledPeerId = null;
+      log("尝试重建连接（延迟 " + delay + "ms）");
       startConnectWatchdog();
-      if (IS_HOST) {
-        try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
-        setupPeer();
-      } else {
-        if (peer && peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
-        else if (!peer || peer.destroyed) { setupPeer(); }
-        else { connectToHost(); }
-      }
+      teardownRTC();
+      setupPeer();
     }, delay);
   }
-
   function leaveRoom() {
     stopRecording();
     clearConnectWatchdog();
-    try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
+    stopSignalingLoop();
+    teardownRTC();
+    isReconnecting = false;
     try { localStorage.removeItem(HOST_MARK); } catch (e) {}
-    peer = null; conn = null; calledPeerId = null;
     if (localStream) { localStream.getTracks().forEach(function (t) { t.stop(); }); localStream = null; }
     remoteStream = null; micOn = false;
-    if (audioCtx) { try { audioCtx.suspend(); } catch (e) {} } // 挂起 AudioContext，省电且防脏状态
+    if (audioCtx) { try { audioCtx.suspend(); } catch (e) {} }
     mixedStreams = [];
     el.micBtn.textContent = "🎤 开启麦克风"; el.voiceState.textContent = "未开启";
     el.room.style.display = "none"; el.landing.style.display = "block";
@@ -627,34 +662,12 @@
         });
     });
   }
-  // 匹配大厅身份：直接用本地随机 id（KV 撮合不依赖 PeerJS cloud，peerId 仅作备用）
+  // 匹配大厅身份：本地随机 id 即可，KV 撮合完全不依赖 PeerJS cloud
   function genLobbyId() {
     return "u" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
   }
   function ensureLobbyId() {
-    return new Promise(function (resolve) {
-      // 优先复用已就绪的 PeerJS id（仅作日志，便于排查）
-      if (peer && peer.id) { resolve(peer.id); return; }
-      // 最多给 PeerJS 1 秒机会拿真实 id；拿不到直接随机 id，绝不阻塞大厅
-      if (window.Peer) {
-        try {
-          var tmp = new Peer({ debug: 0, config: { iceServers: iceServers() } });
-          var settled = false;
-          function done(id) {
-            if (settled) return; settled = true;
-            if (tmp && !tmp.destroyed) { try { tmp.destroy(); } catch (e) {} }
-            resolve(id || genLobbyId());
-          }
-          tmp.on("open", function (id) { done(id); });
-          tmp.on("error", function () { done(""); });
-          setTimeout(function () { done(""); }, 1000);
-          return;
-        } catch (e) {
-          // 构造异常则直接走随机 id
-        }
-      }
-      resolve(genLobbyId());
-    });
+    return new Promise(function (resolve) { resolve(genLobbyId()); });
   }
   var lobbyPollMiss = 0; // 连续未读到 match 次数
   function startLobbyPolling() {
