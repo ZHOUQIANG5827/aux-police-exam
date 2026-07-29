@@ -96,6 +96,16 @@
   <section>
     <h2>🔥 招录热点看板 <span class="tag" id="hotCount">—</span></h2>
     <div class="tabs" id="catTabs"></div>
+    <div class="bar" style="margin:6px 0 10px;">
+      <span class="hint">排序</span>
+      <span class="tab sortbtn on" data-sort="priority">按优先级</span>
+      <span class="tab sortbtn" data-sort="count">按人数</span>
+      <span class="hint" style="margin-left:14px;">筛选</span>
+      <span class="tab filtbtn on" data-filt="all">全部</span>
+      <span class="tab filtbtn" data-filt="week">本周可报</span>
+      <span class="tab filtbtn" data-filt="hot">🔴 优先建</span>
+    </div>
+    <p class="hint" style="margin:0 0 10px;">优先级 = 报名截止紧迫度 × 2 + 人数规模 + 未建权重 + 类别加成（辅警跨城复用价值高）。每天随时间自动重算。</p>
     <div id="hotTable"></div>
   </section>
 
@@ -209,6 +219,8 @@ function loadOv(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"{}");}
 function saveOv(o){localStorage.setItem(STORE_KEY,JSON.stringify(o));}
 let ov = loadOv();                 // { "url": {bankStatus, note} }
 let activeCat = "全部";
+let sortMode = "priority";         // priority | count
+let filterMode = "all";            // all | week | hot
 let currentItem = null;            // 当前生成器对应的热点条目（决定推哪个仓库）
 
 // 已验证可推的本地仓库（2026-07-29 实测 ls-remote 通过）
@@ -225,6 +237,42 @@ document.getElementById("syncBox").textContent = "数据同步：" + (DATA.updat
 function rowStatus(it){ return (ov[it.url]&&ov[it.url].bankStatus) || it.bankStatus || "未建"; }
 function rowNote(it){ return (ov[it.url]&&ov[it.url].note)!==undefined ? ov[it.url].note : it.note; }
 
+// ---------- 优先级评分（建题库建议） ----------
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d = (new Date(dateStr+"T00:00:00") - new Date(todayStr()+"T00:00:00"))/86400000;
+  return Math.round(d);
+}
+function priorityScore(it){
+  const st = rowStatus(it);
+  // 紧迫度：报名截止越近越高
+  let urg = 1;
+  const de = daysUntil(it.signupEnd);
+  if(de!==null){ urg = de<=0?0 : de<=3?3 : de<=7?2 : de<=14?1 : 0.5; }
+  else { const dp = daysUntil(it.publishDate); if(dp!==null && dp<=7) urg = 2; }
+  // 规模：人数越多客群越大
+  const c = it.count||0;
+  const size = c>=200?3 : c>=100?2.5 : c>=50?2 : c>0?1 : 1;
+  // 未建权重：还没建的最该优先
+  const need = st==="未建"?2 : st==="进行中"?1 : 0;
+  // 类别加成：辅警跨城复用价值最高（业务策略）
+  const boost = it.category==="辅警"?0.5 : it.category==="政府专职消防员"?0.3 : 0;
+  return urg*2 + size + need + boost;
+}
+function priorityTag(it){
+  const s = priorityScore(it);
+  if(s>=9) return {t:"🔴 优先建", c:"#e23b2e"};
+  if(s>=6) return {t:"🟠 建议建", c:"#e8852b"};
+  if(s>=3) return {t:"🟡 观察", c:"#e8a72b"};
+  return {t:"⚪ 暂缓", c:"#9aa6b5"};
+}
+function isThisWeek(it){
+  const de = daysUntil(it.signupEnd);
+  if(de!==null) return de>=0;            // 报名未截止
+  const dp = daysUntil(it.publishDate);
+  return dp!==null && dp<=7;             // 或本周内发布
+}
+
 // ---------- KPI ----------
 function renderKPI(){
   const items = DATA.items;
@@ -233,13 +281,17 @@ function renderKPI(){
   const ent = items.filter(i=>i.category==="企业消防员");
   const hot = items.filter(i=> (i.count||0)>=50 && rowStatus(i)!=="已上线");
   const live = items.filter(i=> rowStatus(i)==="已上线");
+  const week = items.filter(isThisWeek);
+  const prio = items.filter(i=> priorityTag(i).t.startsWith("🔴"));
   const html = [
     kpi(items.length,"条招录公告"),
+    kpi(week.length,"本周可报","org"),
+    kpi(prio.length,"🔴 优先建题库","red"),
+    kpi(hot.length,"🔥 热点待建","red"),
+    kpi(live.length,"已上线题库","ok"),
     kpi(aux.length,"辅警 · 条",""),
     kpi(gov.length,"政府专职消防员 · 条","org"),
     kpi(ent.length,"企业消防员 · 条","red"),
-    kpi(hot.length,"🔥 热点待建题库","red"),
-    kpi(live.length,"已上线题库","ok"),
   ].join("");
   document.getElementById("kpis").innerHTML = html;
 }
@@ -253,35 +305,48 @@ function renderTabs(){
     return `<span class="tab ${c===activeCat?'on':''}" data-c="${c}">${c} (${n})</span>`;
   }).join("");
   document.querySelectorAll("#catTabs .tab").forEach(t=>t.onclick=()=>{activeCat=t.dataset.c;renderTabs();renderHot();});
+  document.querySelectorAll(".sortbtn").forEach(b=>b.onclick=()=>{
+    sortMode=b.dataset.sort;
+    document.querySelectorAll(".sortbtn").forEach(x=>x.classList.toggle("on",x===b));
+    renderHot();
+  });
+  document.querySelectorAll(".filtbtn").forEach(b=>b.onclick=()=>{
+    filterMode=b.dataset.filt;
+    document.querySelectorAll(".filtbtn").forEach(x=>x.classList.toggle("on",x===b));
+    renderHot();
+  });
 }
 
 // ---------- 热点表 ----------
 function renderHot(){
   let rows = DATA.items.slice();
   if(activeCat!=="全部") rows = rows.filter(i=>i.category===activeCat);
-  rows.sort((a,b)=>{
-    const ca=a.count||0, cb=b.count||0;
-    if(ca===cb) return (a.region||"").localeCompare(b.region||"");
-    return cb-ca;
-  });
+  if(filterMode==="week") rows = rows.filter(isThisWeek);
+  if(filterMode==="hot")  rows = rows.filter(i=>priorityTag(i).t.startsWith("🔴"));
+  if(sortMode==="count"){
+    rows.sort((a,b)=> (b.count||0)-(a.count||0) || (a.region||"").localeCompare(b.region||""));
+  } else {
+    rows.sort((a,b)=> priorityScore(b)-priorityScore(a) || (b.count||0)-(a.count||0) || (a.region||"").localeCompare(b.region||""));
+  }
   const total = rows.length;
   document.getElementById("hotCount").textContent = "共 "+total+" 条";
   if(!total){document.getElementById("hotTable").innerHTML='<div class="empty">该类暂无数据。每日 09:00 自动同步后将出现在这里。</div>';return;}
 
-  const head = `<tr><th>地区/单位</th><th>人数</th><th>报名截止</th><th>门槛</th><th>题库状态</th><th>操作</th></tr>`;
+  const head = `<tr><th>地区/单位</th><th>人数</th><th>报名截止</th><th>优先级<br><span class="hint">(建题库建议)</span></th><th>门槛</th><th>题库状态</th><th>操作</th></tr>`;
   const body = rows.map((it,idx)=>{
     const isHot = (it.count||0)>=50 && rowStatus(it)!=="已上线";
+    const p = priorityTag(it);
     const auxCross = it.category==="辅警" ? `<span class="badge b-aux">跨城复用</span> ` : "";
     const hotBadge = isHot ? `<span class="badge b-hot">🔥建议建</span> ` : "";
     const cnt = it.count? `<span class="cnt">${it.count}</span>` : `<span class="cnt unk">不详</span>`;
     const end = it.signupEnd?it.signupEnd:"—";
-    const cls = idx%2? "" : "";
     return `<tr>
       <td><b>${it.region||""}</b><br><span class="hint">${it.unit||""}</span><br>${hotBadge}${auxCross}
           <a class="mini" href="${it.url||'#'}" target="_blank">来源↗</a></td>
       <td>${cnt}</td>
       <td>${end}</td>
-      <td style="max-width:220px;">${it.threshold||"—"}<br><span class="hint">${rowNote(it)||""}</span></td>
+      <td><span class="badge" style="background:${p.c}1a;color:${p.c};">${p.t}</span><br><span class="hint">分 ${priorityScore(it).toFixed(1)}</span></td>
+      <td style="max-width:200px;">${it.threshold||"—"}<br><span class="hint">${rowNote(it)||""}</span></td>
       <td><select class="sel" data-url="${it.url}">
           ${["未建","进行中","已上线"].map(s=>`<option ${rowStatus(it)===s?'selected':''}>${s}</option>`).join("")}
         </select></td>
