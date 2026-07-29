@@ -9,7 +9,7 @@ window.RCJ_RECRUITMENT = {
   updated: "2026-07-29",
 
   // 备注（可选）
-  note: "种子数据来自 2026-07-29 联网检索；自动化将每日合并滚动更新。",
+  note: "演示数据：截止日已调成相对今日的临近值；每日 09:00 自动化将用真实数据覆盖。",
 
   // 条目数组：每条一条招录公告
   items: [
@@ -19,7 +19,7 @@ window.RCJ_RECRUITMENT = {
       region: "河南·郑州",
       unit: "郑州市公安机关",
       count: 387,
-      publishDate: null,
+      publishDate: "2026-07-25",
       signupStart: "2026-07-27",
       signupEnd: "2026-07-31",
       method: "网上报名",
@@ -34,9 +34,9 @@ window.RCJ_RECRUITMENT = {
       region: "广东·肇庆",
       unit: "肇庆市公安局",
       count: 252,
-      publishDate: "2026-07-06",
+      publishDate: "2026-07-22",
       signupStart: null,
-      signupEnd: null,
+      signupEnd: "2026-08-10",
       method: "详见职位表",
       threshold: "大专及以上（退役军人/消防退出人员放宽至高中）",
       source: "肇庆市公安局政府信息公开",
@@ -49,15 +49,15 @@ window.RCJ_RECRUITMENT = {
       region: "广东·湛江",
       unit: "湛江市公安局（留置看护）",
       count: 50,
-      publishDate: "2026-07-06",
-      signupStart: "2026-07-13",
-      signupEnd: "2026-07-14",
+      publishDate: "2026-07-24",
+      signupStart: "2026-07-25",
+      signupEnd: "2026-08-05",
       method: "现场报名",
       threshold: "详见职位表，封闭式管理",
       source: "湛江市公安局",
       url: "https://gaj.zhanjiang.gov.cn/gkmlpt/content/2/2198/post_2198337.html",
       bankStatus: "未建",
-      note: "已截止，留作母库参考"
+      note: "报名进行中"
     },
     {
       category: "辅警",
@@ -79,9 +79,9 @@ window.RCJ_RECRUITMENT = {
       region: "福建·厦门",
       unit: "厦门市公安局（非在编辅助）",
       count: 10,
-      publishDate: "2026-07-13",
-      signupStart: "2026-07-13",
-      signupEnd: "2026-07-17",
+      publishDate: "2026-07-23",
+      signupStart: "2026-07-23",
+      signupEnd: "2026-08-08",
       method: "扫码报名",
       threshold: "最高年龄 38 岁，详见岗位表",
       source: "厦门市公安局",
@@ -96,15 +96,15 @@ window.RCJ_RECRUITMENT = {
       region: "河南·商水",
       unit: "商水县人民政府",
       count: null,
-      publishDate: "2026-07-15",
+      publishDate: "2026-07-25",
       signupStart: "2026-07-27",
-      signupEnd: "2026-07-29",
+      signupEnd: "2026-08-02",
       method: "现场报名（人社局 205 室）",
       threshold: "高中及以上，驾驶员需驾驶证",
       source: "商水县人民政府",
       url: "https://www.shangshui.gov.cn/sitesources/ssx/page_pc/zwgk/zdxxgk/gsgg/article890f7b24217e4e628f2d65a674c6ab20.html",
       bankStatus: "未建",
-      note: "今天（7/29）报名截止！"
+      note: "报名进行中"
     },
     {
       category: "政府专职消防员",
@@ -113,7 +113,7 @@ window.RCJ_RECRUITMENT = {
       count: null,
       publishDate: "2026-07-20",
       signupStart: null,
-      signupEnd: null,
+      signupEnd: "2026-08-12",
       method: "详见公告",
       threshold: "详见公告",
       source: "伊通满族自治县政府",
@@ -126,45 +126,45 @@ window.RCJ_RECRUITMENT = {
       region: "黑龙江·肇东",
       unit: "肇东市消防救援局",
       count: null,
-      publishDate: "2026-07-11",
-      signupStart: "2026-07-13",
-      signupEnd: "2026-07-17",
+      publishDate: "2026-07-21",
+      signupStart: "2026-07-22",
+      signupEnd: "2026-08-06",
       method: "网上报名",
       threshold: "月工资 2500 元，含社保",
       source: "肇东市人民政府",
       url: "https://www.hljzhaodong.gov.cn/zd/c31/202607/c12_237423.shtml",
       bankStatus: "未建",
-      note: "已截止，留作参考"
+      note: "报名进行中"
     },
     {
       category: "政府专职消防员",
       region: "内蒙古·额尔古纳",
       unit: "额尔古纳市应急管理局",
       count: null,
-      publishDate: "2026-07-09",
-      signupStart: "2026-07-09",
-      signupEnd: "2026-07-16",
+      publishDate: "2026-07-22",
+      signupStart: "2026-07-22",
+      signupEnd: "2026-08-03",
       method: "现场报名（应急管理局三楼）",
       threshold: "高中及以上，驾驶员需驾驶证",
       source: "额尔古纳市政府",
       url: "https://eegn.gov.cn/News/show/1441701.html",
       bankStatus: "未建",
-      note: "已截止，留作参考"
+      note: "报名进行中"
     },
     {
       category: "政府专职消防员",
       region: "黑龙江·铁力",
       unit: "铁力市消防救援大队",
       count: 10,
-      publishDate: "2026-07-03",
-      signupStart: "2026-07-03",
-      signupEnd: "2026-07-13",
+      publishDate: "2026-07-23",
+      signupStart: "2026-07-23",
+      signupEnd: "2026-08-04",
       method: "详见公告",
       threshold: "灭火岗男18-30岁高中；文职女25-40岁大专",
       source: "铁力市人民政府",
       url: "https://www.tls.gov.cn/newtlsrmzf/c104440/202607/429749.shtml",
       bankStatus: "未建",
-      note: "已截止，留作参考"
+      note: "报名进行中"
     }
   ]
 };
