@@ -408,7 +408,7 @@
     isReconnecting = false;
   }
 
-  var makingOffer = false, sigSince = 0, sigTimer = null, sigStopped = false;
+  var makingOffer = false, sigSince = 0, sigTimer = null, sigStopped = false, pendingIce = [];
   function makeOffer() {
     if (!pc || makingOffer) return;
     makingOffer = true;
@@ -458,12 +458,23 @@
         .then(function () { return pc.createAnswer(); })
         .then(function (ans) { return pc.setLocalDescription(ans); })
         .then(function () { return postSignal("answer", pc.localDescription.toJSON ? pc.localDescription.toJSON() : pc.localDescription); })
+        .then(flushIce)
         .catch(function (e) { log("处理 offer 失败：" + e, "err"); });
     } else if (s.type === "answer") {
-      pc.setRemoteDescription(new RS(s.payload)).catch(function (e) { log("处理 answer 失败：" + e, "err"); });
+      pc.setRemoteDescription(new RS(s.payload)).then(flushIce).catch(function (e) { log("处理 answer 失败：" + e, "err"); });
     } else if (s.type === "ice") {
-      try { pc.addIceCandidate(new RIC(s.payload)); } catch (e) {}
+      // 远端描述尚未就绪时先缓存，待 setRemoteDescription 完成再补加（避免丢候选）
+      if (pc.remoteDescription && pc.remoteDescription.type) {
+        try { pc.addIceCandidate(new RIC(s.payload)); } catch (e) {}
+      } else {
+        pendingIce.push(s.payload);
+      }
     }
+  }
+  function flushIce() {
+    if (!pendingIce.length) return;
+    var list = pendingIce; pendingIce = [];
+    list.forEach(function (c) { try { pc.addIceCandidate(new (window.RTCIceCandidate || RTCIceCandidate)(c)); } catch (e) {} });
   }
   function bindDataChannel(c) {
     c.onopen = function () {
