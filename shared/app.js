@@ -148,6 +148,74 @@ var StorageCtrl = {
   }
 };
 
+// ============ 本轮战绩（本次访问内的刷题正确率，吸顶常驻）============
+// 仅统计"判分提交"（客观题），主观题/查看答案不计分、不计入。
+var roundStats = { answered: 0, correct: 0 };
+function recordRound(isCorrect) {
+  roundStats.answered++;
+  if (isCorrect) roundStats.correct++;
+  updateRoundStat();
+}
+function updateRoundStat() {
+  var box = document.getElementById("roundStatBox");
+  if (!box) return;
+  var a = roundStats.answered, c = roundStats.correct;
+  var pct = a ? Math.round((c / a) * 100) : 0;
+  box.querySelector(".rs-val").textContent = "已答 " + a + " · 正确率 " + (a ? pct + "%" : "—");
+  box.classList.toggle("all-correct", a > 0 && c === a);
+}
+function initRoundStat() {
+  var ti = document.querySelector(".toolbar-inner");
+  if (!ti || document.getElementById("roundStatBox")) return;
+  var box = document.createElement("div");
+  box.className = "round-stat";
+  box.id = "roundStatBox";
+  box.setAttribute("aria-live", "polite");
+  box.innerHTML = '<span class="rs-label">🎯 本轮</span>'
+    + '<span class="rs-val">已答 0 · 正确率 —</span>'
+    + '<button type="button" class="round-stat-reset" id="roundStatReset" title="重置本轮战绩" aria-label="重置本轮战绩">↻</button>';
+  ti.appendChild(box);
+  box.querySelector("#roundStatReset").addEventListener("click", function () {
+    roundStats = { answered: 0, correct: 0 }; updateRoundStat();
+  });
+}
+// 键盘操作：聚焦选项后用数字 1-9 / 字母 a-d 选中，Enter 或 Space 提交本题
+function initQuizKeyboard() {
+  document.addEventListener("keydown", function (e) {
+    var opt = document.activeElement && document.activeElement.closest ? document.activeElement.closest(".study-opt") : null;
+    if (!opt) return;
+    var idx = parseInt(opt.dataset.idx, 10);
+    var q = studyQuestionByIdx(idx);
+    if (!q || normType(q.type) === "subjective") return;
+    if (opt.classList.contains("locked")) {
+      if (e.key === "Enter") { e.preventDefault(); revealStudyAnswer(idx); }
+      return;
+    }
+    var card = opt.closest(".card");
+    var k = (e.key || "").toLowerCase();
+    var m = /^[1-9]$/.test(k) ? parseInt(k, 10) : (/^[a-z]$/.test(k) ? k.charCodeAt(0) - 96 : 0);
+    if (m > 0) {
+      var opts = card.querySelectorAll(".study-opt");
+      var target = opts[m - 1];
+      if (target) {
+        e.preventDefault();
+        var isMulti = (q.type === "multi" || q.type === "multiple");
+        if (isMulti) { target.classList.toggle("selected"); }
+        else {
+          opts.forEach(function (o) { o.classList.remove("selected"); });
+          target.classList.add("selected");
+        }
+        target.focus();
+      }
+      return;
+    }
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      revealStudyAnswer(idx);
+    }
+  });
+}
+
 function escapeHtml(text) {
   var d = document.createElement("div"); d.textContent = text == null ? "" : text; return d.innerHTML;
 }
@@ -301,7 +369,7 @@ function cardHtml(q) {
       var optsHtml = "";
       if (q.options && q.options.length) {
         q.options.forEach(function (o) {
-          optsHtml += '<div class="opt-row study-opt" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
+          optsHtml += '<div class="opt-row study-opt" tabindex="0" role="button" aria-label="选项 ' + escapeHtml(o.letter) + '" data-idx="' + q._idx + '" data-letter="' + escapeHtml(o.letter) + '"><span class="opt-letter">' + escapeHtml(o.letter) + ".</span><span>" + escapeHtml(o.text) + "</span></div>";
         });
       }
       var ansHtml = "<div>答案：<b>" + escapeHtml(displayAnswer(q)) + "</b></div>";
@@ -469,6 +537,7 @@ function revealStudyAnswer(idx) {
     isCorrect = selLetters.length === 1 && String(selLetters[0]).trim() === String(q.answer).trim();
   }
   ansEl.insertBefore(makeResultBanner(isCorrect, q), ansEl.firstChild);
+  recordRound(isCorrect);
   if (btn) btn.style.display = "none";
  } catch (err) {
     console.error("revealStudyAnswer error (idx=" + idx + "):", err);
@@ -1551,6 +1620,8 @@ window.addEventListener("DOMContentLoaded", function () {
   StorageCtrl.updateUI();
   initAudioRecorderSystem();
   render();
+  initRoundStat();
+  initQuizKeyboard();
   // 面试对练舱入口（仅开启 podEnabled 的城市显示）
   try {
     var podBtn = document.getElementById("podEntryBtn");

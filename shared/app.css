@@ -262,6 +262,35 @@ body {
 .study-check { margin: 2px 0 12px; }
 .study-check-btn { cursor: pointer; border: 1px solid var(--primary-light); background: var(--primary-bg); font-weight: 700; padding: 8px 16px; border-radius: 10px; font-size: 13.5px; transition: filter .15s; }
 .study-check-btn:hover { filter: brightness(.97); }
+
+/* 移动端可达性：选项与提交按钮点按区 ≥44px（iPhone/iPad 通勤刷题防误触） */
+.opt-row.study-opt { min-height: 44px; align-items: center; }
+.study-check-btn { min-height: 44px; padding: 10px 18px; }
+
+/* 键盘可达性：选项聚焦轮廓（div 模拟按钮需显式 focus 样式） */
+.study-opt:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* 本轮战绩（注入吸顶工具栏，常驻可见；复用现有蓝/绿，不引入新配色） */
+.round-stat {
+  width: fit-content; margin: 10px 0 0 auto;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 12.5px; font-weight: 600; color: var(--text-secondary);
+  white-space: nowrap;
+}
+.round-stat .rs-label { opacity: .85; }
+.round-stat .rs-val { color: var(--primary); font-variant-numeric: tabular-nums; }
+.round-stat.all-correct .rs-val { color: #16a34a; }
+.round-stat-reset {
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-secondary); font-size: 14px; line-height: 1;
+  padding: 2px 4px; border-radius: 6px;
+}
+.round-stat-reset:hover { background: var(--border); }
+@media (max-width: 600px) {
+  .round-stat { width: 100%; margin: 10px 0 0; justify-content: center; }
+}
 .answer-correct-tag { display: inline-block; font-size: 12px; font-weight: 700; color: #16a34a; margin-left: 4px; }
 [data-theme="dark"] .answer-correct-tag { color: #4ade80; }
 
