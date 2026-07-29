@@ -31,3 +31,7 @@
   Cache-Control: no-cache
 /**/*.webp
   Cache-Control: no-cache
+
+# RCJ 业务工作台（/workbench/ 子路径）：数据每日自动更新，禁用缓存确保即时可见
+/workbench/*
+  Cache-Control: no-cache
