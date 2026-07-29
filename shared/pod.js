@@ -332,16 +332,34 @@
     connectStartTs = Date.now();
     if (connectWatchdog) clearTimeout(connectWatchdog);
     connectWatchdog = setTimeout(function () {
-      if (!conn || conn.readyState !== "open") {
-        log("连接超时，建议换网络或浏览器", "err");
-        setConn("连接超时", "err");
-        var tip = isWechatBrowser()
-          ? "微信内 WebRTC 受限，请点右上角 ⋯ → 在浏览器打开。"
-          : "请尝试：① 切换 4G/5G 或 Wi-Fi；② 换 Safari/Chrome；③ 让房主刷新重开房间。";
-        el.wxHint.innerHTML = "⚠️ " + tip;
-        el.wxHint.classList.add("warn");
+      // 数据通道已打开或 P2P 已连通，不算超时
+      if (conn && conn.readyState === "open") return;
+      if (pc && pc.connectionState === "connected") return;
+      // 房主仍在等访客加入，提示等待而非超时
+      if (IS_HOST && pc && (pc.connectionState === "new" || pc.connectionState === "connecting")) {
+        log("仍在等待搭子加入房间…");
+        setConn("等待搭子加入…", "warn");
+        // 再等 20 秒，若仍未连上再报超时
+        connectWatchdog = setTimeout(function () {
+          if (conn && conn.readyState === "open") return;
+          if (pc && pc.connectionState === "connected") return;
+          log("连接超时，建议换网络或浏览器", "err");
+          setConn("连接超时", "err");
+          showConnectFailTip();
+        }, 20000);
+        return;
       }
+      log("连接超时，建议换网络或浏览器", "err");
+      setConn("连接超时", "err");
+      showConnectFailTip();
     }, 10000);
+  }
+  function showConnectFailTip() {
+    var tip = isWechatBrowser()
+      ? "微信内 WebRTC 受限，请点右上角 ⋯ → 在浏览器打开。"
+      : "请尝试：① 切换 4G/5G 或 Wi-Fi；② 换 Safari/Chrome；③ 让房主刷新重开房间。";
+    el.wxHint.innerHTML = "⚠️ " + tip;
+    el.wxHint.classList.add("warn");
   }
   function clearConnectWatchdog() {
     if (connectWatchdog) { clearTimeout(connectWatchdog); connectWatchdog = null; }
@@ -403,6 +421,8 @@
         toast("房间已创建：" + ROOM + "，把链接发给搭子");
       }
       makeOffer(); // 房主立即发 offer（先建数据通道，音频待开麦后重协商）
+    } else {
+      el.roomNo.textContent = ROOM || "------";
     }
     startSignalingLoop();
     isReconnecting = false;
@@ -696,15 +716,14 @@
             return;
           }
           lobbyPollMiss++;
-          if (d.gone) {
-            log("已从等待池移除，尝试重新匹配", "err");
-            updateMatchHint("配对结果同步延迟，正在重试…");
-            // 重新 join：保留 ticket 不变，服务器会清理旧条目
-            if (lobbyPollMiss >= 2) { leaveLobby(); setTimeout(enterLobby, 300); }
-            return;
-          }
+          // 等待池条目可能已被配对方移除，但 match 结果因 KV 最终一致性延迟未到；
+          // 继续 poll match，而不是重新 join，避免破坏已配对状态。
           if (lobbyPollMiss % 4 === 0) {
             log("仍在等待搭子…（" + lobbyPollMiss + " 次轮询）");
+          }
+          if (lobbyPollMiss >= 12) {
+            // 约 30 秒仍未同步，大概率是配对未真正完成或 KV 读不到，提示用户手动重试
+            updateMatchHint("配对结果同步较慢，建议点「取消」后重新匹配，或「创建房间」发链接给熟人。");
           }
         })
         .catch(function (e) {
