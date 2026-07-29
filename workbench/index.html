@@ -161,9 +161,20 @@
     <div class="bar" style="margin:4px 0 10px;">
       <button class="btn primary" id="planCsvBtn">⬇️ 导出作战清单 CSV（按优先级排序）</button>
       <button class="btn" id="planCmdBtn">📋 展开全部 🔴 建站命令</button>
+      <button class="btn" style="background:#7c3aed;color:#fff;" id="planScriptBtn">🚀 生成一键建站脚本</button>
       <span class="hint">仅含 🔴优先建 / 🟠建议建；每行可单独「生成配置」接入 rcj-exam-builder。</span>
     </div>
     <div id="planTable"></div>
+    <div id="scriptBox" style="display:none;margin-top:14px;padding:14px;border:1px dashed #7c3aed;border-radius:10px;background:#faf8ff;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <b>🚀 一键建站脚本</b>
+        <select id="scriptCity" style="padding:4px 8px;border-radius:6px;border:1px solid #d6c8f5;"></select>
+        <button class="btn" id="copyScriptBtn">📋 复制脚本</button>
+        <button class="btn" id="closeScriptBtn">收起</button>
+      </div>
+      <p class="hint" style="margin:0 0 8px;">选城市→复制脚本→在 <b>Git Bash</b> 粘贴运行。脚本自动串 ingest→build→push；<b>真题 CSV 是硬前提</b>，运行前先放到 <code>~/Desktop/题库/城市_笔试真题.csv</code> 与 <code>城市_面试真题.csv</code>，并把 <code>SLUG</code> 改成城市拼音简写。</p>
+      <textarea id="scriptOut" style="width:100%;height:360px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;padding:10px;border:1px solid #d6c8f5;border-radius:8px;background:#0d1117;color:#e6edf3;white-space:pre;"></textarea>
+    </div>
   </section>
 
   <!-- ============ Anki 辅助 ============ -->
@@ -655,6 +666,83 @@ document.getElementById("planCmdBtn").onclick=()=>{
   document.getElementById("c_dep").textContent=out;
   modal.classList.add("show");
 };
+
+// ---------- 一键建站脚本生成器 ----------
+function genBuildScript(it){
+  const isAux = it.category==="辅警";
+  const city=(it.region||"").split("·").pop();
+  const year=new Date().getFullYear();
+  const repoName = isAux ? "辅警GITHUB" : "消防员GITHUB";
+  const domain = isAux ? "fj.rcj9527.dpdns.org" : "<消防员仓库域名，请填 xf-xxx.dpdns.org 或你的域名>";
+  const slugHint = isAux ? "wz-aux" : "wz-xf";
+  return `#!/usr/bin/env bash
+# ============================================================
+#  RCJ 一键建站脚本 · ${it.region||""} · ${it.category}
+#  优先级分 ${priorityScore(it).toFixed(1)} | 招录 ${it.count||"不详"} 人 | 截止 ${it.signupEnd||"未知"}
+# ============================================================
+set -euo pipefail
+
+# —— 一、填这几个变量（其余自动）——
+PY="$HOME/.workbuddy/binaries/python/versions/3.13.12/python3"
+SKILL="$HOME/.workbuddy/skills/rcj-exam-builder"
+REPO="$HOME/Desktop/产品交付/${repoName}"
+SLUG="${slugHint}"                         # ← 城市拼音简写，如 wz / cd / hz（中文也行但建议拼音）
+CITY="${city}"                             # 城市名（commit 文案用）
+YEAR="${year}"
+WRITTEN_CSV="$HOME/Desktop/题库/${city}_笔试真题.csv"       # ← 笔试真题（硬前提！无真题不建站）
+INTERVIEW_CSV="$HOME/Desktop/题库/${city}_面试真题.csv"     # ← 面试真题（硬前提！）
+CONFIG="$SKILL/assets/template-config.sample.json"         # 站点配置（建议复制改 siteTitle 等再指过来）
+
+# —— 二、前置校验（真题是铁律：没有就别建）——
+[ -f "$WRITTEN_CSV" ]   || { echo "❌ 缺笔试真题: $WRITTEN_CSV";   exit 1; }
+[ -f "$INTERVIEW_CSV" ] || { echo "❌ 缺面试真题: $INTERVIEW_CSV"; exit 1; }
+[ -n "$SLUG" ]          || { echo "❌ 请填写 SLUG（城市拼音简写）"; exit 1; }
+
+# —— 三、ingest 真题 → data-*.json ——
+WORK="$HOME/Desktop/rcj-build/$SLUG"; mkdir -p "$WORK" && cd "$WORK"
+"$PY" "$SKILL/scripts/ingest.py"       "$WRITTEN_CSV"   -o data-written.json
+"$PY" "$SKILL/scripts/ingest.py"       "$INTERVIEW_CSV" -o data-interview.json
+
+# —— 四、build_data → data-*.js + config.js + VERSION.json ——
+"$PY" "$SKILL/scripts/build_data.py" data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify --config "$CONFIG" --emit-config config.js --emit-version --template-version 1.0.0
+"$PY" "$SKILL/scripts/build_data.py" data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
+
+# —— 五、组装站点目录（viewer.html + data-*.js + config.js + VERSION.json）——
+mkdir -p "$REPO/$SLUG"
+cp "$SKILL/assets/viewer.html" "$REPO/$SLUG/index.html"
+cp data-written.js data-interview.js config.js VERSION.json "$REPO/$SLUG/"
+
+# —— 六、（可选）导出 Anki 卡组，丢进站点目录 ——
+# "$PY" "$SKILL/scripts/anki_export.py" data-interview.json -o "$REPO/$SLUG/anki_cards.csv"
+
+# —— 七、push 上线（Cloudflare 自动部署，约 1-2 分钟）——
+cd "$REPO"
+git add "$SLUG/"
+git commit -m "feat: 新增 $CITY 刷题站"
+git push origin main
+echo "✅ 上线: https://${domain}/$SLUG/"`;
+}
+function fillScriptCity(){
+  const list = DATA.items.map(it=>({it,s:priorityScore(it),t:priorityTag(it)}))
+    .filter(x=>x.t.t.startsWith("🔴")||x.t.t.startsWith("🟠")).sort((a,b)=>b.s-a.s);
+  const sel=document.getElementById("scriptCity");
+  if(!list.length){ sel.innerHTML='<option>当前无 🔴/🟠 条目</option>'; document.getElementById("scriptOut").value="（待每日同步后出现 🔴/🟠 条目）"; return; }
+  sel.innerHTML = list.map((x,i)=>`<option value='${encodeURIComponent(JSON.stringify(x.it))}'>${i+1}. ${x.t.t} ${x.it.region||""} · ${x.it.category} (分${x.s.toFixed(1)})</option>`).join("");
+  document.getElementById("scriptOut").value = genBuildScript(list[0].it);
+}
+document.getElementById("planScriptBtn").onclick=()=>{
+  fillScriptCity();
+  document.getElementById("scriptBox").style.display="block";
+  document.getElementById("scriptBox").scrollIntoView({behavior:"smooth"});
+};
+document.getElementById("scriptCity").onchange=(e)=>{
+  if(e.target.value) document.getElementById("scriptOut").value = genBuildScript(JSON.parse(decodeURIComponent(e.target.value)));
+};
+document.getElementById("copyScriptBtn").onclick=()=>{
+  const t=document.getElementById("scriptOut"); t.select();
+  navigator.clipboard.writeText(t.value).then(()=>{ const b=document.getElementById("copyScriptBtn"); b.textContent="✅ 已复制"; setTimeout(()=>b.textContent="📋 复制脚本",1500); });
+};
+document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
 renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderPlan();
