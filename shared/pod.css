@@ -24,6 +24,7 @@ body{
 .card h2{margin:6px 0 4px;font-size:20px;color:var(--navy);}
 .muted{color:var(--muted);font-size:13px;margin:0 0 16px;}
 .hint{color:var(--muted);font-size:12px;margin:12px 0 0;line-height:1.6;}
+.hint.warn{color:var(--err);background:#fee2e2;border-radius:8px;padding:8px 10px;font-weight:600;}
 
 .big-btn{display:block;width:100%;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:800;color:#fff;
   background:linear-gradient(135deg,var(--blue),var(--blue-2));cursor:pointer;box-shadow:0 6px 16px rgba(37,99,235,.28);transition:transform .12s;}

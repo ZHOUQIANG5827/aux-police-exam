@@ -54,6 +54,7 @@
   var mixedStreams = []; // 已接入混音的流，避免重复 connect 导致音量叠加/回声
 
   var pendingRole = "";                    // 匹配成功后预置的面试身份
+  var connectWatchdog = null, connectStartTs = 0; // 连接超时看门狗
 
   // ---------- 工具 ----------
   function log(msg, cls) {
@@ -316,9 +317,53 @@
   }
 
   // ---------- PeerJS 连接 ----------
+  function iceServers() {
+    // 公共 STUN + 免费 TURN fallback，提高国内 NAT 穿透成功率
+    return [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:stun.miwifi.com:3478" },
+      { urls: "stun:stun.qq.com:3478" },
+      { urls: "stun:stun.baidu.com:3478" },
+      { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+      { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" }
+    ];
+  }
+  function isWechatBrowser() {
+    var ua = navigator.userAgent || "";
+    return /MicroMessenger/i.test(ua) || /wxwork/i.test(ua);
+  }
+  function showWxHint() {
+    if (isWechatBrowser()) {
+      el.wxHint.innerHTML = "⚠️ 检测到微信内置浏览器，WebRTC 语音很可能被限制。<br>请点右上角 <b>⋯ → 在浏览器打开</b>（Safari / Chrome），否则无法连上搭子。";
+      el.wxHint.classList.add("warn");
+    }
+  }
+  function startConnectWatchdog() {
+    connectStartTs = Date.now();
+    if (connectWatchdog) clearTimeout(connectWatchdog);
+    connectWatchdog = setTimeout(function () {
+      if (!conn || !conn.open) {
+        log("连接超时，建议换网络或浏览器", "err");
+        setConn("连接超时", "err");
+        var tip = isWechatBrowser()
+          ? "微信内 WebRTC 受限，请点右上角 ⋯ → 在浏览器打开。"
+          : "请尝试：① 切换 4G/5G 或 Wi-Fi；② 换 Safari/Chrome；③ 让房主刷新重开房间。";
+        el.wxHint.innerHTML = "⚠️ " + tip;
+        el.wxHint.classList.add("warn");
+      }
+    }, 10000);
+  }
+  function clearConnectWatchdog() {
+    if (connectWatchdog) { clearTimeout(connectWatchdog); connectWatchdog = null; }
+  }
+
   function setupPeer() {
-    var opts = { debug: 1 };
+    var opts = { debug: 1, config: { iceServers: iceServers() } };
     peer = IS_HOST ? new Peer(ROOM || genRoom(), opts) : new Peer(opts);
+    startConnectWatchdog();
+    showWxHint();
 
     peer.on("open", function (id) {
       log((IS_HOST ? "房主 Peer 就绪：" : "已连信令：") + id);
@@ -339,6 +384,7 @@
     });
     peer.on("connection", function (c) {
       conn = c; bindConn(c); log("搭子已连接（数据）"); setConn("已连接", "ok");
+      clearConnectWatchdog();
       if (micOn) callPeer(c.peer);
     });
     peer.on("call", function (call) {
@@ -383,6 +429,7 @@
   function bindConn(c) {
     c.on("open", function () {
       setConn("已连接", "ok"); log("数据通道已打开");
+      clearConnectWatchdog();
       calledPeerId = null;
       if (pendingRole) { setRole(pendingRole); pendingRole = ""; }
       else {
@@ -408,6 +455,7 @@
       reconnectTimer = null;
       log("尝试重连（延迟 " + delay + "ms）");
       calledPeerId = null;
+      startConnectWatchdog();
       if (IS_HOST) {
         try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
         setupPeer();
@@ -421,6 +469,7 @@
 
   function leaveRoom() {
     stopRecording();
+    clearConnectWatchdog();
     try { if (peer && peer.destroy) peer.destroy(); } catch (e) {}
     try { localStorage.removeItem(HOST_MARK); } catch (e) {}
     peer = null; conn = null; calledPeerId = null;
