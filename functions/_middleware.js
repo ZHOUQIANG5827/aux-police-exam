@@ -47,7 +47,7 @@ const OFFLINE_AT_DEFAULT = 0;
 //   ★ 天数可在 Cloudflare 后台用环境变量 TRIAL_DAYS 覆盖（无需改代码）。
 //   ★ 软限制：清 Cookie / 换浏览器可重置（与每日限额同级别，足够拦住大部分白嫖党）。
 //   ★ VIP / ALLOW_IPS 豁免；离线版 file:// 打开不经过 Cloudflare，天然免疫。
-const TRIAL_DAYS_DEFAULT = 3;
+const TRIAL_DAYS_DEFAULT = 0; // 0 = 关闭试用期限制，页面不再显示「试用结束」与顶部试用条
 
 // —— 试用期结束页（极简，只留引流）——
 const TRIAL_HTML = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
@@ -100,7 +100,9 @@ function trialBannerHtml(trialEnd) {
 }
 
 // 给放行的 HTML 响应：种/续 rcj_trial Cookie + 注入试用提示条
-function withTrial(res, trialStart, trialEnd) {
+// 当试用期关闭（TRIAL_DAYS <= 0）时不种 cookie、不注入提示条，页面保持干净。
+function withTrial(res, trialStart, trialEnd, trialDays) {
+  if (trialDays <= 0) return res;
   res.headers.append(
     "Set-Cookie",
     `rcj_trial=${trialStart}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`
@@ -255,20 +257,21 @@ export async function onRequest(context) {
   if (isBot(request)) return next();
 
   // —— ★ 3 天试用期检查：首次访问记时间戳，到期返回「试用结束」页 ——
-  const TRIAL_DAYS = parseInt((env && env.TRIAL_DAYS) || String(TRIAL_DAYS_DEFAULT), 10) || 3;
-  let trialStart = 0;
-  {
+  // TRIAL_DAYS <= 0 时关闭试用期限制（页面不再显示试用结束与顶部提示条）。
+  const TRIAL_DAYS = parseInt((env && env.TRIAL_DAYS) || String(TRIAL_DAYS_DEFAULT), 10);
+  let trialStart = 0, trialEnd = 0;
+  if (TRIAL_DAYS > 0) {
     const tm = cookie.match(/rcj_trial=(\d+)/);
     if (tm) trialStart = parseInt(tm[1], 10) || 0;
-  }
-  // 防作弊小加固：Cookie 里的时间戳若是未来时间（伪造），视为无效重记
-  if (trialStart <= 0 || trialStart > Date.now()) trialStart = Date.now();
-  const trialEnd = trialStart + TRIAL_DAYS * 86400000;
-  if (Date.now() >= trialEnd) {
-    return new Response(TRIAL_HTML, {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
-    });
+    // 防作弊小加固：Cookie 里的时间戳若是未来时间（伪造），视为无效重记
+    if (trialStart <= 0 || trialStart > Date.now()) trialStart = Date.now();
+    trialEnd = trialStart + TRIAL_DAYS * 86400000;
+    if (Date.now() >= trialEnd) {
+      return new Response(TRIAL_HTML, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+      });
+    }
   }
 
   // —— 4) 每日访问计数 ——
@@ -300,7 +303,7 @@ export async function onRequest(context) {
     } catch (e) {
       /* 写失败不挡用户 */
     }
-    return injectGa4(withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd), ga4Id);
+    return injectGa4(withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd, TRIAL_DAYS), ga4Id);
   }
 
   // ===== 回退：Cookie 软限制（未绑 KV 时）=====
