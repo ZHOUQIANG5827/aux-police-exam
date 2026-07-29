@@ -29,13 +29,26 @@ function displayAnswer(q){
   }
   return ans;
 }
-// 生成"回答正确/回答错误"文字判定横幅，消除纯颜色歧义（D 看似被标绿等误读）
-function makeResultBanner(isCorrect, q){
+// 把答案字母转成"字母.选项文字"的可读标签（如 "C. 治安处罚法"，多选 "A. 甲、B. 乙"）；无选项文字则仅字母；空则"未选择"
+function answerLabel(q, letters){
+  if(!letters || (Array.isArray(letters) && !letters.length)) return "未选择";
+  var arr = Array.isArray(letters) ? letters : String(letters).split("");
+  return arr.map(function(L){
+    var t = "";
+    (q.options||[]).forEach(function(o){ if(o.letter === L) t = o.text; });
+    return L + (t ? ("." + t) : "");
+  }).join("、");
+}
+// 生成判定横幅：始终同时显示"我的答案"与"正确答案"，消除纯颜色歧义与"我到底选了哪个"的困惑
+function makeResultBanner(isCorrect, q, selLetters){
   var d = document.createElement("div");
   d.className = "ans-result " + (isCorrect ? "ans-correct" : "ans-wrong");
-  d.innerHTML = isCorrect
-    ? "✅ 回答正确"
-    : "❌ 回答错误，正确答案：<b>" + escapeHtml(displayAnswer(q)) + "</b>";
+  var verdict = isCorrect ? "✅ 回答正确" : "❌ 回答错误";
+  var myAns = answerLabel(q, selLetters);
+  var corr = answerLabel(q, String(q.answer == null ? "" : q.answer).split(""));
+  d.innerHTML = '<div class="ans-verdict">' + verdict + '</div>'
+    + '<div class="ans-line">我的答案：<b>' + escapeHtml(myAns) + '</b></div>'
+    + '<div class="ans-line">正确答案：<b>' + escapeHtml(corr) + '</b></div>';
   return d;
 }
 // ============ 可配置项（优先读 window.SITE_CONFIG，由 template-config.json 生成；没有则用内联默认值）============
@@ -536,7 +549,7 @@ function revealStudyAnswer(idx) {
   } else {
     isCorrect = selLetters.length === 1 && String(selLetters[0]).trim() === String(q.answer).trim();
   }
-  ansEl.insertBefore(makeResultBanner(isCorrect, q), ansEl.firstChild);
+  ansEl.insertBefore(makeResultBanner(isCorrect, q, selLetters), ansEl.firstChild);
   recordRound(isCorrect);
   if (btn) btn.style.display = "none";
  } catch (err) {
@@ -962,7 +975,7 @@ function gradeRandomSelection() {
   revealRandomAnswer();
   var ac = document.getElementById("randomModalAnswerContent");
   var rb = document.getElementById("randomResultBanner"); if (rb) rb.remove();
-  var banner = makeResultBanner(isCorrect, q); banner.id = "randomResultBanner";
+  var banner = makeResultBanner(isCorrect, q, selLetters); banner.id = "randomResultBanner";
   ac.insertBefore(banner, ac.firstChild);
   var submitBtn = document.getElementById("randomModalSubmit");
   if (submitBtn) submitBtn.style.display = "none";
@@ -1427,7 +1440,7 @@ function submitExam() {
     }
     var card = document.getElementById("examQ" + q._idx);
     card.classList.add("graded");
-    card.insertBefore(makeResultBanner(isCorrect, q), card.firstChild);
+    card.insertBefore(makeResultBanner(isCorrect, q, sel), card.firstChild);
     if (isCorrect) { correct++; card.classList.add("graded-correct"); }
     else { wrong++; card.classList.add("graded-wrong"); }
     var ansArr = normAnsArr(q.answer);
