@@ -83,6 +83,22 @@
   .catstat{display:flex;flex-direction:column;gap:2px;}
   .catstat .ci{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13px;}
   .catstat .ci:last-child{border-bottom:none;}
+  /* 按周对比 */
+  .weekcards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media(max-width:640px){.weekcards{grid-template-columns:repeat(2,1fr);}}
+  .wcard{background:#fafcff;border:1px solid var(--line);border-radius:10px;padding:12px 8px;text-align:center;}
+  .wlabel{font-size:12px;color:var(--mut);}
+  .wnum{font-size:28px;font-weight:700;color:var(--blue-d);line-height:1.2;margin:2px 0;}
+  .wdelta{font-size:12px;font-weight:600;display:inline-block;padding:1px 8px;border-radius:10px;}
+  .wup{background:#e7f7ee;color:var(--ok);}
+  .wdown{background:#fdecea;color:var(--red);}
+  .wflat{background:#eef2f8;color:var(--mut);}
+  .wtrend{margin-top:14px;}
+  .wt-row{display:flex;align-items:center;gap:10px;margin:5px 0;}
+  .wt-lab{width:46px;flex:none;font-size:12px;color:var(--mut);text-align:right;}
+  .wt-track{flex:1;background:#eef2f8;border-radius:6px;height:16px;overflow:hidden;}
+  .wt-fill{height:100%;background:linear-gradient(90deg,var(--org),var(--red));border-radius:6px;}
+  .wt-val{width:26px;flex:none;font-size:12px;font-weight:700;color:var(--blue-d);}
 </style>
 </head>
 <body>
@@ -116,6 +132,10 @@
         <div class="catstat" id="catStat"></div>
         <p class="hint" style="margin-top:10px;">密度最高的省 = 题库扩张首选方向；辅警占比高时优先开辅警站。</p>
       </div>
+    </div>
+    <div style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
+      <h3 style="font-size:14px;margin:0 0 10px;">📈 按周对比（近 4 周 · 看招录是否放量）</h3>
+      <div id="weekCmp"></div>
     </div>
   </section>
 
@@ -597,6 +617,44 @@ function renderTrend(){
   ].map(([k,v,c])=>`<div class="ci"><span>${k}</span><b style="color:${c}">${v} 条</b></div>`).join("");
 }
 
+// ---------- 按周对比 ----------
+function renderWeekCompare(){
+  const hist = DATA.history || [];
+  const box = document.getElementById("weekCmp");
+  if(!hist.length){ box.innerHTML='<div class="empty">暂无历史快照（等每日同步积累几周后出现）。</div>'; return; }
+  const mondayOf = d=>{ const [y,m,da]=d.split("-").map(Number); const dt=new Date(Date.UTC(y,m-1,da)); const day=(dt.getUTCDay()+6)%7; dt.setUTCDate(da-day); return dt.toISOString().slice(0,10); };
+  const wkMap = {};
+  hist.forEach(h=>{
+    const wk = mondayOf(h.date);
+    if(!wkMap[wk]) wkMap[wk]={wk,total:0,cat:null};
+    if(h.total > wkMap[wk].total){ wkMap[wk].total=h.total; wkMap[wk].cat=h.byCategory||{}; }
+  });
+  let weeks = Object.values(wkMap).sort((a,b)=>a.wk.localeCompare(b.wk)).slice(-4);
+  const labels = ["3周前","2周前","上周","本周"];
+  const cards = weeks.map((w,i)=>{
+    const prev = i>0 ? weeks[i-1].total : null;
+    const delta = prev!==null ? w.total-prev : null;
+    let dcls="wflat", dtxt="— 持平";
+    if(delta!==null){ if(delta>0){dcls="wup";dtxt="▲ +"+delta+" 放量";} else if(delta<0){dcls="wdown";dtxt="▼ "+delta+" 缩量";} }
+    const lbl = i===weeks.length-1 ? "本周" : (labels[i]||("第"+(i+1)+"周"));
+    return `<div class="wcard"><div class="wlabel">${lbl}</div><div class="wnum">${w.total}</div><div class="wdelta ${dcls}">${dtxt}</div></div>`;
+  }).join("");
+  const maxT = Math.max(...weeks.map(w=>w.total),1);
+  const trend = weeks.map(w=>{
+    const pct = Math.max(6, Math.round(w.total/maxT*100));
+    return `<div class="wt-row"><div class="wt-lab">${w.wk.slice(5)}</div><div class="wt-track"><div class="wt-fill" style="width:${pct}%"></div></div><div class="wt-val">${w.total}</div></div>`;
+  }).join("");
+  const last = weeks[weeks.length-1], prev = weeks.length>1 ? weeks[weeks.length-2] : null;
+  let verdict="", vcls="wflat";
+  if(prev){ const d=last.total-prev.total;
+    if(d>0){verdict="近 4 周整体放量 ↑，招录窗口在扩大，建议加快建站节奏";vcls="wup";}
+    else if(d<0){verdict="近 4 周整体缩量 ↓，招录放缓，优先消化现有 🔴 清单";vcls="wdown";}
+    else {verdict="近 4 周基本持平，维持现有节奏";}
+  }
+  box.innerHTML = `<div class="weekcards">${cards}</div><div class="wtrend">${trend}</div>`+
+    `<p class="hint" style="margin-top:10px;"><span class="wdelta ${vcls}">${verdict}</span></p>`;
+}
+
 // ---------- 作战清单 ----------
 function renderPlan(){
   const plan = DATA.items
@@ -745,7 +803,7 @@ document.getElementById("copyScriptBtn").onclick=()=>{
 document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
-renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderPlan();
+renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderPlan();
 </script>
 </body>
 </html>
