@@ -588,13 +588,14 @@
     updateMatchHint("正在接入匹配大厅…");
     setConn("正在匹配…", "warn");
     // 需要先有一个 PeerJS id 作为身份；复用 setupPeer 里的 peer 或临时建一个
-    ensureLobbyPeer().then(function (pid) {
+    ensureLobbyId().then(function (pid) {
       if (!lobbyActive) return;
       if (!pid) {
         updateMatchHint("无法获取匹配身份，建议点「创建房间」把链接发给熟人练习。");
         setConn("匹配失败", "err");
         return;
       }
+      log("匹配身份=" + pid);
       fetch("/api/signal?action=join", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -626,37 +627,57 @@
         });
     });
   }
-  // 确保有一个可用的 PeerJS id（不依赖大厅，只拿 id；用完即销毁临时 peer）
-  function ensureLobbyPeer() {
+  // 确保有一个匹配大厅身份：优先拿真实 PeerJS id，拿不到就用本地随机 id（大厅不依赖 PeerJS cloud）
+  function genLobbyId() {
+    return "u" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+  }
+  function ensureLobbyId() {
     return new Promise(function (resolve) {
       if (peer && peer.id) { resolve(peer.id); return; }
-      if (!window.Peer) { resolve(""); return; }
-      var tmp = new Peer({ debug: 1 });
+      if (!window.Peer) { resolve(genLobbyId()); return; }
+      var tmp = new Peer({ debug: 1, config: { iceServers: iceServers() } });
       var settled = false;
       function done(id) {
         if (settled) return; settled = true;
         if (tmp && !tmp.destroyed) { try { tmp.destroy(); } catch (e) {} }
-        resolve(id);
+        resolve(id || genLobbyId());
       }
       tmp.on("open", function (id) { done(id); });
       tmp.on("error", function () { done(""); });
-      setTimeout(function () { done(""); }, 5000);
+      setTimeout(function () { done(""); }, 4000);
     });
   }
+  var lobbyPollMiss = 0; // 连续未读到 match 次数
   function startLobbyPolling() {
     clearLobbyTimers();
+    lobbyPollMiss = 0;
     lobbyPollTimer = setInterval(function () {
       if (!lobbyActive || !lobbyTicket) return;
-      fetch("/api/signal?action=poll&ticket=" + encodeURIComponent(lobbyTicket), { cache: "no-store" })
+      fetch("/api/signal?action=poll&city=" + encodeURIComponent(CITY) + "&ticket=" + encodeURIComponent(lobbyTicket), { cache: "no-store" })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           if (!lobbyActive) return;
           if (d.matched) {
             updateMatchHint("已找到伙伴，正在进入房间…");
             enterLobbySession({ room: d.room, isHost: d.isHost, role: d.role });
+            return;
+          }
+          lobbyPollMiss++;
+          if (d.gone) {
+            log("已从等待池移除，尝试重新匹配", "err");
+            updateMatchHint("配对结果同步延迟，正在重试…");
+            // 重新 join：保留 ticket 不变，服务器会清理旧条目
+            if (lobbyPollMiss >= 2) { leaveLobby(); setTimeout(enterLobby, 300); }
+            return;
+          }
+          if (lobbyPollMiss % 4 === 0) {
+            log("仍在等待搭子…（" + lobbyPollMiss + " 次轮询）");
           }
         })
-        .catch(function () {});
+        .catch(function (e) {
+          if (!lobbyActive) return;
+          log("轮询失败：" + (e && e.message), "err");
+        });
     }, 2500);
   }
   function enterLobbySession(enter) {

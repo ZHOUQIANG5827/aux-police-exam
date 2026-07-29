@@ -122,7 +122,7 @@ async function cancelWait(kv, city, t) {
   return { ok: true };
 }
 
-async function pollMatch(kv, t) {
+async function pollMatch(kv, t, city) {
   try {
     const raw = await kv.get(kvKeyMatch(t));
     if (raw) {
@@ -130,6 +130,14 @@ async function pollMatch(kv, t) {
       return { ok: true, ...data };
     }
   } catch (e) {}
+  // 兜底：如果等待池里已经没有自己，但 match 尚未读到，提示客户端重试/刷新
+  if (city) {
+    try {
+      const list = await readWaitList(kv, city);
+      const stillWaiting = list.some(function (x) { return x && x.ticket === t; });
+      if (!stillWaiting) return { ok: true, matched: false, gone: true };
+    } catch (e) {}
+  }
   return { ok: true, matched: false };
 }
 
@@ -165,8 +173,9 @@ export async function onRequestGet(context) {
 
   if (action === "poll") {
     const t = sanitize(url.searchParams.get("ticket"), 40);
+    const city = cityOf(url.searchParams.get("city"));
     if (!t) return json({ ok: false, error: "MISSING_TICKET" }, 400);
-    return json(await pollMatch(kv, t));
+    return json(await pollMatch(kv, t, city));
   }
 
   return json({ ok: false, error: "BAD_ACTION" }, 400);
