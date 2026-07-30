@@ -136,6 +136,10 @@
     <div style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
       <h3 style="font-size:14px;margin:0 0 10px;">📈 按周对比（近 4 周 · 看招录是否放量）</h3>
       <div id="weekCmp"></div>
+      <div style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
+        <h3 style="font-size:14px;margin:0 0 10px;">📍 按省拆解（近 2 周 · 看哪个省在放量）</h3>
+        <div id="provMom"></div>
+      </div>
     </div>
   </section>
 
@@ -655,6 +659,47 @@ function renderWeekCompare(){
     `<p class="hint" style="margin-top:10px;"><span class="wdelta ${vcls}">${verdict}</span></p>`;
 }
 
+// ---------- 按省拆解（近 2 周动量） ----------
+function renderProvinceMomentum(){
+  const hist = DATA.history || [];
+  const box = document.getElementById("provMom");
+  if(!hist.length){ box.innerHTML='<div class="empty">暂无历史快照。</div>'; return; }
+  const mondayOf = d=>{ const [y,m,da]=d.split("-").map(Number); const dt=new Date(Date.UTC(y,m-1,da)); const day=(dt.getUTCDay()+6)%7; dt.setUTCDate(da-day); return dt.toISOString().slice(0,10); };
+  const wkMap = {};
+  hist.forEach(h=>{
+    const wk = mondayOf(h.date);
+    if(!wkMap[wk]) wkMap[wk]={wk,total:0,prov:null};
+    if(h.total > wkMap[wk].total){ wkMap[wk].total=h.total; wkMap[wk].prov=h.byProvince||{}; }
+  });
+  const weeks = Object.values(wkMap).sort((a,b)=>a.wk.localeCompare(b.wk));
+  if(weeks.length<2){ box.innerHTML='<div class="empty">需至少 2 周快照才能对比（等每日同步积累）。</div>'; return; }
+  const cur = weeks[weeks.length-1], prev = weeks[weeks.length-2];
+  const allProv = new Set([...Object.keys(cur.prov||{}), ...Object.keys(prev.prov||{})]);
+  const rows = [...allProv].map(p=>({ p, c:(cur.prov[p]||0), d:(cur.prov[p]||0)-(prev.prov[p]||0) }))
+    .filter(r=> r.c>0 || r.d!==0)
+    .sort((a,b)=> b.c-a.c);
+  const maxC = Math.max(...rows.map(r=>r.c),1);
+  const body = rows.length ? rows.map(r=>{
+    let dcls="wflat", dtxt="— 持平";
+    if(r.d>0){dcls="wup";dtxt="▲+"+r.d;}
+    else if(r.d<0){dcls="wdown";dtxt="▼"+r.d;}
+    else if(r.c===0){dcls="wdown";dtxt="★ 退出";}
+    return `<div class="bar-row">
+      <div class="bar-label" title="${r.p}">${r.p}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(8,Math.round(r.c/maxC*100))}%;"></div></div>
+      <div class="bar-val">${r.c}</div>
+      <span class="wdelta ${dcls}" style="width:62px;text-align:center;flex:none;">${dtxt}</span>
+    </div>`;
+  }).join("") : '<div class="empty">近 2 周无省份数据。</div>';
+  const ramp = rows.filter(r=>r.d>0).sort((a,b)=>b.d-a.d).map(r=>r.p);
+  const drop = rows.filter(r=>r.d<0).map(r=>r.p);
+  let insight="";
+  if(ramp.length) insight += `🚀 ${ramp.join("、")} 本周放量最猛 → 题库扩张优先这几省。`;
+  if(drop.length) insight += ` 🔻 ${drop.join("、")} 本周降温。`;
+  if(!ramp.length && !drop.length) insight="近 2 周各省招录节奏基本持平。";
+  box.innerHTML = body + `<p class="hint" style="margin-top:10px;">${insight}</p>`;
+}
+
 // ---------- 作战清单 ----------
 function renderPlan(){
   const plan = DATA.items
@@ -803,7 +848,7 @@ document.getElementById("copyScriptBtn").onclick=()=>{
 document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
-renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderPlan();
+renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan();
 </script>
 </body>
 </html>
