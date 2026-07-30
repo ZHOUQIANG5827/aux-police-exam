@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RCJ 辅警/消防 业务工作台</title>
+<title>RCJ 招考 业务工作台</title>
 <script>
 /* 防闪烁：在 CSS 解析前先定好主题，避免浅色→深色闪一下 */
 (function(){try{var t=localStorage.getItem("rcj_wb_theme");if(!t){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
@@ -77,6 +77,7 @@
   .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600;}
   .b-hot{background:var(--wdown-bg);color:var(--hot);}
   .b-aux{background:var(--chip);color:var(--accent-d);}
+  .b-gov{background:#eef2ff;color:#4338ca;}
   .sel{font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--sel-bg);color:var(--txt);}
   .btn{border:1px solid var(--line);background:var(--sel-bg);color:var(--accent-d);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;}
   .btn:hover{background:var(--chip);}
@@ -141,7 +142,7 @@
 <body>
 <header class="top">
   <div class="top-titles">
-    <h1>🛡️ RCJ 辅警 / 消防 · 业务工作台</h1>
+    <h1>🛡️ RCJ 招考 · 业务工作台</h1>
     <div class="sub">把握招录热点 · 一键搞定题库 · 给自己用的作战台</div>
   </div>
   <button id="themeBtn" class="theme-toggle" aria-label="切换深色/浅色模式" title="切换深色 / 浅色模式">🌙 深色</button>
@@ -156,7 +157,7 @@
   <div class="kpis" id="kpis"></div>
 
   <div class="strat" id="stratBox">
-    💡 <b>策略（已锁定）</b>：① 先做 <b>🔴优先建</b> = 本周截止临近 + 人数≥50 + 未建 + 辅警加成；② <b>辅警 &gt; 消防</b>（招聘高频、候选基数大、题库跨城复用强）；③ <b>面试(结构化)跨省通用度远高于笔试</b>，最适母库复用；④ 只建「真实真题」站，严禁洗白拼凑；⑤ 漏斗：本周可报 → 🔴优先 → 拿真题 → 建站 → push上线。
+    💡 <b>策略（已锁定）</b>：① 先做 <b>🔴优先建</b> = 本周截止临近 + 人数≥50 + 未建 + 辅警加成；② <b>辅警 &gt; 消防</b>（招聘高频、候选基数大、题库跨城复用强）；③ <b>面试(结构化)跨省通用度远高于笔试</b>，最适母库复用；④ 只建「真实真题」站，严禁洗白拼凑；⑤ 漏斗：本周可报 → 🔴优先 → 拿真题 → 建站 → push上线；⑥ <b>广东省考/深圳事业编/海南省考</b> 等公开考试：题库公开、自用备考也值钱，按「自用优先·公开整理版」处理，不伪装独家/押题（巨头垄断、纯卖文件不划算）。
   </div>
 
   <!-- ============ 本周趋势 ============ -->
@@ -277,10 +278,10 @@
     <summary>📖 使用说明 / 数据格式</summary>
     <div style="font-size:13px;color:var(--mut);line-height:1.7;">
       <p><b>数据从哪来？</b> 由「每日辅警+消防员招录汇总」自动化每日 09:00 联网检索，合并写入同目录 <code>recruitment-data.js</code>（<code>window.RCJ_RECRUITMENT</code>）。工作台只读这个文件，离线可用。</p>
-      <p><b>条目字段</b>：<code>category</code>(辅警/政府专职消防员/企业消防员)、<code>region</code>、<code>unit</code>、<code>count</code>(人数,null=不详)、<code>publishDate</code>、<code>signupStart/End</code>、<code>method</code>、<code>threshold</code>、<code>source</code>、<code>url</code>、<code>bankStatus</code>(未建/进行中/已上线)、<code>note</code>。</p>
+      <p><b>条目字段</b>：<code>category</code>(辅警/政府专职消防员/企业消防员/<b>广东省考</b>/<b>深圳事业编</b>/<b>海南省考</b>)、<code>region</code>、<code>unit</code>、<code>count</code>(人数,null=不详)、<code>publishDate</code>、<code>signupStart/End</code>、<code>method</code>、<code>threshold</code>、<code>source</code>、<code>url</code>、<code>bankStatus</code>(未建/进行中/已上线)、<code>note</code>。</p>
       <p><b>怎么加/改题库状态？</b> 看板与库存里的状态下拉切换后会存到本机浏览器 localStorage，刷新不丢；要永久生效就编辑 <code>recruitment-data.js</code> 里的 <code>bankStatus</code>。</p>
       <p><b>生成建题库配置后怎么做？</b> 把命令复制到「rcj-exam-builder」技能所在环境执行；真题是硬前提——没拿到该城市真实真题前不要建站。</p>
-      <p><b>上线到 GitHub/Cloudflare（第三步）</b> 生成器里新增「🚀 上线命令」：按所选热点的类别自动挑对应仓库——辅警推 <code>辅警GITHUB</code>(aux-police-exam)，消防两类推 <code>消防员GITHUB</code>(xf-firefighter-exam)；两个仓库的 remote 与 SSH/HTTPS 凭据已于 2026-07-29 实测可推。复制命令在 <b>Git Bash</b> 执行即自动部署上线（Cloudflare 输出目录 <code>/</code>，约 1-2 分钟）。</p>
+      <p><b>上线到 GitHub/Cloudflare（第三步）</b> 生成器里新增「🚀 上线命令」：按所选热点的类别自动挑对应仓库——辅警推 <code>辅警GITHUB</code>(aux-police-exam)，消防两类推 <code>消防员GITHUB</code>(xf-firefighter-exam)；<b>广东省考/深圳事业编/海南省考 按「自用优先·不推仓」</b>，上线命令改为「导出本地 Anki/RemNote 卡组自用」，不推送公开仓库（巨头垄断、纯卖文件不划算，价值在自用备考+公开整理版引流）。辅警/消防仓库的 remote 与 SSH/HTTPS 凭据已于 2026-07-29 实测可推。复制命令在 <b>Git Bash</b> 执行即自动部署上线（Cloudflare 输出目录 <code>/</code>，约 1-2 分钟）。</p>
     </div>
   </details>
 </div>
@@ -325,7 +326,7 @@
 <script src="recruitment-data.js"></script>
 <script>
 const DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]};
-const CATS = ["辅警","政府专职消防员","企业消防员"];
+const CATS = ["辅警","政府专职消防员","企业消防员","广东省考","深圳事业编","海南省考"];
 const STORE_KEY = "rcj_wb_overrides_v1";
 const todayStr = ()=>new Date().toISOString().slice(0,10);
 function loadOv(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"{}");}catch(e){return{};}}
@@ -341,7 +342,20 @@ const REPOS = {
   "辅警":            { path:"/c/Users/小样儿/Desktop/产品交付/辅警GITHUB",        remote:"git@github.com:ZHOUQIANG5827/aux-police-exam.git",        proto:"SSH" },
   "政府专职消防员":   { path:"/c/Users/小样儿/Desktop/产品交付/消防员GITHUB",      remote:"https://github.com/ZHOUQIANG5827/xf-firefighter-exam.git", proto:"HTTPS" },
   "企业消防员":       { path:"/c/Users/小样儿/Desktop/产品交付/消防员GITHUB",      remote:"https://github.com/ZHOUQIANG5827/xf-firefighter-exam.git", proto:"HTTPS" },
+  // 公考类（广东省考/深圳事业编/海南省考）：按「自用优先·不推仓」策略，仅本地导出 Anki/RemNote
+  "广东省考":         { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
+  "深圳事业编":       { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
+  "海南省考":         { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
 };
+
+// 仓库简称（建站脚本/作战清单展示用）：公考类走「自用优先」标签
+function repoShortName(cat){
+  const r = REPOS[cat];
+  if(r && r.localOnly) return r.label || "公考(自用)";
+  if(cat==="辅警") return "辅警GITHUB(aux-police-exam)";
+  if((cat||"").includes("消防")) return "消防员GITHUB(xf-firefighter-exam)";
+  return "辅警GITHUB(aux-police-exam)";
+}
 
 // ---------- 同步信息 + 新鲜度告警 ----------
 (function(){
@@ -421,6 +435,9 @@ function renderKPI(){
   const aux = items.filter(i=>i.category==="辅警");
   const gov = items.filter(i=>i.category==="政府专职消防员");
   const ent = items.filter(i=>i.category==="企业消防员");
+  const gwyGD = items.filter(i=>i.category==="广东省考");
+  const gwySZ = items.filter(i=>i.category==="深圳事业编");
+  const gwyHN = items.filter(i=>i.category==="海南省考");
   const hot = items.filter(i=> (i.count||0)>=50 && rowStatus(i)!=="已上线");
   const live = items.filter(i=> rowStatus(i)==="已上线");
   const week = items.filter(isThisWeek);
@@ -434,6 +451,9 @@ function renderKPI(){
     kpi(aux.length,"辅警 · 条",""),
     kpi(gov.length,"政府专职消防员 · 条","org"),
     kpi(ent.length,"企业消防员 · 条","red"),
+    kpi(gwyGD.length,"广东省考 · 条","org"),
+    kpi(gwySZ.length,"深圳事业编 · 条","org"),
+    kpi(gwyHN.length,"海南省考 · 条","org"),
   ].join("");
   document.getElementById("kpis").innerHTML = html;
 }
@@ -479,6 +499,7 @@ function renderHot(){
     const isHot = (it.count||0)>=50 && rowStatus(it)!=="已上线";
     const p = priorityTag(it);
     const auxCross = it.category==="辅警" ? `<span class="badge b-aux">跨城复用</span> ` : "";
+    const govBadge = (it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考") ? `<span class="badge b-gov">公考·自用</span> ` : "";
     const hotBadge = isHot ? `<span class="badge b-hot">🔥建议建</span> ` : "";
     const cnt = it.count? `<span class="cnt">${it.count}</span>` : `<span class="cnt unk">不详</span>`;
     const end = it.signupEnd?it.signupEnd:"—";
@@ -517,7 +538,7 @@ function renderInv(){
   INV_BASE.forEach(r=>map.set(r.name, {name:r.name,url:r.url,desc:r.desc,st:r.st}));
   DATA.items.forEach(it=>{
     if(!it.region) return;
-    const nm = (it.region||"").split("·").pop() + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":""));
+    const nm = (it.region||"").split("·").pop() + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"公考":"")));
     const st = rowStatus(it);
     if(map.has(nm)){ const e=map.get(nm); e.st=maxStatus(e.st,st); e.desc=it.category+(it.unit?(" · "+it.unit):""); }
     else map.set(nm, {name:nm, url:it.region, desc:it.category+(it.unit?(" · "+it.unit):""), st});
@@ -543,7 +564,7 @@ function openGen(it){
   currentItem = it;
   document.getElementById("f_src").value = (it.region||"")+" · "+(it.unit||"");
   const cityGuess = (it.region||"").split("·").pop();
-  document.getElementById("f_city").value = cityGuess + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":""));
+  document.getElementById("f_city").value = cityGuess + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"公考":"")));
   document.getElementById("f_slug").value = "";
   document.getElementById("f_year").value = (it.signupEnd||it.publishDate||todayStr()).slice(0,4);
   document.getElementById("f_type").value = it.category==="辅警"?"computer":"paper";
@@ -612,8 +633,9 @@ node --check data-written.js && node --check data-interview.js`;
   // ---------- 上线命令（按类别挑仓库） ----------
   const cat = currentItem ? currentItem.category : "辅警";
   const repo = REPOS[cat] || REPOS["辅警"];
-  const depCmd =
-`# 在 Git Bash 执行（仓库已验证可推：${repo.proto} · ${repo.remote}）
+  const depCmd = repo.localOnly
+    ? `# 该品类（${cat}）按「自用优先·不推仓」策略：\n# 生成后导出为本地 Anki/RemNote 卡组自用备考，不推送公开仓库。\n# 导出目录建议：${repo.path}\n# 真题是硬前提——没拿到真实真题前不要建站。`
+    : `# 在 Git Bash 执行（仓库已验证可推：${repo.proto} · ${repo.remote}）
 cd "${repo.path}"
 # 第⑤步已在本机组装好 ${subdir}/（index.html + data-*.js + config.js + VERSION.json）
 git add "${subdir}/"
@@ -690,12 +712,15 @@ function renderTrend(){
         <div class="bar-val">${n}</div>
       </div>`).join("")
     : '<div class="empty">本周暂无可报公告（等每日同步）。</div>';
-  const catN = { "辅警":0,"政府专职消防员":0,"企业消防员":0 };
+  const catN = { "辅警":0,"政府专职消防员":0,"企业消防员":0,"广东省考":0,"深圳事业编":0,"海南省考":0 };
   weekItems.forEach(it=>{ if(catN[it.category]!==undefined) catN[it.category]++; });
   document.getElementById("catStat").innerHTML = [
     ["辅警", catN["辅警"], "var(--blue)"],
     ["政府专职消防员", catN["政府专职消防员"], "var(--org)"],
     ["企业消防员", catN["企业消防员"], "var(--red)"],
+    ["广东省考", catN["广东省考"], "#4338ca"],
+    ["深圳事业编", catN["深圳事业编"], "#4338ca"],
+    ["海南省考", catN["海南省考"], "#4338ca"],
   ].map(([k,v,c])=>`<div class="ci"><span>${k}</span><b style="color:${c}">${v} 条</b></div>`).join("");
 }
 
@@ -788,7 +813,7 @@ function renderPlan(){
   const head=`<tr><th>#</th><th>地区/单位</th><th>人数</th><th>截止</th><th>优先级</th><th>类别</th><th>上线仓库</th><th>操作</th></tr>`;
   const body=plan.map((x,i)=>{
     const it=x.it;
-    const repoShort = it.category==="辅警"?"辅警GITHUB":"消防员GITHUB";
+    const repoShort = repoShortName(it.category);
     const cityGuess=(it.region||"").split("·").pop();
     const cnt=it.count?`<span class="cnt">${it.count}</span>`:`<span class="cnt unk">不详</span>`;
     return `<tr>
@@ -807,7 +832,7 @@ function renderPlan(){
 }
 function slugGuess(it){
   const city=(it.region||"").split("·").pop();
-  const c = it.category==="辅警"?"aux":(it.category.includes("消防")?"xf":"");
+  const c = it.category==="辅警"?"aux":(it.category.includes("消防")?"xf":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"gwy":""));
   return (city+c).replace(/[^\x00-\x7F]/g,"");
 }
 document.getElementById("planCsvBtn").onclick=()=>{
@@ -817,7 +842,7 @@ document.getElementById("planCsvBtn").onclick=()=>{
   const header="排名,优先级,地区,招聘单位,人数,报名截止,类别,上线仓库,建议本地城市名,建议slug(待填英文),备注";
   const rows=plan.map((x,i)=>{
     const it=x.it;
-    const repoShort=it.category==="辅警"?"辅警GITHUB(aux-police-exam)":"消防员GITHUB(xf-firefighter-exam)";
+    const repoShort=repoShortName(it.category);
     const city=(it.region||"").split("·").pop();
     const note = rowStatus(it)==="已上线"?"已上线":(rowStatus(it)==="进行中"?"进行中":"待建·需真实真题");
     return [i+1, x.t.t, it.region||"", it.unit||"", it.count||"不详", it.signupEnd||"", it.category, repoShort, city, slugGuess(it), note].join(",");
@@ -851,11 +876,13 @@ document.getElementById("planCmdBtn").onclick=()=>{
 // ---------- 一键建站脚本生成器 ----------
 function genBuildScript(it){
   const isAux = it.category==="辅警";
+  const r = REPOS[it.category];
+  const localOnly = r && r.localOnly;
   const city=(it.region||"").split("·").pop();
   const year=new Date().getFullYear();
-  const repoName = isAux ? "辅警GITHUB" : "消防员GITHUB";
+  const repoName = localOnly ? "公考自用" : (isAux ? "辅警GITHUB" : "消防员GITHUB");
   const domain = isAux ? "fj.rcj9527.dpdns.org" : "<消防员仓库域名，请填 xf-xxx.dpdns.org 或你的域名>";
-  const slugHint = isAux ? "wz-aux" : "wz-xf";
+  const slugHint = localOnly ? "gwy" : (isAux ? "wz-aux" : "wz-xf");
   return `#!/usr/bin/env bash
 # ============================================================
 #  RCJ 一键建站脚本 · ${it.region||""} · ${it.category}
@@ -896,12 +923,17 @@ cp data-written.js data-interview.js config.js VERSION.json "$REPO/$SLUG/"
 # —— 六、（可选）导出 Anki 卡组，丢进站点目录 ——
 # "$PY" "$SKILL/scripts/anki_export.py" data-interview.json -o "$REPO/$SLUG/anki_cards.csv"
 
-# —— 七、push 上线（Cloudflare 自动部署，约 1-2 分钟）——
+${localOnly ? `# —— 七、自用导出（不推送公开仓库）——
+# 按「自用优先」策略：把 data-*.json 导出为本地 Anki/RemNote 卡组自用备考
+"$PY" "$SKILL/scripts/anki_export.py" data-written.json   -o "$HOME/Desktop/题库/${city}_笔试_Anki.csv"
+"$PY" "$SKILL/scripts/anki_export.py" data-interview.json -o "$HOME/Desktop/题库/${city}_面试_Anki.csv"
+echo "✅ 已导出本地卡组：$HOME/Desktop/题库/${city}_*_Anki.csv（导入 Anki/RemNote 自用）"`
+: `# —— 七、push 上线（Cloudflare 自动部署，约 1-2 分钟）——
 cd "$REPO"
 git add "$SLUG/"
 git commit -m "feat: 新增 $CITY 刷题站"
 git push origin main
-echo "✅ 上线: https://${domain}/$SLUG/"`;
+echo "✅ 上线: https://${domain}/$SLUG/"`};`
 }
 function fillScriptCity(){
   const list = DATA.items.map(it=>({it,s:priorityScore(it),t:priorityTag(it)}))
