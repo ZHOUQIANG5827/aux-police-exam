@@ -19,6 +19,8 @@
   .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px;}
   .bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0;}
   .sync{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:20px;}
+  .sync.warn{background:#fdecea;color:var(--red);border-color:#f5b5ad;font-weight:600;}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:4px;}
   .hint{font-size:12px;color:var(--mut);}
   .hint code{background:var(--chip);padding:1px 6px;border-radius:4px;color:var(--blue-d);}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px;}
@@ -303,8 +305,18 @@ const REPOS = {
   "企业消防员":       { path:"/c/Users/小样儿/Desktop/产品交付/消防员GITHUB",      remote:"https://github.com/ZHOUQIANG5827/xf-firefighter-exam.git", proto:"HTTPS" },
 };
 
-// ---------- 同步信息 ----------
-document.getElementById("syncBox").textContent = "数据同步：" + (DATA.updated||"未知") + (DATA.note?(" · "+DATA.note):"");
+// ---------- 同步信息 + 新鲜度告警 ----------
+(function(){
+  const box = document.getElementById("syncBox");
+  const label = "数据同步：" + (DATA.updated||"未知") + (DATA.note?(" · "+DATA.note):"");
+  const days = daysUntil(DATA.updated);   // 负数 = 数据日期在过去
+  if(days!==null && days < -2){
+    box.classList.add("warn");
+    box.textContent = label + "  ⚠️ 数据已 " + (-days) + " 天未更新，自动化可能中断！";
+  } else {
+    box.textContent = label;
+  }
+})();
 
 // ---------- 状态合并 ----------
 function rowStatus(it){ return (ov[it.url]&&ov[it.url].bankStatus) || it.bankStatus || "未建"; }
@@ -426,7 +438,7 @@ function renderHot(){
       <td><button class="btn" data-gen='${encodeURIComponent(JSON.stringify(it))}'>生成配置</button></td>
     </tr>`;
   }).join("");
-  document.getElementById("hotTable").innerHTML = `<table>${head}${body}</table>`;
+  document.getElementById("hotTable").innerHTML = `<div class="tablewrap"><table>${head}${body}</table></div>`;
 
   document.querySelectorAll("#hotTable .sel").forEach(s=>s.onchange=()=>{
     const url=s.dataset.url; ov[url]=Object.assign({},ov[url],{bankStatus:s.value}); saveOv(ov); renderKPI();
@@ -434,19 +446,27 @@ function renderHot(){
   document.querySelectorAll("#hotTable [data-gen]").forEach(b=>b.onclick=()=>openGen(JSON.parse(decodeURIComponent(b.dataset.gen))));
 }
 
-// ---------- 现有题库库存 ----------
-const INV = [
+// ---------- 现有题库库存（单一数据源：从 DATA.items 派生 + 已知常驻站补充，去重） ----------
+const INV_BASE = [
   {name:"深圳辅警", url:"szfj.rcj9527.dpdns.org", desc:"笔试+面试真题站（已跑通）", st:"已上线"},
   {name:"惠州辅警", url:"机考模板", desc:"惠州机考模式·真题优先", st:"已上线"},
   {name:"广东通用母库", url:"复用基座", desc:"全省标真题，多城复用", st:"已上线"},
-  {name:"武汉辅警", url:"7/18 考", desc:"笔试已过，转面试/押题", st:"进行中"},
-  {name:"成都辅警", url:"7/25 考", desc:"笔试已过，转面试/押题", st:"进行中"},
-  {name:"淮北辅警", url:"待建", desc:"看招录热度决定是否建", st:"未建"},
-  {name:"湖州辅警", url:"待建", desc:"看招录热度决定是否建", st:"未建"},
-  {name:"上海站", url:"风险", desc:"⚠️ 用粤标打底错省，需下架或标全国通用", st:"未建"},
+  {name:"上海站", url:"风险", desc:"⚠️ 用粤标打底错省，需下架/标全国通用", st:"未建"},
 ];
 function renderInv(){
-  document.getElementById("invList").innerHTML = INV.map((r,i)=>{
+  const ST_ORDER = ["未建","进行中","已上线"];
+  const maxStatus = (a,b)=> ST_ORDER[Math.max(ST_ORDER.indexOf(a),ST_ORDER.indexOf(b))]||a;
+  const map = new Map();
+  INV_BASE.forEach(r=>map.set(r.name, {name:r.name,url:r.url,desc:r.desc,st:r.st}));
+  DATA.items.forEach(it=>{
+    if(!it.region) return;
+    const nm = (it.region||"").split("·").pop() + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":""));
+    const st = rowStatus(it);
+    if(map.has(nm)){ const e=map.get(nm); e.st=maxStatus(e.st,st); e.desc=it.category+(it.unit?(" · "+it.unit):""); }
+    else map.set(nm, {name:nm, url:it.region, desc:it.category+(it.unit?(" · "+it.unit):""), st});
+  });
+  const rows = [...map.values()];
+  document.getElementById("invList").innerHTML = rows.map(r=>{
     const key="inv_"+r.name;
     const cur = (ov[key]&&ov[key].st)||r.st;
     return `<div class="inv-row">
@@ -506,22 +526,25 @@ function gen(){
     { "key":"interview", "name":"面试真题", "file":"data-interview.js" }
   ]
 }`;
-  const cmd = `# ① 源文件 → data.json（CSV/XLSX/JSON/TXT/PDF/Word 均可）
-python scripts/ingest.py 题目.csv -o data.json
+  const cmd = `# ① 真题 CSV → data.json（ingest，笔试 + 面试分别转）
+python scripts/ingest.py 笔试真题.csv -o data-written.json
+python scripts/ingest.py 面试真题.csv -o data-interview.json
 
-# ② data.json → 离线 data.js（笔试 + 面试）
-python scripts/build_data.py 数据_笔试.json -o data-written.js --global-name DATA_WRITTEN --minify
-python scripts/build_data.py 数据_面试.json -o data-interview.js --global-name DATA_INTERVIEW --minify
+# ② data.json → 离线 data-*.js（minify）
+python scripts/build_data.py data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify
+python scripts/build_data.py data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
 
-# ③ 导出 Anki 卡包
-python scripts/anki_export.py data.json --apkg --subdeck-by year,type
+# ③ 编译站点配置 config.js + 版本信息 VERSION.json（用技能自带 sample 配置，复制即用）
+python scripts/build_data.py data-written.json -o data-written.js --global-name DATA_WRITTEN \\
+       --config assets/template-config.sample.json --emit-config config.js --emit-version --template-version 1.0.0
 
-# ④ 编译配置 + 版本信息
-python scripts/build_data.py 数据_笔试.json -o data-written.js --global-name DATA_WRITTEN \\
-       --config template-config.json --emit-config config.js --emit-version --template-version 1.0.0
+# ④ 导出 Anki 卡包（可选）
+python scripts/anki_export.py data-interview.json --apkg --subdeck-by year,type
 
-# ⑤ 一键构建自包含单文件站（放 ${city} 子目录，push 即上线）
-python outputs/build_city.py viewer.html config.js data-written.json data-interview.json ${slug}/index.html ${year}
+# ⑤ 组装站点目录（viewer.html 改名 index.html + data-*.js + config.js + VERSION.json）
+mkdir -p "${subdir}"
+cp assets/viewer.html "${subdir}/index.html"
+cp data-written.js data-interview.js config.js VERSION.json "${subdir}/"
 
 # ⑥ 校验（上线前必跑）
 node --check data-written.js && node --check data-interview.js`;
@@ -535,10 +558,8 @@ node --check data-written.js && node --check data-interview.js`;
   const depCmd =
 `# 在 Git Bash 执行（仓库已验证可推：${repo.proto} · ${repo.remote}）
 cd "${repo.path}"
-# 第⑤步 build_city.py 已生成 ${slug}/index.html，放进城市子目录：
-mkdir -p "${subdir}"
-cp "${slug}/index.html" "${subdir}/index.html"
-git add .
+# 第⑤步已在本机组装好 ${subdir}/（index.html + data-*.js + config.js + VERSION.json）
+git add "${subdir}/"
 git commit -m "feat: 新增 ${city} 刷题站"
 git push origin main
 # → Cloudflare Pages 自动构建（输出目录 /，构建设置 None），约 1-2 分钟上线
@@ -724,7 +745,7 @@ function renderPlan(){
       <td><button class="btn" data-gen='${encodeURIComponent(JSON.stringify(it))}'>生成配置</button></td>
     </tr>`;
   }).join("");
-  document.getElementById("planTable").innerHTML=`<table>${head}${body}</table>`;
+  document.getElementById("planTable").innerHTML=`<div class="tablewrap"><table>${head}${body}</table></div>`;
   document.querySelectorAll("#planTable [data-gen]").forEach(b=>b.onclick=()=>openGen(JSON.parse(decodeURIComponent(b.dataset.gen))));
 }
 function slugGuess(it){
@@ -759,8 +780,8 @@ document.getElementById("planCmdBtn").onclick=()=>{
     out+=`\n# 【${i+1}】${it.region||""} · ${it.category} · 人数${it.count||"不详"} · 截止${it.signupEnd||"未知"} · 优先级分 ${x.s.toFixed(1)}\n`;
     out+=`cd "${repo.path}"\n`;
     out+=`mkdir -p "${subdir}"\n`;
-    out+=`cp "<本地 build_city.py 生成的 index.html>" "${subdir}/index.html"\n`;
-    out+=`git add . && git commit -m "feat: 新增 ${city} 刷题站" && git push origin main\n`;
+    out+=`# 站点目录 ${subdir}/ 已用「生成配置」或「一键建站脚本」组装好（含 index.html + data-*.js + config.js + VERSION.json）\n`;
+    out+=`git -C "${repo.path}" add "${subdir}/" && git -C "${repo.path}" commit -m "feat: 新增 ${city} 刷题站" && git -C "${repo.path}" push origin main\n`;
     out+=`# 上线后访问：原域名/${subdir}/\n`;
   });
   document.getElementById("f_src").value="全部 🔴 优先建站命令（按优先级汇总）";
