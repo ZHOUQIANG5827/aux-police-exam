@@ -1,5 +1,7 @@
 # RCJ 辅警题库 · 多城市刷题平台
 
+[![在线演示](https://img.shields.io/badge/在线演示-fj.rcj9527.dpdns.org-blue?style=flat-square)](https://fj.rcj9527.dpdns.org)
+
 RCJ9527 辅警考试真题刷题站合集：**城市专属官方真题**，笔试 + 面试，套题模考 + 定向刷题 + 随机抽题点击即判。纯静态站点，Cloudflare Pages 托管，零运行时依赖。
 
 > 线上：<https://fj.rcj9527.dpdns.org>（门户）｜完整版 / 答疑：闲鱼 **RCJ9527**
