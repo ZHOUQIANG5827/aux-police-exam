@@ -185,7 +185,7 @@
   <div class="bar">
     <span class="sync" id="syncBox">数据同步：—</span>
     <span class="hint">每次打开自动拉取最新数据（带时间戳防缓存）· 每日 09:00 自动更新 · 本机双击打开即用</span>
-    <label class="remind-toggle" title="开启后，数据源超过 7 天未更新时弹出每周更新提醒"><input type="checkbox" id="remindWeekly"> 每周提醒更新</label>
+    <span id="remindOwnerOnly" style="display:none"><label class="remind-toggle" title="开启后，数据源超过 7 天未更新时弹出每周更新提醒"><input type="checkbox" id="remindWeekly"> 每周提醒更新</label></span>
   </div>
   <div class="remind-banner" id="remindBanner">
     <span id="remindText"></span>
@@ -424,8 +424,20 @@ function repoShortName(cat){
   }
 })();
 
-// ---------- 每周提醒更新设置（自用） ----------
+// ---------- 每周提醒更新设置（自用，仅本人可见） ----------
 const REMIND_KEY = "rcj_wb_remind_weekly";
+const RW_OWNER_KEY = "rcj_wb_owner";   // 自用模式持久标记（本机 localStorage）
+let IS_OWNER = false;                  // 是否本人：控制提醒 UI（开关 + 横幅）显隐
+function setupOwnerMode(){
+  // 经自用入口进入（URL 带 #o）或本机曾激活过 → 视为本人
+  const owner = (location.hash.indexOf("o") >= 0) || (localStorage.getItem(RW_OWNER_KEY) === "1");
+  if(owner){
+    try{ localStorage.setItem(RW_OWNER_KEY, "1"); }catch(e){}
+    IS_OWNER = true;
+    const w = document.getElementById("remindOwnerOnly");
+    if(w) w.style.display = "";        // 解除隐藏，显示提醒开关
+  }
+}
 const DISMISS_KEY = "rcj_wb_remind_dismiss_week";
 function isoWeekNum(d){
   const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -436,6 +448,7 @@ function isoWeekNum(d){
   return dt.getFullYear()+"-W"+week;
 }
 function evaluateReminder(){
+  if(!IS_OWNER) return;                // 非本人：永不弹提醒横幅
   const chk = document.getElementById("remindWeekly");
   const banner = document.getElementById("remindBanner");
   const txt = document.getElementById("remindText");
@@ -1059,7 +1072,7 @@ document.getElementById("copyScriptBtn").onclick=()=>{
 document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
-function initWorkbench(){ DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); evaluateReminder(); }
+function initWorkbench(){ setupOwnerMode(); DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); evaluateReminder(); }
 </script>
 
 <div class="rcj-brandbar">
