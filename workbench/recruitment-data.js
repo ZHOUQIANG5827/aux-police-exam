@@ -1,48 +1,141 @@
 // ============================================================
 // RCJ 业务工作台 · 招录数据源
-// 由「每日招录汇总」自动化每日 09:00 合并写入（含 辅警/消防/广东省考/深圳事业编/海南省考）。
+// 由「每日辅警+消防员招录汇总」自动化于 2026-08-02 合并写入。
 // 工作台(workbench.html)通过 <script src="recruitment-data.js"> 离线读取。
 // 字段说明见 workbench.html 内「使用说明」。
+// 口径：仅保留本周内(2026-07-26~08-02)新发布、或报名尚未截止(≥2026-08-02)的官方公告；
+//       报名已截止且不在本周窗口内的旧条目已剔除。人数不详写 null。
+//       已知题库上线的城市(深圳/惠州)bankStatus 标"已上线"，其余标"未建"。
 // ============================================================
 window.RCJ_RECRUITMENT = {
   // 最近一次同步日期 (YYYY-MM-DD)，由自动化更新
-  updated: "2026-07-29",
+  updated: "2026-08-02",
 
-  // 备注（可选）
-  note: "演示数据：截止日已调成相对今日的临近值；广东省考/深圳事业编/海南省考 为演示条目，每日 09:00 自动化将用真实数据覆盖（公考类按「自用优先」策略）。",
+  // 备注
+  note: "每日 09:00 自动合并更新；数据以官方公告为准，报名前请核对户籍/学历/年龄等限制。",
 
   // 条目数组：每条一条招录公告
   items: [
     // ---------- 辅警 ----------
     {
       category: "辅警",
-      region: "河南·郑州",
-      unit: "郑州市公安机关",
-      count: 387,
-      publishDate: "2026-07-25",
-      signupStart: "2026-07-27",
-      signupEnd: "2026-07-31",
-      method: "网上报名",
-      threshold: "大专及以上（部分退役军人放宽至高中）",
-      source: "郑州市公安局",
-      url: "https://zzga.zhengzhou.gov.cn/jfgg/10166621.jhtml",
+      region: "辽宁·大连",
+      unit: "大连市公安局",
+      count: 985,
+      publishDate: "2026-07-30",
+      signupStart: "2026-07-31",
+      signupEnd: "2026-08-09",
+      method: "网上报名（全国事业单位招聘网 bmzt/2360）",
+      threshold: "大专及以上（部分退役军人/退出消防放宽）；18-35岁（特驾岗40岁）",
+      source: "大连市公安局 / 大连公安公众号",
+      url: "https://ga.dl.gov.cn/",
       bankStatus: "未建",
-      note: "报名进行中（7/31 截止）"
+      note: "报名进行中（8/9 15:00截止）"
+    },
+    {
+      category: "辅警",
+      region: "浙江·义乌",
+      unit: "义乌市公安局",
+      count: 142,
+      publishDate: "2026-08-01",
+      signupStart: "2026-08-01",
+      signupEnd: "2026-08-10",
+      method: "网上报名（邮箱3976304060@qq.com）+ 8/11现场确认",
+      threshold: "金华市内户籍；大专及以上（含2026应届）；1991-07-31后出生",
+      source: "义乌市公安局",
+      url: "https://so.html5.qq.com/page/real/search_news?docid=70000021_9796a6d833095152",
+      bankStatus: "未建",
+      note: "报名进行中（8/10 17:00截止）"
+    },
+    {
+      category: "辅警",
+      region: "广东·深圳",
+      unit: "深圳市公安局（劳务派遣辅助岗）",
+      count: 200,
+      publishDate: "2026-07-28",
+      signupStart: "2026-07-29",
+      signupEnd: "2026-08-12",
+      method: "网上报名（全国事业单位招聘网 / 事招雷达APP）",
+      threshold: "详见职位表；长期封闭式管理、值守夜班",
+      source: "深圳市公安局 / 读特",
+      url: "https://www.dutenews.com/n/article/60046109",
+      bankStatus: "已上线",
+      note: "深圳站已上线（真题优先）；报名进行中（8/12 17:00截止）"
+    },
+    {
+      category: "辅警",
+      region: "河南·洛阳",
+      unit: "洛阳市公安机关",
+      count: 286,
+      publishDate: "2026-07-31",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-07",
+      method: "网上报名（洛阳人才网 apply.lyrcrs.com/320）",
+      threshold: "河南省户籍；大专及以上（退役军人放宽高中）；18-35岁",
+      source: "洛阳市公安局",
+      url: "https://new.qq.com/rain/a/20260731A06ALC00",
+      bankStatus: "未建",
+      note: "8/3 起报名（8/7 17:30截止）"
+    },
+    {
+      category: "辅警",
+      region: "广东·揭阳",
+      unit: "揭阳市公安局榕城分局",
+      count: 66,
+      publishDate: "2026-07-30",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-09",
+      method: "网上报名（全国事业单位招聘网 bmzt/2365）",
+      threshold: "高中(中专)及以上男性；18-30岁（退役军人放宽35岁）",
+      source: "揭阳市公安局榕城分局",
+      url: "https://zhaojing.huatu.com/news/guangzhou/2026/0730/2869670.html",
+      bankStatus: "未建",
+      note: "8/3 起报名（8/9 17:30截止）"
     },
     {
       category: "辅警",
       region: "广东·肇庆",
-      unit: "肇庆市公安局",
-      count: 252,
-      publishDate: "2026-07-22",
-      signupStart: null,
-      signupEnd: "2026-08-10",
-      method: "详见职位表",
-      threshold: "大专及以上（退役军人/消防退出人员放宽至高中）",
-      source: "肇庆市公安局政府信息公开",
-      url: "https://www.zhaoqing.gov.cn/zqgaj/gkmlpt/content/3/3255/post_3255180.html",
+      unit: "肇庆市公安局高要分局",
+      count: 63,
+      publishDate: "2026-07-27",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-14",
+      method: "现场报名（高要分局办公大楼2楼政工室）",
+      threshold: "大专及以上（退役/退出消防/见义勇为放宽高中）；18-35岁；不限户籍",
+      source: "高要公安",
+      url: "https://www.offcn.com/zhaojing/2026/0727/179026.html",
       bankStatus: "未建",
-      note: "第二次公开招聘，21 个岗位"
+      note: "8/3 起报名（8/14截止）"
+    },
+    {
+      category: "辅警",
+      region: "湖北·当阳",
+      unit: "当阳市公安局",
+      count: 19,
+      publishDate: "2026-07-28",
+      signupStart: "2026-07-28",
+      signupEnd: "2026-08-03",
+      method: "现场报名（当阳市公安局信访中队）",
+      threshold: "详见职位表；高中及以上",
+      source: "当阳市公安局",
+      url: "http://www.dangyang.gov.cn/zfxxgk/show.html?aid=10&cache=off&id=126482",
+      bankStatus: "未建",
+      note: "🔴报名明日(8/3)截止，最后窗口"
+    },
+    {
+      category: "辅警",
+      region: "安徽·马鞍山",
+      unit: "马鞍山市公安局",
+      count: 109,
+      publishDate: "2026-07-25",
+      signupStart: "2026-07-27",
+      signupEnd: "2026-08-07",
+      method: "网上报名（马鞍山市科创和人才综合服务平台）",
+      threshold: "详见职位表；含体能测评",
+      source: "马鞍山市公安局",
+      url: "https://api.app.anhuinews.com/pc/content/9442550.html",
+      bankStatus: "未建",
+      note: "报名进行中（8/7 17:00截止）"
     },
     {
       category: "辅警",
@@ -57,7 +150,97 @@ window.RCJ_RECRUITMENT = {
       source: "湛江市公安局",
       url: "https://gaj.zhanjiang.gov.cn/gkmlpt/content/2/2198/post_2198337.html",
       bankStatus: "未建",
-      note: "报名进行中"
+      note: "报名进行中（8/5截止）"
+    },
+    {
+      category: "辅警",
+      region: "广东·清远",
+      unit: "清远市公安局清城分局（第三次）",
+      count: 70,
+      publishDate: "2026-07-29",
+      signupStart: "2026-07-29",
+      signupEnd: "2026-08-05",
+      method: "详见公告（网上报名）",
+      threshold: "详见职位表",
+      source: "清远市公安局清城分局 / 华图汇总",
+      url: "https://zhaojing.huatu.com/zt/zjksgg/2026_7_955_2391.html",
+      bankStatus: "未建",
+      note: "报名进行中（8/5截止）"
+    },
+    {
+      category: "辅警",
+      region: "浙江·宁波",
+      unit: "宁波市公安局鄞州（高新）区分局",
+      count: 25,
+      publishDate: "2026-07-27",
+      signupStart: "2026-07-27",
+      signupEnd: "2026-08-02",
+      method: "网上报名（yzgajcpy.nbyz.cn）",
+      threshold: "详见岗位表",
+      source: "宁波市公安局鄞州分局",
+      url: "https://new.qq.com/rain/a/20260727A08GTL00",
+      bankStatus: "未建",
+      note: "🔴报名今日(8/2)截止，最后窗口"
+    },
+    {
+      category: "辅警",
+      region: "浙江·温州",
+      unit: "温州市公安局洞头区分局",
+      count: 9,
+      publishDate: "2026-07-31",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-07",
+      method: "现场报名（洞头分局512室）",
+      threshold: "大专及以上；男；身高170+；年龄38岁以下；部分限户籍",
+      source: "温州市公安局洞头分局",
+      url: "https://www.dongtou.gov.cn/col/col1254239/art/2026/art_3bf155efd6f84c0cac5e0a6419e108f0.html",
+      bankStatus: "未建",
+      note: "8/3 起报名（8/7截止）"
+    },
+    {
+      category: "辅警",
+      region: "新疆·伊犁",
+      unit: "伊犁州公安局",
+      count: 15,
+      publishDate: "2026-07-17",
+      signupStart: "2026-07-17",
+      signupEnd: "2026-08-02",
+      method: "微信服务号“新疆花城人资公司”网上报名",
+      threshold: "详见岗位表；8/3缴费、8/6笔试",
+      source: "伊犁州公安局",
+      url: "http://www.xjrc.com.cn/sydwzpDetails_1AC895EE64117757.shtml",
+      bankStatus: "未建",
+      note: "🔴报名今日(8/2 19:30)截止，最后窗口"
+    },
+    {
+      category: "辅警",
+      region: "北京·怀柔",
+      unit: "北京市公安局怀柔分局",
+      count: 30,
+      publishDate: "2026-07-23",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-04",
+      method: "现场报名（怀柔分局老干部活动中心）",
+      threshold: "详见岗位表；劳务派遣",
+      source: "北京市公安局怀柔分局",
+      url: "https://new.qq.com/rain/a/20260723A0CPDA00",
+      bankStatus: "未建",
+      note: "8/3-8/4 现场报名（仅2天）"
+    },
+    {
+      category: "辅警",
+      region: "湖北·大冶",
+      unit: "大冶市公安局（反恐巡特警大队）",
+      count: 10,
+      publishDate: "2026-07-31",
+      signupStart: "2026-07-31",
+      signupEnd: "2026-08-02",
+      method: "邮箱报名（3663466761@qq.com）",
+      threshold: "男；一线勤务辅警；半封闭军事化管理",
+      source: "大冶市公安局",
+      url: "https://so.html5.qq.com/page/real/search_news?docid=70000021_5736a6dc7be42952",
+      bankStatus: "未建",
+      note: "🔴报名今日(8/2 17:00)截止，最后窗口"
     },
     {
       category: "辅警",
@@ -87,54 +270,84 @@ window.RCJ_RECRUITMENT = {
       source: "厦门市公安局",
       url: "https://ga.xm.gov.cn/xmjx/jfts/202607/t20260713_3006790.htm",
       bankStatus: "未建",
-      note: "非在编辅助岗，人数少"
+      note: "报名进行中"
     },
 
     // ---------- 政府专职消防员 ----------
     {
       category: "政府专职消防员",
-      region: "河南·商水",
-      unit: "商水县人民政府",
-      count: null,
-      publishDate: "2026-07-25",
-      signupStart: "2026-07-27",
-      signupEnd: "2026-08-02",
-      method: "现场报名（人社局 205 室）",
-      threshold: "高中及以上，驾驶员需驾驶证",
-      source: "商水县人民政府",
-      url: "https://www.shangshui.gov.cn/sitesources/ssx/page_pc/zwgk/zdxxgk/gsgg/article890f7b24217e4e628f2d65a674c6ab20.html",
+      region: "浙江·金华",
+      unit: "金华市消防救援支队（兰溪）",
+      count: 30,
+      publishDate: "2026-08-02",
+      signupStart: "2026-08-02",
+      signupEnd: "2026-08-07",
+      method: "现场报名（兰溪市丹溪大道51号丹溪大道消防救援站）",
+      threshold: "男18-35岁（驾驶员≤40岁，持B2+）；高中及以上",
+      source: "金华消防 / 兰精灵客户端",
+      url: "https://new.qq.com/rain/a/20260802A04ABG00",
       bankStatus: "未建",
-      note: "报名进行中"
+      note: "今日发布，报名进行中（8/7截止）"
     },
     {
       category: "政府专职消防员",
-      region: "吉林·伊通",
-      unit: "伊通满族自治县消防救援局",
-      count: null,
+      region: "河南·南阳",
+      unit: "南阳市西峡县消防救援大队",
+      count: 10,
+      publishDate: "2026-08-01",
+      signupStart: "2026-08-03",
+      signupEnd: "2026-08-13",
+      method: "现场报名（创业大道消防救援站报名点）",
+      threshold: "男18-28岁（大专/退役/持证放宽30岁）；高中及以上",
+      source: "西峡县消防救援大队",
+      url: "https://dy.163.com/article/L373PAD505329WZS.html",
+      bankStatus: "未建",
+      note: "报名 8/3 启动（8/13截止）"
+    },
+    {
+      category: "政府专职消防员",
+      region: "河南·平顶山",
+      unit: "平顶山市消防救援支队",
+      count: 105,
+      publishDate: "2026-07-24",
+      signupStart: "2026-07-24",
+      signupEnd: "2026-08-07",
+      method: "网上报名",
+      threshold: "详见岗位表",
+      source: "平顶山市消防救援支队",
+      url: "https://so.html5.qq.com/page/real/search_news?docid=70000021_0166a65a7c180952",
+      bankStatus: "未建",
+      note: "报名进行中（8/7截止）"
+    },
+    {
+      category: "政府专职消防员",
+      region: "辽宁·阜新",
+      unit: "阜新市消防救援局（海州/太平区）",
+      count: 33,
       publishDate: "2026-07-20",
-      signupStart: null,
-      signupEnd: "2026-08-12",
-      method: "详见公告",
-      threshold: "详见公告",
+      signupStart: "2026-07-20",
+      signupEnd: "2026-08-02",
+      method: "网上报名（邮箱 fxxfzz119@163.com）",
+      threshold: "男；高中及以上；灭火员18-35岁（放宽40），驾驶员持A1/A2/B2",
+      source: "阜新市消防救援局",
+      url: "https://new.qq.com/rain/a/20260720A08JKR00",
+      bankStatus: "未建",
+      note: "🔴报名今日(8/2 17:00)截止，最后窗口"
+    },
+    {
+      category: "政府专职消防员",
+      region: "黑龙江·伊通",
+      unit: "伊通满族自治县消防救援局",
+      count: 20,
+      publishDate: "2026-07-20",
+      signupStart: "2026-07-22",
+      signupEnd: "2026-08-04",
+      method: "现场报名（县消防救援局三楼）",
+      threshold: "限伊通户籍；男18-28岁（放宽30）；高中及以上；驾驶员持B2",
       source: "伊通满族自治县政府",
       url: "http://www.yitong.gov.cn/zw/tzgg/202607/t20260720_771250.html",
       bankStatus: "未建",
-      note: ""
-    },
-    {
-      category: "政府专职消防员",
-      region: "黑龙江·肇东",
-      unit: "肇东市消防救援局",
-      count: null,
-      publishDate: "2026-07-21",
-      signupStart: "2026-07-22",
-      signupEnd: "2026-08-06",
-      method: "网上报名",
-      threshold: "月工资 2500 元，含社保",
-      source: "肇东市人民政府",
-      url: "https://www.hljzhaodong.gov.cn/zd/c31/202607/c12_237423.shtml",
-      bankStatus: "未建",
-      note: "报名进行中"
+      note: "报名进行中（8/4截止）"
     },
     {
       category: "政府专职消防员",
@@ -149,7 +362,22 @@ window.RCJ_RECRUITMENT = {
       source: "额尔古纳市政府",
       url: "https://eegn.gov.cn/News/show/1441701.html",
       bankStatus: "未建",
-      note: "报名进行中"
+      note: "🔴报名明日(8/3)截止"
+    },
+    {
+      category: "政府专职消防员",
+      region: "黑龙江·肇东",
+      unit: "肇东市消防救援局",
+      count: null,
+      publishDate: "2026-07-21",
+      signupStart: "2026-07-22",
+      signupEnd: "2026-08-06",
+      method: "网上报名",
+      threshold: "月工资 2500 元，含社保",
+      source: "肇东市人民政府",
+      url: "https://www.hljzhaodong.gov.cn/zd/c31/202607/c12_237423.shtml",
+      bankStatus: "未建",
+      note: "报名进行中（8/6截止）"
     },
     {
       category: "政府专职消防员",
@@ -164,59 +392,59 @@ window.RCJ_RECRUITMENT = {
       source: "铁力市人民政府",
       url: "https://www.tls.gov.cn/newtlsrmzf/c104440/202607/429749.shtml",
       bankStatus: "未建",
-      note: "报名进行中"
+      note: "报名进行中（8/4截止）"
     },
 
-    // ---------- 公考类（广东省考 / 深圳事业编 / 海南省考）· 自用优先·公开整理版 ----------
+    // ---------- 企业消防员 ----------
     {
-      category: "广东省考",
-      region: "广东·省直",
-      unit: "广东省公务员考试（演示条目）",
-      count: null,
+      category: "企业消防员",
+      region: "浙江·舟山",
+      unit: "舟山群岛新区浙东化工科技产业有限公司（特勤消防站）",
+      count: 3,
+      publishDate: "2026-07-31",
+      signupStart: "2026-07-31",
+      signupEnd: "2026-08-06",
+      method: "现场报名（六横社会治理与政务服务中心38号窗）或邮箱",
+      threshold: "化工辅助岗本科化工相关；工作人员岗大专；年龄35-40岁",
+      source: "粉笔资讯 / 舟山六横",
+      url: "https://fenbi.com/page/exam-information-detail/468053376391168",
+      bankStatus: "未建",
+      note: "国企化工特勤消防岗；报名进行中（8/6 17:00截止）"
+    },
+    {
+      category: "企业消防员",
+      region: "陕西·咸阳",
+      unit: "陕西广卫消防安全技术有限责任公司",
+      count: 30,
+      publishDate: "2026-07-14",
+      signupStart: "2026-07-14",
+      signupEnd: null,
+      method: "详见公告（随招聘专栏发布）",
+      threshold: "企业专职消防员；消防外包服务派驻",
+      source: "长武县人民政府（百日千万招聘）",
+      url: "https://www.changwu.gov.cn/zfxxgk/fdzdgk/wgjy/202607/t20260714_2101180.html",
+      bankStatus: "未建",
+      note: "企业消防外包派驻岗，长期招录"
+    },
+    {
+      category: "企业消防员",
+      region: "辽宁·盘锦",
+      unit: "盘锦政泰物业管理有限公司（建筑构消防员）",
+      count: 1,
       publishDate: "2026-07-20",
-      signupStart: null,
-      signupEnd: "2026-08-15",
-      method: "网上报名（广东省人事考试网）",
-      threshold: "大专及以上，详见招考公告",
-      source: "广东省人力资源和社会保障厅",
-      url: "https://hrss.gd.gov.cn/",
+      signupStart: "2026-07-20",
+      signupEnd: "2026-12-31",
+      method: "现场报名（双台子区城北街北中珠大厦物业办公室）",
+      threshold: "持相应证件；有经验优先；缴纳五险",
+      source: "粉笔资讯 / 盘锦政泰物业",
+      url: "https://www.fenbi.com/page/exam-information-detail/467821750407168",
       bankStatus: "未建",
-      note: "演示条目：省考题库公开，自用备考+公开整理版引流，不伪装独家"
-    },
-    {
-      category: "深圳事业编",
-      region: "广东·深圳",
-      unit: "深圳市事业单位公开招聘（演示条目）",
-      count: null,
-      publishDate: "2026-07-22",
-      signupStart: null,
-      signupEnd: "2026-08-12",
-      method: "网上报名（深圳人社局）",
-      threshold: "大专及以上，详见岗位表",
-      source: "深圳市人力资源和社会保障局",
-      url: "http://hrss.sz.gov.cn/",
-      bankStatus: "未建",
-      note: "演示条目：事业编题库公开，自用优先"
-    },
-    {
-      category: "海南省考",
-      region: "海南·省直",
-      unit: "海南省公务员考试（演示条目）",
-      count: null,
-      publishDate: "2026-07-18",
-      signupStart: null,
-      signupEnd: "2026-08-20",
-      method: "网上报名（海南省考试局）",
-      threshold: "大专及以上，详见招考公告",
-      source: "海南省考试局",
-      url: "http://ea.hainan.gov.cn/",
-      bankStatus: "未建",
-      note: "演示条目：省考题库公开，自用备考+公开整理版引流"
+      note: "物业消防中控岗，长期招录（额满即止）"
     }
   ],
 
   // 历史快照：每日自动化追加一条（按 date 去重，保留约 42 天）。
-  // 用于「按周对比」——看招录是否在放量。total = 当日活跃公告数；byCategory = 当日类别构成；byProvince = 当日各省分布。
+  // total = 当日活跃公告数（仍在本周窗口内的条目）；byCategory = 当日类别构成；byProvince = 当日各省分布。
   history: [
     { date:"2026-07-07", total:5,  byCategory:{"辅警":3,"政府专职消防员":2,"企业消防员":0}, byProvince:{"广东":2,"河南":1,"黑龙江":1,"福建":1} },
     { date:"2026-07-10", total:6,  byCategory:{"辅警":3,"政府专职消防员":2,"企业消防员":1}, byProvince:{"广东":2,"河南":1,"黑龙江":2,"福建":1} },
@@ -227,6 +455,7 @@ window.RCJ_RECRUITMENT = {
     { date:"2026-07-23", total:9,  byCategory:{"辅警":5,"政府专职消防员":3,"企业消防员":1}, byProvince:{"广东":3,"河南":2,"黑龙江":2,"福建":1,"吉林":1} },
     { date:"2026-07-25", total:10, byCategory:{"辅警":5,"政府专职消防员":4,"企业消防员":1}, byProvince:{"广东":3,"河南":2,"黑龙江":2,"福建":1,"吉林":1,"内蒙古":1} },
     { date:"2026-07-27", total:10, byCategory:{"辅警":5,"政府专职消防员":5,"企业消防员":0}, byProvince:{"广东":3,"河南":2,"黑龙江":2,"福建":1,"吉林":1,"内蒙古":1} },
-    { date:"2026-07-29", total:12, byCategory:{"辅警":5,"政府专职消防员":5,"企业消防员":0}, byProvince:{"广东":4,"河南":3,"黑龙江":2,"福建":1,"吉林":1,"内蒙古":1} }
+    { date:"2026-07-29", total:12, byCategory:{"辅警":5,"政府专职消防员":5,"企业消防员":0}, byProvince:{"广东":4,"河南":3,"黑龙江":2,"福建":1,"吉林":1,"内蒙古":1} },
+    { date:"2026-08-02", total:28, byCategory:{"辅警":17,"政府专职消防员":8,"企业消防员":3}, byProvince:{"广东":6,"浙江":5,"河南":3,"辽宁":3,"黑龙江":3,"湖北":2,"福建":1,"新疆":1,"安徽":1,"北京":1,"内蒙古":1,"陕西":1} }
   ]
 };
