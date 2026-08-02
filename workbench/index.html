@@ -164,6 +164,18 @@
   .remind-banner .rbtns{margin-left:auto;display:flex;gap:8px}
   .remind-banner .rbtn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
   .remind-banner .rbtn.ghost{background:transparent;color:inherit;border:1px solid currentColor}
+
+  /* 密码门禁（自用工作台） */
+  .gate{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;background:rgba(40,12,10,.92);}
+  .gate-card{background:var(--card);color:var(--text);width:min(340px,90vw);padding:32px 28px;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;}
+  .gate-icon{font-size:34px;margin-bottom:6px;}
+  .gate-title{font-size:18px;margin:0 0 4px;font-weight:800;}
+  .gate-sub{font-size:13px;opacity:.7;margin:0 0 18px;}
+  .gate-input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;text-align:center;margin-bottom:12px;box-sizing:border-box;}
+  .gate-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(181,72,70,.15);}
+  .gate-btn{width:100%;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:.18s;}
+  .gate-btn:hover{opacity:.92;}
+  .gate-err{color:#c0392b;font-size:13px;min-height:18px;margin:10px 0 0;}
 </style>
 </head>
 <body>
@@ -364,6 +376,18 @@
   </div>
 </div>
 
+<!-- 密码门禁（自用工作台）：进入需输入密码 -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-icon">🔐</div>
+    <h2 class="gate-title">RCJ 业务工作台</h2>
+    <p class="gate-sub">请输入访问密码</p>
+    <input type="password" id="gatePwd" class="gate-input" placeholder="访问密码" autocomplete="off">
+    <button id="gateBtn" class="gate-btn">进入</button>
+    <p class="gate-err" id="gateErr"></p>
+  </div>
+</div>
+
 <script>
   // 实时数据源：动态加载并带时间戳强制回源，避免浏览器/CDN 缓存导致打开看到旧数据
   (function () {
@@ -374,9 +398,46 @@
       p.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#dc2626;color:#fff;font-size:13px;text-align:center;padding:8px;';
       p.textContent = '⚠️ 数据源 recruitment-data.js 加载失败，请检查文件或 Ctrl+F5';
       document.body.appendChild(p);
+      onDataReady();   // 数据失败也允许进（用空数据渲染）
     };
-    s.onload = function () { initWorkbench(); };
+    s.onload = function () { onDataReady(); };
     document.head.appendChild(s);
+  })();
+
+  // ---------- 密码门禁（自用工作台，进入需密码） ----------
+  const GATE_PASS = "199527";
+  const GATE_KEY = "rcj_wb_unlocked";
+  function showGate(show){
+    const g = document.getElementById("gate");
+    if(g) g.style.display = show ? "flex" : "none";
+  }
+  function tryUnlock(){
+    const inp = document.getElementById("gatePwd");
+    const err = document.getElementById("gateErr");
+    if(inp.value.trim() === GATE_PASS){
+      try{ localStorage.setItem(GATE_KEY, "1"); localStorage.setItem("rcj_wb_owner", "1"); }catch(e){}
+      showGate(false);
+      initWorkbench();
+    } else {
+      err.textContent = "密码错误，请重试";
+      inp.value = "";
+      inp.focus();
+    }
+  }
+  function onDataReady(){
+    let unlocked = false;
+    try{ unlocked = localStorage.getItem(GATE_KEY) === "1"; }catch(e){}
+    if(unlocked){ showGate(false); initWorkbench(); }
+    else { showGate(true); }   // 未解锁：显示密码框，题目列表暂不渲染
+  }
+  (function bindGate(){
+    const inp = document.getElementById("gatePwd");
+    const btn = document.getElementById("gateBtn");
+    if(btn) btn.addEventListener("click", tryUnlock);
+    if(inp){
+      inp.focus();
+      inp.addEventListener("keydown", function(e){ if(e.key === "Enter") tryUnlock(); });
+    }
   })();
 
 let DATA = {updated:"",note:"",items:[]};
