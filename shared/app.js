@@ -1583,6 +1583,8 @@ if (CONFIG.rewardImage) { var _qr = document.getElementById("rewardQr"); _qr.src
 document.getElementById("timerDigits").textContent = (function () { var m = Math.floor(userTimerSeconds / 60), s = userTimerSeconds % 60; return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s); })();
 
 // 页脚（logo + 文案 + 联系 + 版本）
+// 去重策略：footerText 不再作为重复版权声明，只留轻量站点名；
+// 题量/版本合并到一行小字里，避免与 brandbar 的 RCJ9527 slogan 重复。
 var _footer = document.querySelector('.footer');
 if (_footer) {
   _footer.innerHTML = '';
@@ -1594,7 +1596,11 @@ if (_footer) {
   var _fp = document.getElementById('footerText');
   if (!_fp) { _fp = document.createElement('p'); _fp.id = 'footerText'; _footer.appendChild(_fp); }
   else { if (_fp.parentNode !== _footer) _footer.appendChild(_fp.cloneNode(false)); }
-  _fp.innerHTML = CONFIG.footerText + (CONFIG.contact ? ' · 联系：' + CONFIG.contact : '');
+  // 简化重复版权文案：去掉 "© " 和 " · 在线开源版" 这类与 brandbar 重复的表述
+  var _ft = (CONFIG.footerText || '').replace(/^©\s*/, '').replace(/\s*·\s*在线开源版$/, '').replace(/\s*·\s*开源离线版$/, '');
+  if (_ft) _ft = _ft + (CONFIG.contact ? ' · 联系：' + CONFIG.contact : '');
+  _fp.innerHTML = _ft || '';
+  _fp.style.display = _ft ? '' : 'none';
   var _fv = document.createElement('p'); _fv.className = 'footer-version'; _fv.id = 'footerVersion';
   _footer.appendChild(_fv);
 }
@@ -1607,7 +1613,7 @@ if (_footer) {
         if (!v) return;
         var _fv = document.getElementById('footerVersion');
         if (!_fv) return;
-        var _parts = ['RCJ Exam Template v' + (v.version || '1.0.0')];
+        var _parts = [];
         if (v.updated) _parts.push('更新于 ' + v.updated);
         var _c = [];
         if (v.writtenCount != null) _c.push('笔试 ' + v.writtenCount);
