@@ -55,7 +55,7 @@ function makeResultBanner(isCorrect, q, selLetters){
 var _DEFAULTS = {
   siteTitle: "辅警真题卡组",
   siteEmoji: "🚔",
-  subtitle: "真实考试真题 · 笔试+面试 · 离线可用",
+  subtitle: "真实考试真题 · 结构化面试 · 离线可用",
   logo: "",
   cover: "",
   themeColor: "#1e3a5f",
