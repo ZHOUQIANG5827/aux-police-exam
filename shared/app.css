@@ -70,6 +70,23 @@ body {
 }
 .theme-toggle:hover { background: rgba(255,255,255,0.25); transform: scale(1.1); }
 
+/* 返回主站胶囊（参照消防站） */
+.hub-btn {
+  position: absolute; top: 16px; right: 66px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #24292f; color: #fff; font-weight: 600; font-size: 0.82rem;
+  padding: 7px 13px; border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: transform 0.08s, box-shadow 0.08s, background 0.15s;
+  white-space: nowrap; text-decoration: none;
+}
+.hub-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(0,0,0,0.3); background: #1a1f24; }
+.hub-btn svg { width: 15px; height: 15px; fill: currentColor; }
+@media (max-width: 560px) {
+  .hub-btn .hub-txt { display: none; }
+  .hub-btn { right: 64px; padding: 7px 10px; }
+}
+
 /* 模式切换 tab */
 .mode-tabs { display: inline-flex; gap: 8px; margin-bottom: 14px; background: rgba(255,255,255,0.12); padding: 4px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.2); min-height: 38px; }
 .mode-tab { padding: 7px 22px; border-radius: 999px; border: none; background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; }
