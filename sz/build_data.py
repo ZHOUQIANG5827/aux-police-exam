@@ -96,7 +96,8 @@ def emit_version(config_path, version_path, version="1.0.0"):
         "counts": counts,
     }
     if 'written' in counts:
-        ver['writtenCount'] = counts['written']
+        # 笔试已下架（hideWrittenCount）时不出"笔试 N"，页脚只显示面试题量
+        ver['writtenCount'] = None if cfg.get('hideWrittenCount') else counts['written']
     if 'interview' in counts:
         ver['interviewCount'] = counts['interview']
     with open(version_path, 'w', encoding='utf-8') as f:
