@@ -174,7 +174,7 @@
 <div class="wrap">
   <div class="bar">
     <span class="sync" id="syncBox">数据同步：—</span>
-    <span class="hint">每日 09:00 自动更新 · 本机双击打开即用 · 数据有变请 <code>Ctrl+F5</code> 硬刷</span>
+    <span class="hint">每次打开自动拉取最新数据（带时间戳防缓存）· 每日 09:00 自动更新 · 本机双击打开即用</span>
   </div>
 
   <div class="kpis" id="kpis"></div>
@@ -346,9 +346,22 @@
   </div>
 </div>
 
-<script src="recruitment-data.js"></script>
 <script>
-const DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]};
+  // 实时数据源：动态加载并带时间戳强制回源，避免浏览器/CDN 缓存导致打开看到旧数据
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'recruitment-data.js?v=' + Date.now();
+    s.onerror = function () {
+      var p = document.createElement('div');
+      p.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#dc2626;color:#fff;font-size:13px;text-align:center;padding:8px;';
+      p.textContent = '⚠️ 数据源 recruitment-data.js 加载失败，请检查文件或 Ctrl+F5';
+      document.body.appendChild(p);
+    };
+    s.onload = function () { initWorkbench(); };
+    document.head.appendChild(s);
+  })();
+
+let DATA = {updated:"",note:"",items:[]};
 const CATS = ["辅警","政府专职消防员","企业消防员","广东省考","深圳事业编","海南省考"];
 const STORE_KEY = "rcj_wb_overrides_v1";
 const todayStr = ()=>new Date().toISOString().slice(0,10);
@@ -981,7 +994,7 @@ document.getElementById("copyScriptBtn").onclick=()=>{
 document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
-renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan();
+function initWorkbench(){ DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); }
 </script>
 
 <div class="rcj-brandbar">
