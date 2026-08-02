@@ -153,7 +153,17 @@
 .rcj-brandbar .rcj-links a.fj{background:var(--primary,#2563eb)}
 .rcj-brandbar .rcj-links a.xf{background:#dc2626}
 .rcj-brandbar .rcj-links a.gwy{background:#16a34a}
-.rcj-brandbar .rcj-slogan{margin:0;opacity:.85}
+  .rcj-brandbar .rcj-slogan{margin:0;opacity:.85}
+  /* 每周提醒更新（自用设置 + 横幅） */
+  .remind-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer;user-select:none;margin-left:auto}
+  .remind-toggle input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue)}
+  .remind-banner{display:none;align-items:center;gap:12px;margin:14px 0 0;padding:12px 16px;border-radius:10px;background:#fff7e6;border:1px solid #f3dca8;color:#7a5a16;font-size:14px}
+  .remind-banner.show{display:flex}
+  .remind-banner.warn{background:#fdecea;border-color:#f5c2bb;color:#a12a1a}
+  .remind-banner b{color:inherit}
+  .remind-banner .rbtns{margin-left:auto;display:flex;gap:8px}
+  .remind-banner .rbtn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .remind-banner .rbtn.ghost{background:transparent;color:inherit;border:1px solid currentColor}
 </style>
 </head>
 <body>
@@ -175,6 +185,14 @@
   <div class="bar">
     <span class="sync" id="syncBox">数据同步：—</span>
     <span class="hint">每次打开自动拉取最新数据（带时间戳防缓存）· 每日 09:00 自动更新 · 本机双击打开即用</span>
+    <label class="remind-toggle" title="开启后，数据源超过 7 天未更新时弹出每周更新提醒"><input type="checkbox" id="remindWeekly"> 每周提醒更新</label>
+  </div>
+  <div class="remind-banner" id="remindBanner">
+    <span id="remindText"></span>
+    <span class="rbtns">
+      <button class="rbtn ghost" id="remindDismiss">本周已读</button>
+      <button class="rbtn" id="remindRefresh">去刷新数据</button>
+    </span>
   </div>
 
   <div class="kpis" id="kpis"></div>
@@ -404,6 +422,53 @@ function repoShortName(cat){
   } else {
     box.textContent = label;
   }
+})();
+
+// ---------- 每周提醒更新设置（自用） ----------
+const REMIND_KEY = "rcj_wb_remind_weekly";
+const DISMISS_KEY = "rcj_wb_remind_dismiss_week";
+function isoWeekNum(d){
+  const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (dt.getDay()+6)%7;            // 周一为一周起点
+  dt.setDate(dt.getDate()-day+3);           // 该周周四
+  const firstThu = new Date(dt.getFullYear(),0,4);
+  const week = 1 + Math.round(((dt-firstThu)/86400000 - 3 + ((firstThu.getDay()+6)%7))/7);
+  return dt.getFullYear()+"-W"+week;
+}
+function evaluateReminder(){
+  const chk = document.getElementById("remindWeekly");
+  const banner = document.getElementById("remindBanner");
+  const txt = document.getElementById("remindText");
+  if(!chk || !banner) return;
+  if(!chk.checked){ banner.classList.remove("show","warn"); return; }
+  const days = daysUntil(DATA.updated);          // 负数 = 数据日期在过去
+  const stale = (days===null) ? null : Math.abs(days);
+  const thisWeek = isoWeekNum(new Date());
+  const dismissed = localStorage.getItem(DISMISS_KEY);
+  if(stale!==null && stale >= 7 && dismissed !== thisWeek){
+    banner.classList.add("show","warn");
+    txt.innerHTML = "⏰ <b>每周更新提醒</b>：数据已 <b>"+stale+" 天</b>未更新（最近更新："+(DATA.updated||"未知")+"）。请确认每日自动化是否在跑，或手动刷新数据源。";
+  } else {
+    banner.classList.remove("show","warn");
+  }
+}
+(function(){
+  const chk = document.getElementById("remindWeekly");
+  if(chk){
+    chk.checked = (localStorage.getItem(REMIND_KEY)==="1");
+    chk.addEventListener("change", function(){
+      localStorage.setItem(REMIND_KEY, this.checked?"1":"0");
+      evaluateReminder();
+    });
+  }
+  const dis = document.getElementById("remindDismiss");
+  const ref = document.getElementById("remindRefresh");
+  if(dis) dis.onclick = function(){
+    localStorage.setItem(DISMISS_KEY, isoWeekNum(new Date()));
+    const b = document.getElementById("remindBanner");
+    if(b) b.classList.remove("show","warn");
+  };
+  if(ref) ref.onclick = function(){ location.reload(true); };
 })();
 
 // ---------- 主题切换（深色 / 浅色，持久化 + 跟随系统） ----------
@@ -994,7 +1059,7 @@ document.getElementById("copyScriptBtn").onclick=()=>{
 document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
 
 // ---------- init ----------
-function initWorkbench(){ DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); }
+function initWorkbench(){ DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); evaluateReminder(); }
 </script>
 
 <div class="rcj-brandbar">
