@@ -46,6 +46,12 @@
   header.top{background:linear-gradient(120deg,var(--header-from),var(--header-to));color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
   .theme-toggle{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:background .15s;}
   .theme-toggle:hover{background:rgba(255,255,255,.28);}
+  .top-actions{display:flex;align-items:center;gap:10px}
+  /* 返回主站胶囊（与城市页一致） */
+  .hub-btn{display:inline-flex;align-items:center;gap:6px;background:#24292f;color:#fff;font-weight:600;font-size:13px;padding:7px 13px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;text-decoration:none;transition:transform .08s,box-shadow .08s,background .15s}
+  .hub-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.3);background:#1a1f24}
+  .hub-btn svg{width:15px;height:15px;fill:currentColor}
+  @media (max-width:560px){.hub-btn .hub-txt{display:none}}
   header.top h1{margin:0;font-size:20px;letter-spacing:.5px;}
   header.top .sub{font-size:12px;opacity:.9;margin-top:4px;}
   .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px;}
@@ -156,7 +162,13 @@
     <h1>🛡️ RCJ 招考 · 业务工作台</h1>
     <div class="sub">把握招录热点 · 一键搞定题库 · 给自己用的作战台</div>
   </div>
-  <button id="themeBtn" class="theme-toggle" aria-label="切换深色/浅色模式" title="切换深色 / 浅色模式">🌙 深色</button>
+  <div class="top-actions">
+    <a class="hub-btn" href="https://exam.rcj9527.dpdns.org/" target="_blank" rel="noopener" title="返回 RCJ Exam Hub 主站">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span class="hub-txt">RCJ Exam Hub 主站</span>
+    </a>
+    <button id="themeBtn" class="theme-toggle" aria-label="切换深色/浅色模式" title="切换深色 / 浅色模式">🌙 深色</button>
+  </div>
 </header>
 
 <div class="wrap">
@@ -975,7 +987,7 @@ renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCo
 <div class="rcj-brandbar">
   <p class="rcj-links">
     <a class="xf" href="https://xf.rcj9527.dpdns.org/" target="_blank" rel="noopener">消防真题</a>
-    <a class="gwy" href="https://gwy.gkzhenti.cn/" target="_blank" rel="noopener">公考真题库</a>
+    <a class="gwy" href="https://gwy.gkzhenti.cn/" target="_blank" rel="noopener">公考真题库<span style="display:inline-block;font-size:10px;font-weight:600;line-height:1;padding:2px 6px;margin-left:6px;border:1px solid rgba(255,255,255,.78);border-radius:999px;opacity:.92;white-space:nowrap;vertical-align:middle;">外站↗</span></a>
   </p>
   <p class="rcj-slogan">© RCJ9527 · 让公开考试资料更容易获取、学习、记住</p>
 </div>
