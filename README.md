@@ -123,3 +123,5 @@ NODE_PATH=<node workspace>/node_modules node build/test_full.js
 
 Cloudflare Pages 连接本仓库，`git push` 到 `main` 自动部署（`assets.directory: "."`，整仓即站点）。
 详细 runbook 见 `DEPLOY-STEPS.md`；新城市上线模板见 `DEPLOY-HUIZHOU.md`。
+
+<!-- deploy marker 20260803175858 -->

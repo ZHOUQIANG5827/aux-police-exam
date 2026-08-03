@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RCJ 招考 业务工作台</title>
+<script>
+/* 防闪烁：在 CSS 解析前先定好主题，避免浅色→深色闪一下 */
+(function(){try{var t=localStorage.getItem("rcj_wb_theme");if(!t){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
+</script>
+<style>
+  :root{
+    --blue:#1e63d0; --blue-d:#16488f; --red:#d9432b; --org:#e8852b;
+    --bg:#f4f6fa; --card:#ffffff; --line:#e3e8f0; --txt:#1f2733; --mut:#6b7787;
+    --ok:#1f9d55; --warn:#e8a72b; --hot:#e23b2e; --chip:#eef3fb;
+    /* 主题派生 token（深浅色共用，深色块覆盖取值） */
+    --header-from:var(--blue); --header-to:var(--blue-d);
+    --accent:var(--blue); --accent-d:var(--blue-d);
+    --tab-on-bg:var(--blue); --tab-on-fg:#fff;
+    --btn-primary-bg:var(--blue); --btn-primary-d:var(--blue-d);
+    --sel-bg:#fff; --field-bg:#fff;
+    --strat-bg:#fff8ec; --strat-border:#f3dca8; --strat-text:#7a5a16;
+    --th-bg:#fafbfd; --row-hover:#fafcff;
+    --bar-track:#eef2f8; --wcard-bg:#fafcff;
+    --wup-bg:#e7f7ee; --wdown-bg:#fdecea; --wflat-bg:#eef2f8;
+    --code-bg:#0f172a; --code-fg:#e2e8f0;
+  }
+  [data-theme="dark"]{
+    --blue:#4d8ef5; --blue-d:#7fb0ff; --red:#ff6b57; --org:#f0a44a;
+    --bg:#0f141b; --card:#1a212c; --line:#2a3340; --txt:#e6edf3; --mut:#93a1b3;
+    --ok:#34d27f; --warn:#f0c24a; --hot:#ff6a5a; --chip:#1e2733;
+    --header-from:#16335f; --header-to:#0c1c33;
+    --accent:#5ea0ff; --accent-d:#8ab4ff;
+    --tab-on-bg:#2b6cd6; --tab-on-fg:#fff;
+    --btn-primary-bg:#2b6cd6; --btn-primary-d:#1e4f9e;
+    --sel-bg:#10171f; --field-bg:#10171f;
+    --strat-bg:#2a2414; --strat-border:#5c4a1f; --strat-text:#e8c97a;
+    --th-bg:#161d27; --row-hover:#161d27;
+    --bar-track:#1e2733; --wcard-bg:#161d27;
+    --wup-bg:#143326; --wdown-bg:#3a1d18; --wflat-bg:#1e2733;
+    --code-bg:#0a0f17; --code-fg:#c9d6e5;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5;}
+  header.top{background:linear-gradient(120deg,var(--header-from),var(--header-to));color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .theme-toggle{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:background .15s;}
+  .theme-toggle:hover{background:rgba(255,255,255,.28);}
+  .top-actions{display:flex;align-items:center;gap:10px}
+  /* 返回主站胶囊（与城市页一致） */
+  .hub-btn{display:inline-flex;align-items:center;gap:6px;background:#24292f;color:#fff;font-weight:600;font-size:13px;padding:7px 13px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap;text-decoration:none;transition:transform .08s,box-shadow .08s,background .15s}
+  .hub-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(0,0,0,.3);background:#1a1f24}
+  .hub-btn svg{width:15px;height:15px;fill:currentColor}
+  @media (max-width:560px){.hub-btn .hub-txt{display:none}}
+  header.top h1{margin:0;font-size:20px;letter-spacing:.5px;}
+  header.top .sub{font-size:12px;opacity:.9;margin-top:4px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 60px;}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0;}
+  .sync{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:20px;}
+  .sync.warn{background:var(--wdown-bg);color:var(--red);border-color:#7a3a30;font-weight:600;}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:4px;}
+  .hint{font-size:12px;color:var(--mut);}
+  .hint code{background:var(--chip);padding:1px 6px;border-radius:4px;color:var(--blue-d);}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .kpi .n{font-size:26px;font-weight:700;color:var(--accent);}
+  .kpi .l{font-size:12px;color:var(--mut);margin-top:2px;}
+  .kpi.red .n{color:var(--red);} .kpi.org .n{color:var(--org);} .kpi.ok .n{color:var(--ok);}
+  .strat{background:var(--strat-bg);border:1px solid var(--strat-border);border-left:4px solid var(--org);
+    border-radius:8px;padding:10px 14px;font-size:13px;margin:12px 0;color:var(--strat-text);}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:18px;}
+  section h2{margin:0 0 12px;font-size:16px;display:flex;align-items:center;gap:8px;}
+  section h2 .tag{font-size:11px;background:var(--chip);color:var(--blue-d);padding:2px 8px;border-radius:10px;font-weight:600;}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .tab{border:1px solid var(--line);background:var(--sel-bg);border-radius:18px;padding:5px 14px;cursor:pointer;font-size:13px;color:var(--mut);}
+  .tab.on{background:var(--tab-on-bg);color:var(--tab-on-fg);border-color:var(--tab-on-bg);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{color:var(--mut);font-weight:600;font-size:12px;background:var(--th-bg);}
+  tr:hover td{background:var(--row-hover);}
+  .cnt{font-weight:700;color:var(--accent-d);}
+  .cnt.unk{color:var(--mut);font-weight:400;}
+  .badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;font-weight:600;}
+  .b-hot{background:var(--wdown-bg);color:var(--hot);}
+  .b-aux{background:var(--chip);color:var(--accent-d);}
+  .b-gov{background:#eef2ff;color:#4338ca;}
+  .sel{font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--sel-bg);color:var(--txt);}
+  .btn{border:1px solid var(--line);background:var(--sel-bg);color:var(--accent-d);border-radius:7px;padding:4px 10px;cursor:pointer;font-size:12px;}
+  .btn:hover{background:var(--chip);}
+  .btn.primary{background:var(--btn-primary-bg);color:#fff;border-color:var(--btn-primary-bg);}
+  .btn.primary:hover{background:var(--btn-primary-d);border-color:var(--btn-primary-d);}
+  .mini{font-size:11px;color:var(--mut);text-decoration:none;}
+  .empty{color:var(--mut);font-size:13px;padding:14px 4px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+  .inv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .inv-row:last-child{border-bottom:none;}
+  .inv-name{font-weight:600;}
+  .inv-meta{font-size:12px;color:var(--mut);}
+  .code{background:var(--code-bg);color:var(--code-fg);border-radius:8px;padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;white-space:pre;overflow:auto;max-height:340px;}
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow:auto;}
+  .modal.show{display:flex;}
+  .modal-box{background:var(--card);border-radius:14px;max-width:760px;width:100%;padding:20px 22px;}
+  .modal-box h3{margin:0 0 14px;font-size:17px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px;}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px;font-family:inherit;background:var(--field-bg);color:var(--txt);}
+  .field textarea{resize:vertical;min-height:90px;font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .block{margin-top:12px;}
+  .block .bh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .block .bh span{font-size:12px;color:var(--mut);font-weight:600;}
+  .closex{float:right;cursor:pointer;color:var(--mut);font-size:20px;line-height:1;}
+  #scriptBox{background:#faf8ff;}
+  [data-theme="dark"] #scriptBox{background:#1a1626;border-color:#5b3fa8;}
+  [data-theme="dark"] #scriptOut{background:#0a0f17;color:#c9d6e5;}
+  details summary{cursor:pointer;color:var(--blue-d);font-size:13px;padding:6px 0;}
+  details{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px;}
+  .pill{font-size:11px;padding:1px 7px;border-radius:9px;background:var(--chip);color:var(--blue-d);}
+  .sec2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+  @media(max-width:820px){.sec2{grid-template-columns:1fr;}}
+  .bars{font-size:13px;}
+  .bar-row{display:flex;align-items:center;gap:10px;margin:7px 0;}
+  .bar-label{width:92px;flex:none;text-align:right;color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bar-track{flex:1;background:var(--bar-track);border-radius:6px;height:20px;position:relative;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-d));border-radius:6px;}
+  .bar-val{width:30px;flex:none;font-weight:700;color:var(--blue-d);font-size:12px;text-align:left;}
+  .catstat{display:flex;flex-direction:column;gap:2px;}
+  .catstat .ci{display:flex;justify-content:space-between;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13px;}
+  .catstat .ci:last-child{border-bottom:none;}
+  /* 按周对比 */
+  .weekcards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  @media(max-width:640px){.weekcards{grid-template-columns:repeat(2,1fr);}}
+  .wcard{background:var(--wcard-bg);border:1px solid var(--line);border-radius:10px;padding:12px 8px;text-align:center;}
+  .wlabel{font-size:12px;color:var(--mut);}
+  .wnum{font-size:28px;font-weight:700;color:var(--blue-d);line-height:1.2;margin:2px 0;}
+  .wdelta{font-size:12px;font-weight:600;display:inline-block;padding:1px 8px;border-radius:10px;}
+  .wup{background:var(--wup-bg);color:var(--ok);}
+  .wdown{background:var(--wdown-bg);color:var(--red);}
+  .wflat{background:var(--wflat-bg);color:var(--mut);}
+  .wtrend{margin-top:14px;}
+  .wt-row{display:flex;align-items:center;gap:10px;margin:5px 0;}
+  .wt-lab{width:46px;flex:none;font-size:12px;color:var(--mut);text-align:right;}
+  .wt-track{flex:1;background:var(--bar-track);border-radius:6px;height:16px;overflow:hidden;}
+  .wt-fill{height:100%;background:linear-gradient(90deg,var(--org),var(--red));border-radius:6px;}
+  .wt-val{width:26px;flex:none;font-size:12px;font-weight:700;color:var(--blue-d);}
+</style>
+
+<style>
+.rcj-brandbar{text-align:center;padding:28px 20px;margin-top:40px;border-top:1px solid var(--border,#e5e7eb);color:var(--text-muted,var(--text-secondary,#6b7280));font-size:13px;background:transparent}
+.rcj-brandbar .rcj-links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:0 0 10px}
+.rcj-brandbar .rcj-links a{display:inline-flex;align-items:center;justify-content:center;padding:8px 18px;border-radius:999px;color:#fff;text-decoration:none;font-weight:600;font-size:14px;transition:transform .15s ease,box-shadow .15s ease}
+.rcj-brandbar .rcj-links a:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.18);text-decoration:none}
+.rcj-brandbar .rcj-links a.fj{background:var(--primary,#2563eb)}
+.rcj-brandbar .rcj-links a.xf{background:#dc2626}
+.rcj-brandbar .rcj-links a.gwy{background:#16a34a}
+  .rcj-brandbar .rcj-slogan{margin:0;opacity:.85}
+  /* 每周提醒更新（自用设置 + 横幅） */
+  .remind-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--mut);cursor:pointer;user-select:none;margin-left:auto}
+  .remind-toggle input{width:15px;height:15px;cursor:pointer;accent-color:var(--blue)}
+  .remind-banner{display:none;align-items:center;gap:12px;margin:14px 0 0;padding:12px 16px;border-radius:10px;background:#fff7e6;border:1px solid #f3dca8;color:#7a5a16;font-size:14px}
+  .remind-banner.show{display:flex}
+  .remind-banner.warn{background:#fdecea;border-color:#f5c2bb;color:#a12a1a}
+  .remind-banner b{color:inherit}
+  .remind-banner .rbtns{margin-left:auto;display:flex;gap:8px}
+  .remind-banner .rbtn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+  .remind-banner .rbtn.ghost{background:transparent;color:inherit;border:1px solid currentColor}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-titles">
+    <h1>🛡️ RCJ 招考 · 业务工作台</h1>
+    <div class="sub">把握招录热点 · 一键搞定题库 · 给自己用的作战台</div>
+  </div>
+  <div class="top-actions">
+    <a class="hub-btn" href="https://exam.rcj9527.dpdns.org/" target="_blank" rel="noopener" title="返回 RCJ Exam Hub 主站">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span class="hub-txt">RCJ Exam Hub 主站</span>
+    </a>
+    <button id="themeBtn" class="theme-toggle" aria-label="切换深色/浅色模式" title="切换深色 / 浅色模式">🌙 深色</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <span class="sync" id="syncBox">数据同步：—</span>
+    <span class="hint">每次打开自动拉取最新数据（带时间戳防缓存）· 每日 09:00 自动更新 · 本机双击打开即用</span>
+    <label class="remind-toggle" title="开启后，数据源超过 7 天未更新时弹出每周更新提醒"><input type="checkbox" id="remindWeekly"> 每周提醒更新</label>
+  </div>
+  <div class="remind-banner" id="remindBanner">
+    <span id="remindText"></span>
+    <span class="rbtns">
+      <button class="rbtn ghost" id="remindDismiss">本周已读</button>
+      <button class="rbtn" id="remindRefresh">去刷新数据</button>
+    </span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="strat" id="stratBox">
+    💡 <b>策略（已锁定）</b>：① 先做 <b>🔴优先建</b> = 本周截止临近 + 人数≥50 + 未建 + 辅警加成；② <b>辅警 &gt; 消防</b>（招聘高频、候选基数大、题库跨城复用强）；③ <b>面试(结构化)跨省通用度远高于笔试</b>，最适母库复用；④ 只建「真实真题」站，严禁洗白拼凑；⑤ 漏斗：本周可报 → 🔴优先 → 拿真题 → 建站 → push上线；⑥ <b>广东省考/深圳事业编/海南省考</b> 等公开考试：题库公开、自用备考也值钱，按「自用优先·公开整理版」处理，不伪装独家/押题（巨头垄断、纯卖文件不划算）。
+  </div>
+
+  <!-- ============ 本周趋势 ============ -->
+  <section>
+    <h2>📊 本周招录趋势 <span class="tag">情报</span></h2>
+    <div class="sec2">
+      <div>
+        <h3 style="font-size:14px;margin:0 0 8px;">本周可报 · 各省密度（按省聚合，数值=可报公告数）</h3>
+        <div class="bars" id="provBars"></div>
+      </div>
+      <div>
+        <h3 style="font-size:14px;margin:0 0 8px;">类别分布（本周可报）</h3>
+        <div class="catstat" id="catStat"></div>
+        <p class="hint" style="margin-top:10px;">密度最高的省 = 题库扩张首选方向；辅警占比高时优先开辅警站。</p>
+      </div>
+    </div>
+    <div style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
+      <h3 style="font-size:14px;margin:0 0 10px;">📈 按周对比（近 4 周 · 看招录是否放量）</h3>
+      <div id="weekCmp"></div>
+      <div style="margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;">
+        <h3 style="font-size:14px;margin:0 0 10px;">📍 按省拆解（近 2 周 · 看哪个省在放量）</h3>
+        <div id="provMom"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 热点看板 ============ -->
+  <section>
+    <h2>🔥 招录热点看板 <span class="tag" id="hotCount">—</span></h2>
+    <div class="tabs" id="catTabs"></div>
+    <div class="bar" style="margin:6px 0 10px;">
+      <span class="hint">排序</span>
+      <span class="tab sortbtn on" data-sort="priority">按优先级</span>
+      <span class="tab sortbtn" data-sort="count">按人数</span>
+      <span class="hint" style="margin-left:14px;">筛选</span>
+      <span class="tab filtbtn on" data-filt="all">全部</span>
+      <span class="tab filtbtn" data-filt="week">本周可报</span>
+      <span class="tab filtbtn" data-filt="hot">🔴 优先建</span>
+    </div>
+    <p class="hint" style="margin:0 0 10px;">优先级 = 报名截止紧迫度 × 2 + 人数规模 + 未建权重 + 类别加成（辅警跨城复用价值高）。每天随时间自动重算。</p>
+    <div id="hotTable"></div>
+  </section>
+
+  <!-- ============ 题库流水线 ============ -->
+  <section>
+    <h2>🛠️ 题库生产流水线 <span class="tag">搞定题库</span></h2>
+    <div class="grid2">
+      <div>
+        <h3 style="font-size:14px;margin:0 0 8px;">① 现有题库库存</h3>
+        <div id="invList"></div>
+        <p class="hint" style="margin-top:10px;">状态可下拉切换，自动存本机（localStorage），不写源码。</p>
+      </div>
+      <div>
+        <h3 style="font-size:14px;margin:0 0 8px;">② 快速动作</h3>
+        <button class="btn primary" id="genBtn" style="width:100%;margin-bottom:8px;">＋ 选一条热点 → 生成建题库配置/命令</button>
+        <button class="btn" id="csvBtn" style="width:100%;margin-bottom:8px;">⬇️ 下载题库 CSV 模板（笔试）</button>
+        <button class="btn" id="csvIntBtn" style="width:100%;margin-bottom:8px;">⬇️ 下载题库 CSV 模板（面试）</button>
+        <p class="hint">生成器会按所选城市/考试年份，产出 <code>template-config.json</code> 片段 + 完整构建命令，复制即用。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 作战清单 ============ -->
+  <section>
+    <h2>📋 本周建题库作战清单 <span class="tag">行动</span></h2>
+    <div class="bar" style="margin:4px 0 10px;">
+      <button class="btn primary" id="planCsvBtn">⬇️ 导出作战清单 CSV（按优先级排序）</button>
+      <button class="btn" id="planCmdBtn">📋 展开全部 🔴 建站命令</button>
+      <button class="btn" style="background:#7c3aed;color:#fff;" id="planScriptBtn">🚀 生成一键建站脚本</button>
+      <span class="hint">仅含 🔴优先建 / 🟠建议建；每行可单独「生成配置」接入 rcj-exam-builder。</span>
+    </div>
+    <div id="planTable"></div>
+    <div id="scriptBox" style="display:none;margin-top:14px;padding:14px;border:1px dashed #7c3aed;border-radius:10px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+        <b>🚀 一键建站脚本</b>
+        <select id="scriptCity" style="padding:4px 8px;border-radius:6px;border:1px solid #d6c8f5;"></select>
+        <button class="btn" id="copyScriptBtn">📋 复制脚本</button>
+        <button class="btn" id="closeScriptBtn">收起</button>
+      </div>
+      <p class="hint" style="margin:0 0 8px;">选城市→复制脚本→在 <b>Git Bash</b> 粘贴运行。脚本自动串 ingest→build→push；<b>真题 CSV 是硬前提</b>，运行前先放到 <code>~/Desktop/题库/城市_笔试真题.csv</code> 与 <code>城市_面试真题.csv</code>，并把 <code>SLUG</code> 改成城市拼音简写。</p>
+      <textarea id="scriptOut" style="width:100%;height:360px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;padding:10px;border:1px solid #d6c8f5;border-radius:8px;background:#0d1117;color:#e6edf3;white-space:pre;"></textarea>
+    </div>
+  </section>
+
+  <!-- ============ Anki 辅助 ============ -->
+  <section>
+    <h2>🃏 Anki 辅助记忆 <span class="tag">记忆系统</span></h2>
+    <div class="grid2">
+      <div>
+        <p style="margin:0 0 8px;">把任意 <code>data.json</code> 题库一键导出 Anki 卡包（CSV / .apkg），支持标签分组与子牌组。</p>
+        <div class="code" id="ankiCmd"></div>
+      </div>
+      <div>
+        <p style="margin:0 0 8px;">已有 .apkg 卡包批量加「结构化答题框架」头（与网页站同口径），并清洗双引号脏数据：</p>
+        <div class="code" id="ankiFwCmd"></div>
+        <p class="hint" style="margin-top:8px;">移动端(iOS)无法导入 .apkg → 拆包转 RemNote 文本（题干 == 参考答案）再粘贴。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 变现入口 ============ -->
+  <section>
+    <h2>💰 变现 / 私域入口</h2>
+    <div class="grid2">
+      <div id="cashList"></div>
+      <div>
+        <p style="margin:0 0 6px;"><b>引流原则</b>（来自业务复盘）：</p>
+        <ul style="margin:0;padding-left:18px;color:var(--mut);font-size:13px;">
+          <li>刷题站是<b>引流钩子</b>，不是产品本身——每个站必须把流量导到打赏/公众号/闲鱼完整版。</li>
+          <li>质 &gt; 量：3 个扎实诚实题库 &gt; 10 个套壳站；差评杀伤远大于多一个城市曝光。</li>
+          <li>闲鱼店名/公众号放自己主页简介（平台管得松），别在笔记正文暗语导流。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <details>
+    <summary>📖 使用说明 / 数据格式</summary>
+    <div style="font-size:13px;color:var(--mut);line-height:1.7;">
+      <p><b>数据从哪来？</b> 由「每日辅警+消防员招录汇总」自动化每日 09:00 联网检索，合并写入同目录 <code>recruitment-data.js</code>（<code>window.RCJ_RECRUITMENT</code>）。工作台只读这个文件，离线可用。</p>
+      <p><b>条目字段</b>：<code>category</code>(辅警/政府专职消防员/企业消防员/<b>广东省考</b>/<b>深圳事业编</b>/<b>海南省考</b>)、<code>region</code>、<code>unit</code>、<code>count</code>(人数,null=不详)、<code>publishDate</code>、<code>signupStart/End</code>、<code>method</code>、<code>threshold</code>、<code>source</code>、<code>url</code>、<code>bankStatus</code>(未建/进行中/已上线)、<code>note</code>。</p>
+      <p><b>怎么加/改题库状态？</b> 看板与库存里的状态下拉切换后会存到本机浏览器 localStorage，刷新不丢；要永久生效就编辑 <code>recruitment-data.js</code> 里的 <code>bankStatus</code>。</p>
+      <p><b>生成建题库配置后怎么做？</b> 把命令复制到「rcj-exam-builder」技能所在环境执行；真题是硬前提——没拿到该城市真实真题前不要建站。</p>
+      <p><b>上线到 GitHub/Cloudflare（第三步）</b> 生成器里新增「🚀 上线命令」：按所选热点的类别自动挑对应仓库——辅警推 <code>辅警GITHUB</code>(aux-police-exam)，消防两类推 <code>消防员GITHUB</code>(xf-firefighter-exam)；<b>广东省考/深圳事业编/海南省考 按「自用优先·不推仓」</b>，上线命令改为「导出本地 Anki/RemNote 卡组自用」，不推送公开仓库（巨头垄断、纯卖文件不划算，价值在自用备考+公开整理版引流）。辅警/消防仓库的 remote 与 SSH/HTTPS 凭据已于 2026-07-29 实测可推。复制命令在 <b>Git Bash</b> 执行即自动部署上线（Cloudflare 输出目录 <code>/</code>，约 1-2 分钟）。</p>
+    </div>
+  </details>
+</div>
+
+<!-- 生成器弹窗 -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <span class="closex" id="closeX">×</span>
+    <h3>🛠️ 建题库配置 / 命令生成器</h3>
+    <div class="field"><label>来源热点</label><input id="f_src" readonly></div>
+    <div class="grid2">
+      <div class="field"><label>城市 / 考试名（本地中文文件夹用）</label><input id="f_city" placeholder="如：武汉辅警"></div>
+      <div class="field"><label>GitHub 仓库 slug（英文）</label><input id="f_slug" placeholder="如：wuhan-aux-police"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>考试年份</label><input id="f_year" placeholder="如：2026"></div>
+      <div class="field"><label>机考 / 非机考</label>
+        <select id="f_type"><option value="computer">机考（套题模考为核心）</option><option value="paper">非机考（结构化面试为重点）</option></select>
+      </div>
+    </div>
+    <div class="field"><label>真题情况（铁律：必须有真实真题）</label>
+      <select id="f_real"><option value="true">✅ 全部为真实考试真题</option><option value="false">⚠️ 暂未拿到真题（先别建站）</option></select>
+    </div>
+    <div class="field"><label>闲鱼口令 / 联系方式（留空则不加推广）</label><input id="f_xianyu" placeholder="如：RCJ9527"></div>
+    <div class="field"><label>仓库内城市子目录（push 后该路径即上线，如 sz / hz / cd）</label><input id="f_subdir" placeholder="如：sz"></div>
+
+    <div class="block">
+      <div class="bh"><span>template-config.json 片段</span><button class="btn" data-copy="c_conf">复制</button></div>
+      <div class="code" id="c_conf"></div>
+    </div>
+    <div class="block">
+      <div class="bh"><span>构建命令（在 rcj-exam-builder 技能目录执行）</span><button class="btn" data-copy="c_cmd">复制</button></div>
+      <div class="code" id="c_cmd"></div>
+    </div>
+    <div class="block">
+      <div class="bh"><span>🚀 上线命令（push 到对应仓库 → Cloudflare 自动部署）</span><button class="btn" data-copy="c_dep">复制</button></div>
+      <div class="code" id="c_dep"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 实时数据源：动态加载并带时间戳强制回源，避免浏览器/CDN 缓存导致打开看到旧数据
+  (function () {
+    var s = document.createElement('script');
+    s.src = 'recruitment-data.js?v=' + Date.now();
+    s.onerror = function () {
+      var p = document.createElement('div');
+      p.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9999;background:#dc2626;color:#fff;font-size:13px;text-align:center;padding:8px;';
+      p.textContent = '⚠️ 数据源 recruitment-data.js 加载失败，请检查文件或 Ctrl+F5';
+      document.body.appendChild(p);
+    };
+    s.onload = function () { initWorkbench(); };
+    document.head.appendChild(s);
+  })();
+
+let DATA = {updated:"",note:"",items:[]};
+const CATS = ["辅警","政府专职消防员","企业消防员","广东省考","深圳事业编","海南省考"];
+const STORE_KEY = "rcj_wb_overrides_v1";
+const todayStr = ()=>new Date().toISOString().slice(0,10);
+function loadOv(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||"{}");}catch(e){return{};}}
+function saveOv(o){localStorage.setItem(STORE_KEY,JSON.stringify(o));}
+let ov = loadOv();                 // { "url": {bankStatus, note} }
+let activeCat = "全部";
+let sortMode = "priority";         // priority | count
+let filterMode = "all";            // all | week | hot
+let currentItem = null;            // 当前生成器对应的热点条目（决定推哪个仓库）
+
+// 已验证可推的本地仓库（2026-07-29 实测 ls-remote 通过）
+const REPOS = {
+  "辅警":            { path:"/c/Users/小样儿/Desktop/产品交付/辅警GITHUB",        remote:"git@github.com:ZHOUQIANG5827/aux-police-exam.git",        proto:"SSH" },
+  "政府专职消防员":   { path:"/c/Users/小样儿/Desktop/产品交付/消防员GITHUB",      remote:"https://xf.rcj9527.dpdns.org/.git", proto:"HTTPS" },
+  "企业消防员":       { path:"/c/Users/小样儿/Desktop/产品交付/消防员GITHUB",      remote:"https://xf.rcj9527.dpdns.org/.git", proto:"HTTPS" },
+  // 公考类（广东省考/深圳事业编/海南省考）：按「自用优先·不推仓」策略，仅本地导出 Anki/RemNote
+  "广东省考":         { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
+  "深圳事业编":       { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
+  "海南省考":         { path:"/c/Users/小样儿/Desktop/产品交付/公考自用", remote:null, proto:"LOCAL", localOnly:true, label:"公考(自用)" },
+};
+
+// 仓库简称（建站脚本/作战清单展示用）：公考类走「自用优先」标签
+function repoShortName(cat){
+  const r = REPOS[cat];
+  if(r && r.localOnly) return r.label || "公考(自用)";
+  if(cat==="辅警") return "辅警GITHUB(aux-police-exam)";
+  if((cat||"").includes("消防")) return "消防员GITHUB(xf-firefighter-exam)";
+  return "辅警GITHUB(aux-police-exam)";
+}
+
+// ---------- 同步信息 + 新鲜度告警 ----------
+(function(){
+  const box = document.getElementById("syncBox");
+  const label = "数据同步：" + (DATA.updated||"未知") + (DATA.note?(" · "+DATA.note):"");
+  const days = daysUntil(DATA.updated);   // 负数 = 数据日期在过去
+  if(days!==null && days < -2){
+    box.classList.add("warn");
+    box.textContent = label + "  ⚠️ 数据已 " + (-days) + " 天未更新，自动化可能中断！";
+  } else {
+    box.textContent = label;
+  }
+})();
+
+// ---------- 每周提醒更新设置（自用） ----------
+const REMIND_KEY = "rcj_wb_remind_weekly";
+const DISMISS_KEY = "rcj_wb_remind_dismiss_week";
+function isoWeekNum(d){
+  const dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (dt.getDay()+6)%7;            // 周一为一周起点
+  dt.setDate(dt.getDate()-day+3);           // 该周周四
+  const firstThu = new Date(dt.getFullYear(),0,4);
+  const week = 1 + Math.round(((dt-firstThu)/86400000 - 3 + ((firstThu.getDay()+6)%7))/7);
+  return dt.getFullYear()+"-W"+week;
+}
+function evaluateReminder(){
+  const chk = document.getElementById("remindWeekly");
+  const banner = document.getElementById("remindBanner");
+  const txt = document.getElementById("remindText");
+  if(!chk || !banner) return;
+  if(!chk.checked){ banner.classList.remove("show","warn"); return; }
+  const days = daysUntil(DATA.updated);          // 负数 = 数据日期在过去
+  const stale = (days===null) ? null : Math.abs(days);
+  const thisWeek = isoWeekNum(new Date());
+  const dismissed = localStorage.getItem(DISMISS_KEY);
+  if(stale!==null && stale >= 7 && dismissed !== thisWeek){
+    banner.classList.add("show","warn");
+    txt.innerHTML = "⏰ <b>每周更新提醒</b>：数据已 <b>"+stale+" 天</b>未更新（最近更新："+(DATA.updated||"未知")+"）。请确认每日自动化是否在跑，或手动刷新数据源。";
+  } else {
+    banner.classList.remove("show","warn");
+  }
+}
+(function(){
+  const chk = document.getElementById("remindWeekly");
+  if(chk){
+    chk.checked = (localStorage.getItem(REMIND_KEY)==="1");
+    chk.addEventListener("change", function(){
+      localStorage.setItem(REMIND_KEY, this.checked?"1":"0");
+      evaluateReminder();
+    });
+  }
+  const dis = document.getElementById("remindDismiss");
+  const ref = document.getElementById("remindRefresh");
+  if(dis) dis.onclick = function(){
+    localStorage.setItem(DISMISS_KEY, isoWeekNum(new Date()));
+    const b = document.getElementById("remindBanner");
+    if(b) b.classList.remove("show","warn");
+  };
+  if(ref) ref.onclick = function(){ location.reload(true); };
+})();
+
+// ---------- 主题切换（深色 / 浅色，持久化 + 跟随系统） ----------
+const THEME_KEY = "rcj_wb_theme";
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  const b = document.getElementById("themeBtn");
+  if(b) b.textContent = (t==="dark" ? "☀️ 浅色" : "🌙 深色");
+}
+(function(){
+  let saved = localStorage.getItem(THEME_KEY);
+  if(!saved){ saved = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light"; }
+  applyTheme(saved);
+})();
+const themeBtn = document.getElementById("themeBtn");
+if(themeBtn) themeBtn.onclick = ()=>{
+  const next = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+};
+
+// ---------- 状态合并 ----------
+function rowStatus(it){ return (ov[it.url]&&ov[it.url].bankStatus) || it.bankStatus || "未建"; }
+function rowNote(it){ return (ov[it.url]&&ov[it.url].note)!==undefined ? ov[it.url].note : it.note; }
+
+// ---------- 优先级评分（建题库建议） ----------
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d = (new Date(dateStr+"T00:00:00") - new Date(todayStr()+"T00:00:00"))/86400000;
+  return Math.round(d);
+}
+function priorityScore(it){
+  const st = rowStatus(it);
+  // 紧迫度：报名截止越近越高
+  let urg = 1;
+  const de = daysUntil(it.signupEnd);
+  if(de!==null){ urg = de<=0?0 : de<=3?3 : de<=7?2 : de<=14?1 : 0.5; }
+  else { const dp = daysUntil(it.publishDate); if(dp!==null && dp<=7) urg = 2; }
+  // 规模：人数越多客群越大
+  const c = it.count||0;
+  const size = c>=200?3 : c>=100?2.5 : c>=50?2 : c>0?1 : 1;
+  // 未建权重：还没建的最该优先
+  const need = st==="未建"?2 : st==="进行中"?1 : 0;
+  // 类别加成：辅警跨城复用价值最高（业务策略）
+  const boost = it.category==="辅警"?0.5 : it.category==="政府专职消防员"?0.3 : 0;
+  return urg*2 + size + need + boost;
+}
+function priorityTag(it){
+  const s = priorityScore(it);
+  if(s>=9) return {t:"🔴 优先建", c:"#e23b2e"};
+  if(s>=6) return {t:"🟠 建议建", c:"#e8852b"};
+  if(s>=3) return {t:"🟡 观察", c:"#e8a72b"};
+  return {t:"⚪ 暂缓", c:"#9aa6b5"};
+}
+function isThisWeek(it){
+  const de = daysUntil(it.signupEnd);
+  if(de!==null) return de>=0;            // 报名未截止
+  const dp = daysUntil(it.publishDate);
+  return dp!==null && dp<=7;             // 或本周内发布
+}
+
+// ---------- KPI ----------
+function renderKPI(){
+  const items = DATA.items;
+  const aux = items.filter(i=>i.category==="辅警");
+  const gov = items.filter(i=>i.category==="政府专职消防员");
+  const ent = items.filter(i=>i.category==="企业消防员");
+  const gwyGD = items.filter(i=>i.category==="广东省考");
+  const gwySZ = items.filter(i=>i.category==="深圳事业编");
+  const gwyHN = items.filter(i=>i.category==="海南省考");
+  const hot = items.filter(i=> (i.count||0)>=50 && rowStatus(i)!=="已上线");
+  const live = items.filter(i=> rowStatus(i)==="已上线");
+  const week = items.filter(isThisWeek);
+  const prio = items.filter(i=> priorityTag(i).t.startsWith("🔴"));
+  const html = [
+    kpi(items.length,"条招录公告"),
+    kpi(week.length,"本周可报","org"),
+    kpi(prio.length,"🔴 优先建题库","red"),
+    kpi(hot.length,"🔥 热点待建","red"),
+    kpi(live.length,"已上线题库","ok"),
+    kpi(aux.length,"辅警 · 条",""),
+    kpi(gov.length,"政府专职消防员 · 条","org"),
+    kpi(ent.length,"企业消防员 · 条","red"),
+    kpi(gwyGD.length,"广东省考 · 条","org"),
+    kpi(gwySZ.length,"深圳事业编 · 条","org"),
+    kpi(gwyHN.length,"海南省考 · 条","org"),
+  ].join("");
+  document.getElementById("kpis").innerHTML = html;
+}
+function kpi(n,l,cls){return `<div class="kpi ${cls}"><div class="n">${n}</div><div class="l">${l}</div></div>`;}
+
+// ---------- 分类 tabs ----------
+function renderTabs(){
+  const all = ["全部",...CATS];
+  document.getElementById("catTabs").innerHTML = all.map(c=>{
+    const n = c==="全部"?DATA.items.length:DATA.items.filter(i=>i.category===c).length;
+    return `<span class="tab ${c===activeCat?'on':''}" data-c="${c}">${c} (${n})</span>`;
+  }).join("");
+  document.querySelectorAll("#catTabs .tab").forEach(t=>t.onclick=()=>{activeCat=t.dataset.c;renderTabs();renderHot();});
+  document.querySelectorAll(".sortbtn").forEach(b=>b.onclick=()=>{
+    sortMode=b.dataset.sort;
+    document.querySelectorAll(".sortbtn").forEach(x=>x.classList.toggle("on",x===b));
+    renderHot();
+  });
+  document.querySelectorAll(".filtbtn").forEach(b=>b.onclick=()=>{
+    filterMode=b.dataset.filt;
+    document.querySelectorAll(".filtbtn").forEach(x=>x.classList.toggle("on",x===b));
+    renderHot();
+  });
+}
+
+// ---------- 热点表 ----------
+function renderHot(){
+  let rows = DATA.items.slice();
+  if(activeCat!=="全部") rows = rows.filter(i=>i.category===activeCat);
+  if(filterMode==="week") rows = rows.filter(isThisWeek);
+  if(filterMode==="hot")  rows = rows.filter(i=>priorityTag(i).t.startsWith("🔴"));
+  if(sortMode==="count"){
+    rows.sort((a,b)=> (b.count||0)-(a.count||0) || (a.region||"").localeCompare(b.region||""));
+  } else {
+    rows.sort((a,b)=> priorityScore(b)-priorityScore(a) || (b.count||0)-(a.count||0) || (a.region||"").localeCompare(b.region||""));
+  }
+  const total = rows.length;
+  document.getElementById("hotCount").textContent = "共 "+total+" 条";
+  if(!total){document.getElementById("hotTable").innerHTML='<div class="empty">该类暂无数据。每日 09:00 自动同步后将出现在这里。</div>';return;}
+
+  const head = `<tr><th>地区/单位</th><th>人数</th><th>报名截止</th><th>优先级<br><span class="hint">(建题库建议)</span></th><th>门槛</th><th>题库状态</th><th>操作</th></tr>`;
+  const body = rows.map((it,idx)=>{
+    const isHot = (it.count||0)>=50 && rowStatus(it)!=="已上线";
+    const p = priorityTag(it);
+    const auxCross = it.category==="辅警" ? `<span class="badge b-aux">跨城复用</span> ` : "";
+    const govBadge = (it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考") ? `<span class="badge b-gov">公考·自用</span> ` : "";
+    const hotBadge = isHot ? `<span class="badge b-hot">🔥建议建</span> ` : "";
+    const cnt = it.count? `<span class="cnt">${it.count}</span>` : `<span class="cnt unk">不详</span>`;
+    const end = it.signupEnd?it.signupEnd:"—";
+    return `<tr>
+      <td><b>${it.region||""}</b><br><span class="hint">${it.unit||""}</span><br>${hotBadge}${auxCross}
+          <a class="mini" href="${it.url||'#'}" target="_blank">来源↗</a></td>
+      <td>${cnt}</td>
+      <td>${end}</td>
+      <td><span class="badge" style="background:${p.c}1a;color:${p.c};">${p.t}</span><br><span class="hint">分 ${priorityScore(it).toFixed(1)}</span></td>
+      <td style="max-width:200px;">${it.threshold||"—"}<br><span class="hint">${rowNote(it)||""}</span></td>
+      <td><select class="sel" data-url="${it.url}">
+          ${["未建","进行中","已上线"].map(s=>`<option ${rowStatus(it)===s?'selected':''}>${s}</option>`).join("")}
+        </select></td>
+      <td><button class="btn" data-gen='${encodeURIComponent(JSON.stringify(it))}'>生成配置</button></td>
+    </tr>`;
+  }).join("");
+  document.getElementById("hotTable").innerHTML = `<div class="tablewrap"><table>${head}${body}</table></div>`;
+
+  document.querySelectorAll("#hotTable .sel").forEach(s=>s.onchange=()=>{
+    const url=s.dataset.url; ov[url]=Object.assign({},ov[url],{bankStatus:s.value}); saveOv(ov); renderKPI();
+  });
+  document.querySelectorAll("#hotTable [data-gen]").forEach(b=>b.onclick=()=>openGen(JSON.parse(decodeURIComponent(b.dataset.gen))));
+}
+
+// ---------- 现有题库库存（单一数据源：从 DATA.items 派生 + 已知常驻站补充，去重） ----------
+const INV_BASE = [
+  {name:"深圳辅警", url:"szfj.rcj9527.dpdns.org", desc:"笔试+面试真题站（已跑通）", st:"已上线"},
+  {name:"惠州辅警", url:"机考模板", desc:"惠州机考模式·真题优先", st:"已上线"},
+  {name:"广东通用母库", url:"复用基座", desc:"全省标真题，多城复用", st:"已上线"},
+  {name:"上海站", url:"风险", desc:"⚠️ 用粤标打底错省，需下架/标全国通用", st:"未建"},
+];
+function renderInv(){
+  const ST_ORDER = ["未建","进行中","已上线"];
+  const maxStatus = (a,b)=> ST_ORDER[Math.max(ST_ORDER.indexOf(a),ST_ORDER.indexOf(b))]||a;
+  const map = new Map();
+  INV_BASE.forEach(r=>map.set(r.name, {name:r.name,url:r.url,desc:r.desc,st:r.st}));
+  DATA.items.forEach(it=>{
+    if(!it.region) return;
+    const nm = (it.region||"").split("·").pop() + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"公考":"")));
+    const st = rowStatus(it);
+    if(map.has(nm)){ const e=map.get(nm); e.st=maxStatus(e.st,st); e.desc=it.category+(it.unit?(" · "+it.unit):""); }
+    else map.set(nm, {name:nm, url:it.region, desc:it.category+(it.unit?(" · "+it.unit):""), st});
+  });
+  const rows = [...map.values()];
+  document.getElementById("invList").innerHTML = rows.map(r=>{
+    const key="inv_"+r.name;
+    const cur = (ov[key]&&ov[key].st)||r.st;
+    return `<div class="inv-row">
+      <div><div class="inv-name">${r.name}</div><div class="inv-meta">${r.desc} · <span class="pill">${r.url}</span></div></div>
+      <select class="sel" data-inv="${key}">
+        ${["未建","进行中","已上线"].map(s=>`<option ${cur===s?'selected':''}>${s}</option>`).join("")}
+      </select></div>`;
+  }).join("");
+  document.querySelectorAll("#invList [data-inv]").forEach(s=>s.onchange=()=>{
+    const k=s.dataset.inv; ov[k]=Object.assign({},ov[k],{st:s.value}); saveOv(ov);
+  });
+}
+
+// ---------- 生成器 ----------
+const modal=document.getElementById("modal");
+function openGen(it){
+  currentItem = it;
+  document.getElementById("f_src").value = (it.region||"")+" · "+(it.unit||"");
+  const cityGuess = (it.region||"").split("·").pop();
+  document.getElementById("f_city").value = cityGuess + (it.category==="辅警"?"辅警":(it.category.includes("消防")?"消防":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"公考":"")));
+  document.getElementById("f_slug").value = "";
+  document.getElementById("f_year").value = (it.signupEnd||it.publishDate||todayStr()).slice(0,4);
+  document.getElementById("f_type").value = it.category==="辅警"?"computer":"paper";
+  document.getElementById("f_real").value = "true";
+  document.getElementById("f_xianyu").value = "RCJ9527";
+  document.getElementById("f_subdir").value = "";
+  gen();
+  modal.classList.add("show");
+}
+function closeModal(){modal.classList.remove("show");}
+document.getElementById("closeX").onclick=closeModal;
+modal.onclick=(e)=>{if(e.target===modal)closeModal();};
+
+function gen(){
+  const city=document.getElementById("f_city").value||"某城辅警";
+  const slug=document.getElementById("f_slug").value||"city-aux-police";
+  const subdir=document.getElementById("f_subdir").value.trim()||slug||"sz";
+  const year=document.getElementById("f_year").value||"2026";
+  const type=document.getElementById("f_type").value;
+  const real=document.getElementById("f_real").value;
+  const xy=document.getElementById("f_xianyu").value.trim();
+  const isInterview = type==="paper";
+
+  const conf = `{
+  "siteTitle": "${city}真题卡组",
+  "siteEmoji": "🛡️",
+  "subtitle": "${year}年招录 · 笔试+面试",
+  "examType": "${type}",
+  "examYear": "${year}",
+  "realQuestions": ${real},
+  "themeColor": "#1e63d0",
+  "contact": "RCJ9527",
+  ${xy?`"xianyuCode": "${xy}",\n  "enabledModules": ["promo","xianyu","reward","progress","themeToggle"${isInterview?',"record"':''}],`:`"enabledModules": ["progress","themeToggle"${isInterview?',"record"':''}],`}
+  "examPreset": { "label":"标准模考", "single":36, "multi":12, "bool":12, "minutes":60, "typing":${type==="computer"}, "typingMinutes":10 },
+  "datasets": [
+    { "key":"written", "name":"笔试真题", "file":"data-written.js" },
+    { "key":"interview", "name":"面试真题", "file":"data-interview.js" }
+  ]
+}`;
+  const cmd = `# ① 真题 CSV → data.json（ingest，笔试 + 面试分别转）
+python scripts/ingest.py 笔试真题.csv -o data-written.json
+python scripts/ingest.py 面试真题.csv -o data-interview.json
+
+# ② data.json → 离线 data-*.js（minify）
+python scripts/build_data.py data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify
+python scripts/build_data.py data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
+
+# ③ 编译站点配置 config.js + 版本信息 VERSION.json（用技能自带 sample 配置，复制即用）
+python scripts/build_data.py data-written.json -o data-written.js --global-name DATA_WRITTEN \\
+       --config assets/template-config.sample.json --emit-config config.js --emit-version --template-version 1.0.0
+
+# ④ 导出 Anki 卡包（可选）
+python scripts/anki_export.py data-interview.json --apkg --subdeck-by year,type
+
+# ⑤ 组装站点目录（viewer.html 改名 index.html + data-*.js + config.js + VERSION.json）
+mkdir -p "${subdir}"
+cp assets/viewer.html "${subdir}/index.html"
+cp data-written.js data-interview.js config.js VERSION.json "${subdir}/"
+
+# ⑥ 校验（上线前必跑）
+node --check data-written.js && node --check data-interview.js`;
+
+  document.getElementById("c_conf").textContent=conf;
+  document.getElementById("c_cmd").textContent=cmd;
+
+  // ---------- 上线命令（按类别挑仓库） ----------
+  const cat = currentItem ? currentItem.category : "辅警";
+  const repo = REPOS[cat] || REPOS["辅警"];
+  const depCmd = repo.localOnly
+    ? `# 该品类（${cat}）按「自用优先·不推仓」策略：\n# 生成后导出为本地 Anki/RemNote 卡组自用备考，不推送公开仓库。\n# 导出目录建议：${repo.path}\n# 真题是硬前提——没拿到真实真题前不要建站。`
+    : `# 在 Git Bash 执行（仓库已验证可推：${repo.proto} · ${repo.remote}）
+cd "${repo.path}"
+# 第⑤步已在本机组装好 ${subdir}/（index.html + data-*.js + config.js + VERSION.json）
+git add "${subdir}/"
+git commit -m "feat: 新增 ${city} 刷题站"
+git push origin main
+# → Cloudflare Pages 自动构建（输出目录 /，构建设置 None），约 1-2 分钟上线
+# 上线后访问：原域名/${subdir}/`;
+  document.getElementById("c_dep").textContent=depCmd;
+}
+["f_city","f_slug","f_subdir","f_year","f_type","f_real","f_xianyu"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",gen);
+  document.getElementById(id).addEventListener("change",gen);
+});
+document.getElementById("genBtn").onclick=()=>{
+  // 默认取第一条「热点待建」或第一条辅警
+  const cand = DATA.items.find(i=>(i.count||0)>=50 && rowStatus(i)!=="已上线") || DATA.items.find(i=>i.category==="辅警") || DATA.items[0];
+  if(cand) openGen(cand); else alert("暂无可选热点，请先等每日同步或手动编辑 recruitment-data.js");
+};
+
+// ---------- 复制按钮 ----------
+document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{
+  const t=document.getElementById(b.dataset.copy).textContent;
+  copy(t); b.textContent="已复制"; setTimeout(()=>b.textContent="复制",1200);
+});
+function copy(t){navigator.clipboard?navigator.clipboard.writeText(t):(function(){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();})();}
+
+// ---------- CSV 模板下载 ----------
+function dlCSV(name,header,row){const blob=new Blob([header+"\n"+row],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href);}
+document.getElementById("csvBtn").onclick=()=>dlCSV("题库模板_笔试.csv",
+  "批次,题型,题干,选项A,选项B,选项C,选项D,答案,解析,标签,年份",
+  '第十批·单选题,单选,下列属于治安管理处罚种类的是？,警告,拘役,管制,罚金,A,治安管理处罚法规定的处罚种类包括警告、罚款、行政拘留等;,法律基础,2026');
+document.getElementById("csvIntBtn").onclick=()=>dlCSV("题库模板_面试.csv",
+  "年份,题型,题目,参考答案,答题框架·思路,答题框架·要点,标签",
+  '2026,综合分析,请谈谈你对“枫桥经验”的理解。,“枫桥经验”核心是依靠群众、就地化解矛盾……,审题→破题→分层论证→结合实际,1.亮明内涵 2.谈意义 3.谈落实,综合分析');
+
+// ---------- 静态代码块 ----------
+document.getElementById("ankiCmd").textContent =
+`# 任意 data.json → Anki（CSV / .apkg）
+python scripts/anki_export.py data.json
+python scripts/anki_export.py data.json --group-by year,type
+python scripts/anki_export.py data.json --apkg --subdeck-by year,type`;
+document.getElementById("ankiFwCmd").textContent =
+`# 已有 .apkg 批量加结构化框架 + 清洗脏数据
+python scripts/add_framework_to_anki.py 输入.apkg -o 输出_structured.apkg --overwrite`;
+
+// ---------- 变现入口 ----------
+const CASH=[
+  {n:"闲鱼店 RCJ9527", d:"引流+低价完整版", u:"闲鱼搜索 RCJ9527"},
+  {n:"微信公众号", d:"私域复购主阵地", u:"用户自己主页简介置顶"},
+  {n:"打赏码 reward.png", d:"站点内「打赏作者」按钮", u:"local 图片，已接入"},
+  {n:"小红书", d:"AI/效率干货引流（诚实不夸大）", u:"笔记正文站内闭环"},
+];
+document.getElementById("cashList").innerHTML = CASH.map(c=>`<div class="inv-row"><div><div class="inv-name">${c.n}</div><div class="inv-meta">${c.d}</div></div><span class="pill">${c.u}</span></div>`).join("");
+
+// ---------- 本周趋势 ----------
+function provinceOf(region){
+  if(!region) return "未知";
+  return region.split("·")[0].trim() || "未知";
+}
+function renderTrend(){
+  const weekItems = DATA.items.filter(isThisWeek);
+  const byProv = {};
+  weekItems.forEach(it=>{
+    const p = provinceOf(it.region);
+    byProv[p] = (byProv[p]||0)+1;
+  });
+  const provArr = Object.entries(byProv).sort((a,b)=>b[1]-a[1]);
+  const maxP = provArr.length?provArr[0][1]:1;
+  document.getElementById("provBars").innerHTML = provArr.length
+    ? provArr.map(([p,n])=>`
+      <div class="bar-row">
+        <div class="bar-label" title="${p}">${p}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(8,Math.round(n/maxP*100))}%;"></div></div>
+        <div class="bar-val">${n}</div>
+      </div>`).join("")
+    : '<div class="empty">本周暂无可报公告（等每日同步）。</div>';
+  const catN = { "辅警":0,"政府专职消防员":0,"企业消防员":0,"广东省考":0,"深圳事业编":0,"海南省考":0 };
+  weekItems.forEach(it=>{ if(catN[it.category]!==undefined) catN[it.category]++; });
+  document.getElementById("catStat").innerHTML = [
+    ["辅警", catN["辅警"], "var(--blue)"],
+    ["政府专职消防员", catN["政府专职消防员"], "var(--org)"],
+    ["企业消防员", catN["企业消防员"], "var(--red)"],
+    ["广东省考", catN["广东省考"], "#4338ca"],
+    ["深圳事业编", catN["深圳事业编"], "#4338ca"],
+    ["海南省考", catN["海南省考"], "#4338ca"],
+  ].map(([k,v,c])=>`<div class="ci"><span>${k}</span><b style="color:${c}">${v} 条</b></div>`).join("");
+}
+
+// ---------- 按周对比 ----------
+function renderWeekCompare(){
+  const hist = DATA.history || [];
+  const box = document.getElementById("weekCmp");
+  if(!hist.length){ box.innerHTML='<div class="empty">暂无历史快照（等每日同步积累几周后出现）。</div>'; return; }
+  const mondayOf = d=>{ const [y,m,da]=d.split("-").map(Number); const dt=new Date(Date.UTC(y,m-1,da)); const day=(dt.getUTCDay()+6)%7; dt.setUTCDate(da-day); return dt.toISOString().slice(0,10); };
+  const wkMap = {};
+  hist.forEach(h=>{
+    const wk = mondayOf(h.date);
+    if(!wkMap[wk]) wkMap[wk]={wk,total:0,cat:null};
+    if(h.total > wkMap[wk].total){ wkMap[wk].total=h.total; wkMap[wk].cat=h.byCategory||{}; }
+  });
+  let weeks = Object.values(wkMap).sort((a,b)=>a.wk.localeCompare(b.wk)).slice(-4);
+  const labels = ["3周前","2周前","上周","本周"];
+  const cards = weeks.map((w,i)=>{
+    const prev = i>0 ? weeks[i-1].total : null;
+    const delta = prev!==null ? w.total-prev : null;
+    let dcls="wflat", dtxt="— 持平";
+    if(delta!==null){ if(delta>0){dcls="wup";dtxt="▲ +"+delta+" 放量";} else if(delta<0){dcls="wdown";dtxt="▼ "+delta+" 缩量";} }
+    const lbl = i===weeks.length-1 ? "本周" : (labels[i]||("第"+(i+1)+"周"));
+    return `<div class="wcard"><div class="wlabel">${lbl}</div><div class="wnum">${w.total}</div><div class="wdelta ${dcls}">${dtxt}</div></div>`;
+  }).join("");
+  const maxT = Math.max(...weeks.map(w=>w.total),1);
+  const trend = weeks.map(w=>{
+    const pct = Math.max(6, Math.round(w.total/maxT*100));
+    return `<div class="wt-row"><div class="wt-lab">${w.wk.slice(5)}</div><div class="wt-track"><div class="wt-fill" style="width:${pct}%"></div></div><div class="wt-val">${w.total}</div></div>`;
+  }).join("");
+  const last = weeks[weeks.length-1], prev = weeks.length>1 ? weeks[weeks.length-2] : null;
+  let verdict="", vcls="wflat";
+  if(prev){ const d=last.total-prev.total;
+    if(d>0){verdict="近 4 周整体放量 ↑，招录窗口在扩大，建议加快建站节奏";vcls="wup";}
+    else if(d<0){verdict="近 4 周整体缩量 ↓，招录放缓，优先消化现有 🔴 清单";vcls="wdown";}
+    else {verdict="近 4 周基本持平，维持现有节奏";}
+  }
+  box.innerHTML = `<div class="weekcards">${cards}</div><div class="wtrend">${trend}</div>`+
+    `<p class="hint" style="margin-top:10px;"><span class="wdelta ${vcls}">${verdict}</span></p>`;
+}
+
+// ---------- 按省拆解（近 2 周动量） ----------
+function renderProvinceMomentum(){
+  const hist = DATA.history || [];
+  const box = document.getElementById("provMom");
+  if(!hist.length){ box.innerHTML='<div class="empty">暂无历史快照。</div>'; return; }
+  const mondayOf = d=>{ const [y,m,da]=d.split("-").map(Number); const dt=new Date(Date.UTC(y,m-1,da)); const day=(dt.getUTCDay()+6)%7; dt.setUTCDate(da-day); return dt.toISOString().slice(0,10); };
+  const wkMap = {};
+  hist.forEach(h=>{
+    const wk = mondayOf(h.date);
+    if(!wkMap[wk]) wkMap[wk]={wk,total:0,prov:null};
+    if(h.total > wkMap[wk].total){ wkMap[wk].total=h.total; wkMap[wk].prov=h.byProvince||{}; }
+  });
+  const weeks = Object.values(wkMap).sort((a,b)=>a.wk.localeCompare(b.wk));
+  if(weeks.length<2){ box.innerHTML='<div class="empty">需至少 2 周快照才能对比（等每日同步积累）。</div>'; return; }
+  const cur = weeks[weeks.length-1], prev = weeks[weeks.length-2];
+  const allProv = new Set([...Object.keys(cur.prov||{}), ...Object.keys(prev.prov||{})]);
+  const rows = [...allProv].map(p=>({ p, c:(cur.prov[p]||0), d:(cur.prov[p]||0)-(prev.prov[p]||0) }))
+    .filter(r=> r.c>0 || r.d!==0)
+    .sort((a,b)=> b.c-a.c);
+  const maxC = Math.max(...rows.map(r=>r.c),1);
+  const body = rows.length ? rows.map(r=>{
+    let dcls="wflat", dtxt="— 持平";
+    if(r.d>0){dcls="wup";dtxt="▲+"+r.d;}
+    else if(r.d<0){dcls="wdown";dtxt="▼"+r.d;}
+    else if(r.c===0){dcls="wdown";dtxt="★ 退出";}
+    return `<div class="bar-row">
+      <div class="bar-label" title="${r.p}">${r.p}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(8,Math.round(r.c/maxC*100))}%;"></div></div>
+      <div class="bar-val">${r.c}</div>
+      <span class="wdelta ${dcls}" style="width:62px;text-align:center;flex:none;">${dtxt}</span>
+    </div>`;
+  }).join("") : '<div class="empty">近 2 周无省份数据。</div>';
+  const ramp = rows.filter(r=>r.d>0).sort((a,b)=>b.d-a.d).map(r=>r.p);
+  const drop = rows.filter(r=>r.d<0).map(r=>r.p);
+  let insight="";
+  if(ramp.length) insight += `🚀 ${ramp.join("、")} 本周放量最猛 → 题库扩张优先这几省。`;
+  if(drop.length) insight += ` 🔻 ${drop.join("、")} 本周降温。`;
+  if(!ramp.length && !drop.length) insight="近 2 周各省招录节奏基本持平。";
+  box.innerHTML = body + `<p class="hint" style="margin-top:10px;">${insight}</p>`;
+}
+
+// ---------- 作战清单 ----------
+function renderPlan(){
+  const plan = DATA.items
+    .map(it=>({it, s:priorityScore(it), t:priorityTag(it)}))
+    .filter(x=> x.t.t.startsWith("🔴") || x.t.t.startsWith("🟠"))
+    .sort((a,b)=> b.s-a.s);
+  if(!plan.length){ document.getElementById("planTable").innerHTML='<div class="empty">当前无 🔴优先建 / 🟠建议建 条目。待每日同步后出现。</div>'; return; }
+  const head=`<tr><th>#</th><th>地区/单位</th><th>人数</th><th>截止</th><th>优先级</th><th>类别</th><th>上线仓库</th><th>操作</th></tr>`;
+  const body=plan.map((x,i)=>{
+    const it=x.it;
+    const repoShort = repoShortName(it.category);
+    const cityGuess=(it.region||"").split("·").pop();
+    const cnt=it.count?`<span class="cnt">${it.count}</span>`:`<span class="cnt unk">不详</span>`;
+    return `<tr>
+      <td>${i+1}</td>
+      <td><b>${it.region||""}</b><br><span class="hint">${it.unit||""}</span></td>
+      <td>${cnt}</td>
+      <td>${it.signupEnd||"—"}</td>
+      <td><span class="badge" style="background:${x.t.c}1a;color:${x.t.c};">${x.t.t}</span><br><span class="hint">分 ${x.s.toFixed(1)}</span></td>
+      <td>${it.category}</td>
+      <td><span class="pill">${repoShort}</span></td>
+      <td><button class="btn" data-gen='${encodeURIComponent(JSON.stringify(it))}'>生成配置</button></td>
+    </tr>`;
+  }).join("");
+  document.getElementById("planTable").innerHTML=`<div class="tablewrap"><table>${head}${body}</table></div>`;
+  document.querySelectorAll("#planTable [data-gen]").forEach(b=>b.onclick=()=>openGen(JSON.parse(decodeURIComponent(b.dataset.gen))));
+}
+function slugGuess(it){
+  const city=(it.region||"").split("·").pop();
+  const c = it.category==="辅警"?"aux":(it.category.includes("消防")?"xf":((it.category==="广东省考"||it.category==="深圳事业编"||it.category==="海南省考")?"gwy":""));
+  return (city+c).replace(/[^\x00-\x7F]/g,"");
+}
+document.getElementById("planCsvBtn").onclick=()=>{
+  const plan = DATA.items.map(it=>({it,s:priorityScore(it),t:priorityTag(it)}))
+    .filter(x=>x.t.t.startsWith("🔴")||x.t.t.startsWith("🟠")).sort((a,b)=>b.s-a.s);
+  if(!plan.length){alert("当前无 🔴/🟠 条目可导出。");return;}
+  const header="排名,优先级,地区,招聘单位,人数,报名截止,类别,上线仓库,建议本地城市名,建议slug(待填英文),备注";
+  const rows=plan.map((x,i)=>{
+    const it=x.it;
+    const repoShort=repoShortName(it.category);
+    const city=(it.region||"").split("·").pop();
+    const note = rowStatus(it)==="已上线"?"已上线":(rowStatus(it)==="进行中"?"进行中":"待建·需真实真题");
+    return [i+1, x.t.t, it.region||"", it.unit||"", it.count||"不详", it.signupEnd||"", it.category, repoShort, city, slugGuess(it), note].join(",");
+  });
+  const blob=new Blob([header+"\n"+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="RCJ建题库作战清单_"+todayStr()+".csv";a.click();URL.revokeObjectURL(a.href);
+};
+document.getElementById("planCmdBtn").onclick=()=>{
+  const list = DATA.items.map(it=>({it,s:priorityScore(it),t:priorityTag(it)}))
+    .filter(x=>x.t.t.startsWith("🔴")).sort((a,b)=>b.s-a.s);
+  if(!list.length){alert("当前无 🔴优先建 条目。");return;}
+  let out="";
+  list.forEach((x,i)=>{
+    const it=x.it; const repo=(REPOS[it.category]||REPOS["辅警"]);
+    const city=(it.region||"").split("·").pop();
+    const subdir=slugGuess(it)||("city"+i);
+    out+=`\n# 【${i+1}】${it.region||""} · ${it.category} · 人数${it.count||"不详"} · 截止${it.signupEnd||"未知"} · 优先级分 ${x.s.toFixed(1)}\n`;
+    out+=`cd "${repo.path}"\n`;
+    out+=`mkdir -p "${subdir}"\n`;
+    out+=`# 站点目录 ${subdir}/ 已用「生成配置」或「一键建站脚本」组装好（含 index.html + data-*.js + config.js + VERSION.json）\n`;
+    out+=`git -C "${repo.path}" add "${subdir}/" && git -C "${repo.path}" commit -m "feat: 新增 ${city} 刷题站" && git -C "${repo.path}" push origin main\n`;
+    out+=`# 上线后访问：原域名/${subdir}/\n`;
+  });
+  document.getElementById("f_src").value="全部 🔴 优先建站命令（按优先级汇总）";
+  document.getElementById("c_conf").textContent="（见下方「构建/上线命令」，已按优先级汇总；subdir 为建议值，需替换为英文 slug）";
+  document.getElementById("c_cmd").textContent=out;
+  document.getElementById("c_dep").textContent=out;
+  modal.classList.add("show");
+};
+
+// ---------- 一键建站脚本生成器 ----------
+function genBuildScript(it){
+  const isAux = it.category==="辅警";
+  const r = REPOS[it.category];
+  const localOnly = r && r.localOnly;
+  const city=(it.region||"").split("·").pop();
+  const year=new Date().getFullYear();
+  const repoName = localOnly ? "公考自用" : (isAux ? "辅警GITHUB" : "消防员GITHUB");
+  const domain = isAux ? "fj.rcj9527.dpdns.org" : "<消防员仓库域名，请填 xf-xxx.dpdns.org 或你的域名>";
+  const slugHint = localOnly ? "gwy" : (isAux ? "wz-aux" : "wz-xf");
+  return `#!/usr/bin/env bash
+# ============================================================
+#  RCJ 一键建站脚本 · ${it.region||""} · ${it.category}
+#  优先级分 ${priorityScore(it).toFixed(1)} | 招录 ${it.count||"不详"} 人 | 截止 ${it.signupEnd||"未知"}
+# ============================================================
+set -euo pipefail
+
+# —— 一、填这几个变量（其余自动）——
+PY="$HOME/.workbuddy/binaries/python/versions/3.13.12/python3"
+SKILL="$HOME/.workbuddy/skills/rcj-exam-builder"
+REPO="$HOME/Desktop/产品交付/${repoName}"
+SLUG="${slugHint}"                         # ← 城市拼音简写，如 wz / cd / hz（中文也行但建议拼音）
+CITY="${city}"                             # 城市名（commit 文案用）
+YEAR="${year}"
+WRITTEN_CSV="$HOME/Desktop/题库/${city}_笔试真题.csv"       # ← 笔试真题（硬前提！无真题不建站）
+INTERVIEW_CSV="$HOME/Desktop/题库/${city}_面试真题.csv"     # ← 面试真题（硬前提！）
+CONFIG="$SKILL/assets/template-config.sample.json"         # 站点配置（建议复制改 siteTitle 等再指过来）
+
+# —— 二、前置校验（真题是铁律：没有就别建）——
+[ -f "$WRITTEN_CSV" ]   || { echo "❌ 缺笔试真题: $WRITTEN_CSV";   exit 1; }
+[ -f "$INTERVIEW_CSV" ] || { echo "❌ 缺面试真题: $INTERVIEW_CSV"; exit 1; }
+[ -n "$SLUG" ]          || { echo "❌ 请填写 SLUG（城市拼音简写）"; exit 1; }
+
+# —— 三、ingest 真题 → data-*.json ——
+WORK="$HOME/Desktop/rcj-build/$SLUG"; mkdir -p "$WORK" && cd "$WORK"
+"$PY" "$SKILL/scripts/ingest.py"       "$WRITTEN_CSV"   -o data-written.json
+"$PY" "$SKILL/scripts/ingest.py"       "$INTERVIEW_CSV" -o data-interview.json
+
+# —— 四、build_data → data-*.js + config.js + VERSION.json ——
+"$PY" "$SKILL/scripts/build_data.py" data-written.json   -o data-written.js   --global-name DATA_WRITTEN   --minify --config "$CONFIG" --emit-config config.js --emit-version --template-version 1.0.0
+"$PY" "$SKILL/scripts/build_data.py" data-interview.json -o data-interview.js --global-name DATA_INTERVIEW --minify
+
+# —— 五、组装站点目录（viewer.html + data-*.js + config.js + VERSION.json）——
+mkdir -p "$REPO/$SLUG"
+cp "$SKILL/assets/viewer.html" "$REPO/$SLUG/index.html"
+cp data-written.js data-interview.js config.js VERSION.json "$REPO/$SLUG/"
+
+# —— 六、（可选）导出 Anki 卡组，丢进站点目录 ——
+# "$PY" "$SKILL/scripts/anki_export.py" data-interview.json -o "$REPO/$SLUG/anki_cards.csv"
+
+${localOnly ? `# —— 七、自用导出（不推送公开仓库）——
+# 按「自用优先」策略：把 data-*.json 导出为本地 Anki/RemNote 卡组自用备考
+"$PY" "$SKILL/scripts/anki_export.py" data-written.json   -o "$HOME/Desktop/题库/${city}_笔试_Anki.csv"
+"$PY" "$SKILL/scripts/anki_export.py" data-interview.json -o "$HOME/Desktop/题库/${city}_面试_Anki.csv"
+echo "✅ 已导出本地卡组：$HOME/Desktop/题库/${city}_*_Anki.csv（导入 Anki/RemNote 自用）"`
+: `# —— 七、push 上线（Cloudflare 自动部署，约 1-2 分钟）——
+cd "$REPO"
+git add "$SLUG/"
+git commit -m "feat: 新增 $CITY 刷题站"
+git push origin main
+echo "✅ 上线: https://${domain}/$SLUG/"`};`
+}
+function fillScriptCity(){
+  const list = DATA.items.map(it=>({it,s:priorityScore(it),t:priorityTag(it)}))
+    .filter(x=>x.t.t.startsWith("🔴")||x.t.t.startsWith("🟠")).sort((a,b)=>b.s-a.s);
+  const sel=document.getElementById("scriptCity");
+  if(!list.length){ sel.innerHTML='<option>当前无 🔴/🟠 条目</option>'; document.getElementById("scriptOut").value="（待每日同步后出现 🔴/🟠 条目）"; return; }
+  sel.innerHTML = list.map((x,i)=>`<option value='${encodeURIComponent(JSON.stringify(x.it))}'>${i+1}. ${x.t.t} ${x.it.region||""} · ${x.it.category} (分${x.s.toFixed(1)})</option>`).join("");
+  document.getElementById("scriptOut").value = genBuildScript(list[0].it);
+}
+document.getElementById("planScriptBtn").onclick=()=>{
+  fillScriptCity();
+  document.getElementById("scriptBox").style.display="block";
+  document.getElementById("scriptBox").scrollIntoView({behavior:"smooth"});
+};
+document.getElementById("scriptCity").onchange=(e)=>{
+  if(e.target.value) document.getElementById("scriptOut").value = genBuildScript(JSON.parse(decodeURIComponent(e.target.value)));
+};
+document.getElementById("copyScriptBtn").onclick=()=>{
+  const t=document.getElementById("scriptOut"); t.select();
+  navigator.clipboard.writeText(t.value).then(()=>{ const b=document.getElementById("copyScriptBtn"); b.textContent="✅ 已复制"; setTimeout(()=>b.textContent="📋 复制脚本",1500); });
+};
+document.getElementById("closeScriptBtn").onclick=()=>{ document.getElementById("scriptBox").style.display="none"; };
+
+// ---------- init ----------
+function initWorkbench(){ DATA = (window.RCJ_RECRUITMENT && window.RCJ_RECRUITMENT.items) ? window.RCJ_RECRUITMENT : {updated:"",note:"",items:[]}; renderKPI(); renderTabs(); renderHot(); renderInv(); renderTrend(); renderWeekCompare(); renderProvinceMomentum(); renderPlan(); evaluateReminder(); }
+</script>
+
+<div class="rcj-brandbar">
+  <p class="rcj-links">
+    <a class="xf" href="https://xf.rcj9527.dpdns.org/" target="_blank" rel="noopener">消防真题</a>
+    <a class="gwy" href="https://gwy.gkzhenti.cn/" target="_blank" rel="noopener">公考真题库<span style="display:inline-block;font-size:10px;font-weight:600;line-height:1;padding:2px 6px;margin-left:6px;border:1px solid rgba(255,255,255,.78);border-radius:999px;opacity:.92;white-space:nowrap;vertical-align:middle;">外站↗</span></a>
+  </p>
+  <p class="rcj-slogan">© RCJ9527 · 让公开考试资料更容易获取、学习、记住</p>
+</div>
+
+<!-- Cloudflare Pages Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "e7017334b9c245a4b5f301ddbc29c37e"}'></script><!-- Cloudflare Pages Analytics --></body>
+</html>
