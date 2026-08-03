@@ -110,6 +110,15 @@ NODE_PATH=<node workspace>/node_modules node build/test_full.js
 - **面试模块**（深圳）：结构化真题按板块刷 + 录音演练 + 语音转文字预览。
 - **判断题**：统一显示为 **A. 正确 / B. 错误**，答案区明确「正确 / 错误」。
 
+## 相关仓库 / 站点矩阵
+
+- `rcj-exam-bank`（综合公职真题库主站，域 `exam.955827.xyz` / `exam.rcj9527.dpdns.org`）
+- `xf-firefighter-exam`（政府 / 企业消防员题库，域 `xf.955827.xyz`）
+- `rcj-hub`（RCJ 品牌枢纽页 / 个人主页，域 `955827.xyz`，含 HTML→分享链接等 Vibe Coding 工具）
+- `mianshi-dazi`（面试搭子 MVP：粘贴会议链接一键组队）
+
+辅警 / 消防 / 公考三站通过各站 footer 胶囊互链，构成 RCJ 招考生态。
+
 ## 部署
 
 Cloudflare Pages 连接本仓库，`git push` 到 `main` 自动部署（`assets.directory: "."`，整仓即站点）。
