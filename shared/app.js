@@ -1647,8 +1647,7 @@ window.addEventListener("DOMContentLoaded", function () {
     if (podBtn && CONFIG.podEnabled) {
       podBtn.hidden = false;
       podBtn.addEventListener("click", function () {
-        var seg = (location.pathname.split("/")[1] || "sz").replace(/[^a-z]/gi, "");
-        window.open("/shared/pod?city=" + (seg || "sz"), "_blank");
+        window.open("https://ms.955827.xyz/?role=辅警&from=fj", "_blank");
       });
     }
   } catch (e) {}
