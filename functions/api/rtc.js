@@ -1,12 +1,12 @@
-/* 面试对练舱 · KV 信令通道（替代 PeerJS 云信令）
- * 原生 WebRTC + Cloudflare KV 做 SDP/ICE 中转：国内可达、免费、不依赖任何云信令服务器。
+/* 面试对练舱 · D1 信令通道（替代 PeerJS 云信令 / KV 中转）
+ * 原生 WebRTC + Cloudflare D1 做 SDP/ICE 中转：国内可达、免费、不依赖任何云信令服务器。
  *
  * POST /api/rtc  body { room, tag:"A"|"B", type:"offer"|"answer"|"ice", payload }
- *   写入该房间的信号总线（按 seq 自增，供对方按 since 拉取增量）
+ *   写入该房间的信号总线（自增 id 即 seq，供对方按 since 拉取增量）
  * GET  /api/rtc?room=&tag=&since=
- *   返回 from!=tag 且 seq>since 的信号（增量）
+ *   返回 from!=tag 且 id>since 的信号（增量）
  *
- * 依赖 env.VISIT_KV；未绑定返回 503 KV_NOT_BOUND。
+ * 依赖 env.DB（D1）；未绑定返回 503 DB_NOT_BOUND。
  */
 function sanitizeRoom(s) {
   return (s || "").toString().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
@@ -23,11 +23,23 @@ function json(obj, status) {
     },
   });
 }
-function kvKey(room) { return "rtc_" + room; }
+function getDB(env) {
+  if (env && env.DB) return env.DB;
+  if (env) {
+    for (const k of Object.keys(env)) {
+      const v = env[k];
+      if (v && typeof v.prepare === "function" && typeof v.exec === "function") return v;
+    }
+  }
+  return null;
+}
+function safeParse(s, def) {
+  try { return JSON.parse(s); } catch (e) { return def; }
+}
 
 export async function onRequestPost(context) {
-  const kv = context.env && context.env.VISIT_KV;
-  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  const db = getDB(context.env);
+  if (!db) return json({ ok: false, error: "DB_NOT_BOUND" }, 503);
   const url = new URL(context.request.url);
   let body;
   try { body = await context.request.json(); } catch (e) { body = {}; }
@@ -38,38 +50,39 @@ export async function onRequestPost(context) {
   if (!["offer", "answer", "ice"].includes(type)) return json({ ok: false, error: "BAD_TYPE" }, 400);
   if (!body.payload) return json({ ok: false, error: "MISSING_PAYLOAD" }, 400);
 
-  let store;
+  // 惰性清理：删掉该房间 30 分钟前的旧信令（防无限增长）
+  const expire = Date.now() - 1800000;
+  try { await db.prepare("DELETE FROM rtc_signals WHERE room=? AND created_at<?").bind(room, expire).run(); } catch (e) {}
+
   try {
-    const raw = await kv.get(kvKey(room));
-    store = raw ? JSON.parse(raw) : { seq: 0, signals: [], created: Date.now() };
+    const info = await db.prepare(
+      "INSERT INTO rtc_signals (room, from_tag, type, payload, created_at) VALUES (?,?,?,?,?)"
+    ).bind(room, tag, type, JSON.stringify(body.payload), Date.now()).run();
+    const seq = (info && info.meta && info.meta.last_row_id) || 0;
+    return json({ ok: true, seq: seq });
   } catch (e) {
-    store = { seq: 0, signals: [], created: Date.now() };
+    return json({ ok: false, error: "WRITE_FAIL" }, 500);
   }
-  store.seq = (store.seq || 0) + 1;
-  store.signals = store.signals || [];
-  store.signals.push({ seq: store.seq, from: tag, type: type, payload: body.payload, ts: Date.now() });
-  if (store.signals.length > 80) store.signals = store.signals.slice(-80); // 裁剪，防无限增长
-  await kv.put(kvKey(room), JSON.stringify(store), { expirationTtl: 1800 });
-  return json({ ok: true, seq: store.seq });
 }
 
 export async function onRequestGet(context) {
-  const kv = context.env && context.env.VISIT_KV;
-  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  const db = getDB(context.env);
+  if (!db) return json({ ok: false, error: "DB_NOT_BOUND" }, 503);
   const url = new URL(context.request.url);
   const room = sanitizeRoom(url.searchParams.get("room"));
   if (!room) return json({ ok: false, error: "MISSING_ROOM" }, 400);
   const tag = (url.searchParams.get("tag") === "A" || url.searchParams.get("tag") === "B") ? url.searchParams.get("tag") : "A";
   const since = parseInt(url.searchParams.get("since") || "0", 10) || 0;
   try {
-    const raw = await kv.get(kvKey(room));
-    if (!raw) return json({ ok: true, signals: [], seq: 0 });
-    const store = JSON.parse(raw);
-    const all = store.signals || [];
-    const out = all.filter(function (s) { return s.from !== tag && s.seq > since; });
-    return json({ ok: true, signals: out, seq: store.seq || 0 });
+    const { results } = await db.prepare(
+      "SELECT id,from_tag,type,payload FROM rtc_signals WHERE room=? AND id>? AND from_tag!=? ORDER BY id ASC"
+    ).bind(room, since, tag).all();
+    const out = (results || []).map(function (r) {
+      return { seq: r.id, from: r.from_tag, type: r.type, payload: safeParse(r.payload, r.payload) };
+    });
+    return json({ ok: true, signals: out, seq: out.length ? out[out.length - 1].seq : since });
   } catch (e) {
-    return json({ ok: true, signals: [], seq: 0 });
+    return json({ ok: true, signals: [], seq: since });
   }
 }
 

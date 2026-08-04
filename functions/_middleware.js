@@ -2,9 +2,9 @@
 // 部署后由 Cloudflare 自动对每个请求执行。
 //
 // 计数方案（两档自动切换）：
-//   ★ 真·按 IP 硬限制（KV）：在 Cloudflare 后台把 KV 命名空间绑定到本函数(绑定名 VISIT_KV)后，
+//   ★ 真·按 IP 硬限制（D1）：在 Cloudflare 后台把 D1 数据库绑定到本函数(绑定名 DB)后，
 //     自动按访客 IP 记当日浏览页数。优点：清 Cookie / 开无痕 / 换浏览器都绕不过，最硬。
-//   ★ 回退·Cookie 软限制：未绑定 KV 时，用浏览器 Cookie 记当日页数（零配置，push 即生效）。
+//   ★ 回退·Cookie 软限制：未绑定 D1 时，用浏览器 Cookie 记当日页数（零配置，push 即生效）。
 //     缺点：访客清 Cookie 可重置（足够拦住大部分白嫖党）。
 //
 // 作者本人永不被限（优先级从高到低）：
@@ -200,6 +200,17 @@ function injectGa4(res, ga4Id) {
   return new HTMLRewriter().on("head", { element(el) { el.append(s, { html: true }); } }).transform(res);
 }
 
+function getDB(env) {
+  if (env && env.DB) return env.DB;
+  if (env) {
+    for (const k of Object.keys(env)) {
+      const v = env[k];
+      if (v && typeof v.prepare === "function" && typeof v.exec === "function") return v;
+    }
+  }
+  return null;
+}
+
 export async function onRequest(context) {
   const { request, env, next } = context;
   const url = new URL(request.url);
@@ -276,14 +287,15 @@ export async function onRequest(context) {
 
   // —— 4) 每日访问计数 ——
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
-  const kv = env && env.VISIT_KV; // 后台绑定 KV(绑定名 VISIT_KV)后存在 → 按 IP 硬限制
+  const db = getDB(env); // 后台绑定 D1(绑定名 DB)后存在 → 按 IP 硬限制
 
-  if (kv) {
-    // ===== 真·按 IP 硬限制（KV）=====
-    const key = `v:${ip || "unknown"}:${today}`;
+  if (db) {
+    // ===== 真·按 IP 硬限制（D1）=====
+    const ipKey = ip || "unknown";
     let n = 0;
     try {
-      n = parseInt((await kv.get(key)) || "0", 10) || 0;
+      const row = await db.prepare("SELECT n FROM visit_counts WHERE ip=? AND day=?").bind(ipKey, today).all();
+      n = row.results.length ? (Number(row.results[0].n) || 0) : 0;
     } catch (e) {
       n = 0; // 读失败不挡用户（fail-open）
     }
@@ -299,7 +311,9 @@ export async function onRequest(context) {
     }
     const res = await next();
     try {
-      await kv.put(key, String(n + 1), { expirationTtl: 172800 }); // 48h 覆盖次日 UTC 翻转
+      await db.prepare(
+        "INSERT INTO visit_counts (ip,day,n) VALUES (?,?,1) ON CONFLICT(ip,day) DO UPDATE SET n = n + 1"
+      ).bind(ipKey, today).run();
     } catch (e) {
       /* 写失败不挡用户 */
     }

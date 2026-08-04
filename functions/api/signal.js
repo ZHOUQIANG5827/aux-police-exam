@@ -1,4 +1,4 @@
-/* 面试对练舱 · KV 集中撮合大厅（替代 PeerJS 大厅自撮合）
+/* 面试对练舱 · D1 集中撮合大厅（替代 PeerJS 大厅自撮合）
  * POST /api/signal?action=join  -> body { city, peerId } 加入等待池或立即配对
  * GET  /api/signal?action=poll&city=sz&ticket=xxx  -> 查询是否已配对
  * POST /api/signal?action=cancel&city=sz&ticket=xxx  -> 取消等待
@@ -9,10 +9,10 @@
  *   role:   当前用户角色 examiner/candidate
  *   peerId: 对方 PeerJS ID（调试/备用）
  *
- * 依赖 env.VISIT_KV；未绑定返回 503 KV_NOT_BOUND。
+ * 依赖 env.DB（D1）；未绑定返回 503 DB_NOT_BOUND。
  */
 const CITIES = ["sz", "hz", "gd", "ms", "cd", "wh"];
-const WAIT_TTL = 300;          // 等待池条目 TTL（秒）
+const WAIT_TTL = 300;          // 等待池条目 TTL（秒，仅用于惰性清理）
 const MATCH_TTL = 300;         // 配对结果 TTL（秒）
 const MAX_WAIT = 60;           // 单个城市等待池最多保留条目（防异常堆积）
 
@@ -43,66 +43,53 @@ function ticket() {
 function genRoom() {
   return "r" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
 }
-function kvKeyWait(city) { return "pod_signal_wait_" + city; }
-function kvKeyMatch(ticket) { return "pod_signal_match_" + ticket; }
-
-async function readWaitList(kv, city) {
-  try {
-    const raw = await kv.get(kvKeyWait(city));
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
-}
-async function writeWaitList(kv, city, list) {
-  await kv.put(kvKeyWait(city), JSON.stringify(list), { expirationTtl: WAIT_TTL });
-}
-async function writeMatch(kv, ticket, data) {
-  await kv.put(kvKeyMatch(ticket), JSON.stringify(data), { expirationTtl: MATCH_TTL });
+function getDB(env) {
+  if (env && env.DB) return env.DB;
+  if (env) {
+    for (const k of Object.keys(env)) {
+      const v = env[k];
+      if (v && typeof v.prepare === "function" && typeof v.exec === "function") return v;
+    }
+  }
+  return null;
 }
 
-// 原子式尝试配对：读取等待池，若有人则配对并写结果，否则把自己加入。
-// 用简单重试处理 KV 最终一致性的并发冲突。
-async function joinOrWait(kv, city, myPeerId) {
+async function joinOrWait(db, city, myPeerId) {
   const myTicket = ticket();
   const now = Date.now();
+  // 惰性清理过期等待条目
+  try { await db.prepare("DELETE FROM signal_wait WHERE created_at < ?").bind(now - 240000).run(); } catch (e) {}
   for (let attempt = 0; attempt < 5; attempt++) {
-    let list = await readWaitList(kv, city);
-    // 清理过期 / 同 peerId 的旧条目
-    list = list.filter(function (x) {
-      if (!x) return false;
-      if (x.peerId === myPeerId) return false;
-      if ((x.createdAt || 0) < now - 240000) return false; // 4 分钟未匹配视为过期
-      return true;
+    const { results } = await db.prepare(
+      "SELECT ticket,peer_id,created_at FROM signal_wait WHERE city=? ORDER BY created_at ASC"
+    ).bind(city).all();
+    const list = (results || []).filter(function (x) {
+      return x.peer_id !== myPeerId && (x.created_at || 0) > now - 240000;
     });
-
     if (list.length > 0) {
-      // 配对：取最早等待者
-      const partner = list.shift();
+      const partner = list[0];
+      // 抢占对方等待条目，避免并发双匹配
+      const del = await db.prepare("DELETE FROM signal_wait WHERE ticket=? AND peer_id=?")
+        .bind(partner.ticket, partner.peer_id).run();
+      if (!del.meta || !del.meta.changes) { await new Promise(function (r) { setTimeout(r, 50); }); continue; }
       const room = genRoom();
-      // 随机分配角色
       const partnerRole = Math.random() < 0.5 ? "examiner" : "candidate";
       const myRole = partnerRole === "examiner" ? "candidate" : "examiner";
-
-      const partnerMatch = { matched: true, room: room, isHost: true, role: partnerRole, peerId: myPeerId };
-      const myMatch = { matched: true, room: room, isHost: false, role: myRole, peerId: partner.peerId };
-
+      const exp = now + MATCH_TTL * 1000;
       try {
-        await writeMatch(kv, partner.ticket, partnerMatch);
-        await writeMatch(kv, myTicket, myMatch);
-        await writeWaitList(kv, city, list);
-        return { ok: true, matched: true, ticket: myTicket, ...myMatch };
+        await db.prepare("INSERT OR REPLACE INTO signal_match (ticket,room,is_host,role,peer_id,expires) VALUES (?,?,1,?,?,?)")
+          .bind(partner.ticket, room, partnerRole, myPeerId, exp).run();
+        await db.prepare("INSERT OR REPLACE INTO signal_match (ticket,room,is_host,role,peer_id,expires) VALUES (?,?,0,?,?,?)")
+          .bind(myTicket, room, myRole, partner.peer_id, exp).run();
+        return { ok: true, matched: true, ticket: myTicket, room: room, isHost: false, role: myRole, peerId: partner.peer_id };
       } catch (e) {
-        // 写失败重试
         await new Promise(function (r) { setTimeout(r, 50); });
         continue;
       }
     } else {
-      // 加入等待池
-      const entry = { ticket: myTicket, peerId: myPeerId, createdAt: now };
-      list.push(entry);
-      if (list.length > MAX_WAIT) list = list.slice(list.length - MAX_WAIT);
       try {
-        await writeWaitList(kv, city, list);
+        await db.prepare("INSERT OR REPLACE INTO signal_wait (ticket,city,peer_id,created_at) VALUES (?,?,?,?)")
+          .bind(myTicket, city, myPeerId, now).run();
         return { ok: true, matched: false, ticket: myTicket };
       } catch (e) {
         await new Promise(function (r) { setTimeout(r, 50); });
@@ -113,22 +100,22 @@ async function joinOrWait(kv, city, myPeerId) {
   return { ok: false, error: "BUSY" };
 }
 
-async function cancelWait(kv, city, t) {
-  const list = await readWaitList(kv, city);
-  const next = list.filter(function (x) { return x && x.ticket !== t; });
-  if (next.length !== list.length) {
-    await writeWaitList(kv, city, next);
-  }
+async function cancelWait(db, t) {
+  try { await db.prepare("DELETE FROM signal_wait WHERE ticket=?").bind(t).run(); } catch (e) {}
   return { ok: true };
 }
 
-async function pollMatch(kv, t, city) {
-  // 优先读配对结果；KV 最终一致，客户端应持续轮询，不要因等待池无自己就放弃。
+async function pollMatch(db, t) {
   try {
-    const raw = await kv.get(kvKeyMatch(t));
-    if (raw) {
-      const data = JSON.parse(raw);
-      return { ok: true, ...data };
+    const { results } = await db.prepare("SELECT * FROM signal_match WHERE ticket=?").bind(t).all();
+    if (results && results.length) {
+      const m = results[0];
+      // 过期则清理
+      if (m.expires && m.expires < Date.now()) {
+        await db.prepare("DELETE FROM signal_match WHERE ticket=?").bind(t).run();
+        return { ok: true, matched: false };
+      }
+      return { ok: true, matched: true, room: m.room, isHost: !!m.is_host, role: m.role, peerId: m.peer_id };
     }
   } catch (e) {}
   return { ok: true, matched: false };
@@ -137,14 +124,14 @@ async function pollMatch(kv, t, city) {
 export async function onRequestPost(context) {
   const url = new URL(context.request.url);
   const action = url.searchParams.get("action") || "join";
-  const kv = context.env && context.env.VISIT_KV;
-  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  const db = getDB(context.env);
+  if (!db) return json({ ok: false, error: "DB_NOT_BOUND" }, 503);
 
   if (action === "cancel") {
     const city = cityOf(url.searchParams.get("city"));
     const t = sanitize(url.searchParams.get("ticket"), 40);
     if (!t) return json({ ok: false, error: "MISSING_TICKET" }, 400);
-    return json(await cancelWait(kv, city, t));
+    return json(await cancelWait(db, t));
   }
 
   if (action !== "join") return json({ ok: false, error: "BAD_ACTION" }, 400);
@@ -155,20 +142,20 @@ export async function onRequestPost(context) {
   const peerId = sanitize(body.peerId, 60);
   if (!peerId) return json({ ok: false, error: "MISSING_PEER_ID" }, 400);
 
-  return json(await joinOrWait(kv, city, peerId));
+  return json(await joinOrWait(db, city, peerId));
 }
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
   const action = url.searchParams.get("action") || "poll";
-  const kv = context.env && context.env.VISIT_KV;
-  if (!kv) return json({ ok: false, error: "KV_NOT_BOUND" }, 503);
+  const db = getDB(context.env);
+  if (!db) return json({ ok: false, error: "DB_NOT_BOUND" }, 503);
 
   if (action === "poll") {
     const t = sanitize(url.searchParams.get("ticket"), 40);
     const city = cityOf(url.searchParams.get("city"));
     if (!t) return json({ ok: false, error: "MISSING_TICKET" }, 400);
-    return json(await pollMatch(kv, t, city));
+    return json(await pollMatch(db, t));
   }
 
   return json({ ok: false, error: "BAD_ACTION" }, 400);

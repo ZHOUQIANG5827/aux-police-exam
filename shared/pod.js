@@ -1,6 +1,6 @@
 /* 面试对练舱 · 1v1 P2P 极简面试对练
- * 架构：原生 WebRTC + Cloudflare KV 信令（不再依赖 PeerJS 云信令，国内可达/免费）。
- *       房号=房间 key，信令走 /api/rtc（KV 中转 SDP/ICE）；语音用 RTCPeerConnection 双向 addTrack。
+ * 架构：原生 WebRTC + Cloudflare D1 信令（不再依赖 PeerJS 云信令，国内可达/免费）。
+ *       房号=房间 key，信令走 /api/rtc（D1 中转 SDP/ICE）；语音用 RTCPeerConnection 双向 addTrack。
  * 特性：URL 秒连 / 考生·考官分工 / 题库+倒计时镜面同步 / Checklist 零延迟同步
  *       / 断线自动重连 / Checklist 双向 localStorage 缓存
  */
@@ -365,7 +365,7 @@
     if (connectWatchdog) { clearTimeout(connectWatchdog); connectWatchdog = null; }
   }
 
-  // ---------- 原生 WebRTC + KV 信令（不再依赖 PeerJS 云信令） ----------
+  // ---------- 原生 WebRTC + D1 信令（不再依赖 PeerJS 云信令） ----------
   function setupPeer() {
     showWxHint();
     startConnectWatchdog();
@@ -629,7 +629,7 @@
     });
   }
 
-  // ---------- 随机匹配大厅（KV 集中撮合，不再依赖 PeerJS 大厅 P2P） ----------
+  // ---------- 随机匹配大厅（D1 集中撮合，不再依赖 PeerJS 大厅 P2P） ----------
   var lobbyActive = false, lobbyEntered = false, lobbyTicket = "", lobbyPollTimer = null, matchHintTimer = null;
   function showMatchView() {
     el.landing.style.display = "none"; el.room.style.display = "none";
@@ -670,7 +670,7 @@
         .then(function (d) {
           if (!lobbyActive) return;
           if (!d.ok) {
-            if (d.error === "KV_NOT_BOUND") updateMatchHint("匹配服务未启用（KV 未绑定），建议点「创建房间」发链接给熟人。");
+            if (d.error === "DB_NOT_BOUND") updateMatchHint("匹配服务未启用（D1 未绑定），建议点「创建房间」发链接给熟人。");
             else updateMatchHint("匹配服务暂时繁忙，建议点「创建房间」发链接给熟人练习。");
             setConn("匹配失败", "err");
             return;
@@ -693,7 +693,7 @@
         });
     });
   }
-  // 匹配大厅身份：本地随机 id 即可，KV 撮合完全不依赖 PeerJS cloud
+  // 匹配大厅身份：本地随机 id 即可，D1 撮合完全不依赖 PeerJS cloud
   function genLobbyId() {
     return "u" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
   }
@@ -816,7 +816,7 @@
     setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 4000);
   }
 
-  // ---------- 留言墙 / 约练（KV 后端） ----------
+  // ---------- 留言墙 / 约练（D1 后端） ----------
   var wallTimer = null;
   var lastWallItems = [];
   var wallFilter = "all";
@@ -912,8 +912,8 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d.ok) { el.wallErr.style.display = "none"; renderWall(d.items); }
-        else if (d.error === "KV_NOT_BOUND") {
-          showWallErr("留言墙存储未启用：请在 Cloudflare 后台把 KV 命名空间绑定到函数（绑定名 VISIT_KV）。");
+        else if (d.error === "DB_NOT_BOUND") {
+          showWallErr("留言墙存储未启用：请在 Cloudflare 后台把 D1 数据库绑定到函数（绑定名 DB）。");
         } else { showWallErr("留言墙加载失败，稍后点刷新重试。"); }
       })
       .catch(function () { showWallErr("留言墙加载失败（网络），稍后点刷新重试。"); });
@@ -949,8 +949,8 @@
         if (d.ok) {
           el.wfText.value = ""; el.wfMeetAt.value = ""; el.wfDirection.value = "";
           toast("已发布到留言墙"); fetchWall();
-        } else if (d.error === "KV_NOT_BOUND") {
-          showWallErr("留言墙存储未启用：请在 Cloudflare 后台绑定 KV（VISIT_KV）。");
+        } else if (d.error === "DB_NOT_BOUND") {
+          showWallErr("留言墙存储未启用：请在 Cloudflare 后台绑定 D1（DB）。");
         } else if (d.error === "RATE_LIMIT") {
           toast("发帖太频繁，请 " + (d.left || 60) + " 秒后再发");
         } else if (d.error === "DAILY_LIMIT") {
