@@ -119,6 +119,22 @@ NODE_PATH=<node workspace>/node_modules node build/test_full.js
 
 辅警 / 消防 / 公考三站通过各站 footer 胶囊互链，构成 RCJ 招考生态。
 
+## 后端数据层（D1）
+
+站点的**陪练留言墙 / 对练舱 WebRTC 信令 / 撮合大厅 / 每日访问限流**均建立在 Cloudflare D1（SQLite）上，**不再依赖 KV**（KV 命名空间现已只保留你自己的 VPN 数据）。
+
+数据表（`aux-police-exam-d1` 库，建表见 `schema.sql`）：
+
+| 表 | 用途 |
+| --- | --- |
+| `wall` | 各城市陪练留言墙 / 约练帖 |
+| `wall_rl` / `wall_day` | 发帖频率限制（按 IP） |
+| `rtc_signals` | 面试对练舱 WebRTC 信令中转 |
+| `signal_wait` / `signal_match` | 对练舱撮合大厅（等待 / 已匹配房间） |
+| `visit_counts` | 每日访问限流计数（防白嫖） |
+
+**部署必做**：`aux-police-exam` → Settings → Functions → D1 database bindings → 变量名 `DB`、库选 `aux-police-exam-d1` → Deployments **Retry**。未绑定时接口返回 `DB_NOT_BOUND`，前端提示「后端存储正在初始化」。
+
 ## 部署
 
 Cloudflare Pages 连接本仓库，`git push` 到 `main` 自动部署（`assets.directory: "."`，整仓即站点）。

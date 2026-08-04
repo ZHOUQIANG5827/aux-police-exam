@@ -320,7 +320,7 @@ export async function onRequest(context) {
     return injectGa4(withTrial(injectBanner(res, OFFLINE_AT), trialStart, trialEnd, TRIAL_DAYS), ga4Id);
   }
 
-  // ===== 回退：Cookie 软限制（未绑 KV 时）=====
+  // ===== 回退：Cookie 软限制（未绑 DB 时）=====
   let visits = 0;
   try {
     const m = cookie.match(/rcj_visits=([^;]+)/);
