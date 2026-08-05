@@ -3,156 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>面试对练舱 · 1v1 语音对练</title>
+<title>面试搭子组队 · 已迁移到 FaceTalk</title>
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="refresh" content="0; url=https://ms.955827.xyz/?from=fj_pod">
 <link rel="stylesheet" href="pod.css?v=20260729p">
 </head>
 <body>
 <div class="pod">
   <div class="pod-top">
-    <div class="pod-title">🤝 面试对练舱</div>
-    <div class="pod-conn" id="connState">未连接</div>
+    <div class="pod-title">🤝 面试搭子组队</div>
+    <div class="pod-conn ok">已迁移</div>
   </div>
-
-  <!-- 落地：创建房间 -->
-    <section id="landing" class="card center">
-    <h2>1v1 极简面试对练</h2>
-    <p class="muted">纯链接秒连 · 免注册 · P2P 语音直连</p>
-    <button class="big-btn" id="createBtn">➕ 创建房间（发链接给熟人）</button>
-    <button class="big-btn alt" id="matchBtn">🎲 随机匹配搭子（陌生人）</button>
-    <p class="hint">创建房间：把链接发给搭子，对方点开即连。随机匹配：系统自动给你配一位在线练习伙伴，双方随机分配考官/考生。</p>
-
-    <div class="wall" id="wallPanel">
-      <div class="wall-head">
-        <span>💬 陪练留言墙 / 约练</span>
-        <button class="mini-btn" id="wallRefresh">↻ 刷新</button>
-      </div>
-      <div class="wall-tabs" id="wallTabs">
-        <button class="tab active" data-f="all">全部</button>
-        <button class="tab" data-f="meet">约练</button>
-        <button class="tab" data-f="msg">留言</button>
-      </div>
-      <div class="wall-list" id="wallList"><div class="wall-empty">加载中…</div></div>
-      <div class="wall-form">
-        <input class="wf-input" id="wfName" placeholder="昵称（选填，自动记住）" maxlength="20">
-        <div class="wf-type">
-          <label><input type="radio" name="wfType" value="msg" checked> 留言</label>
-          <label><input type="radio" name="wfType" value="meet"> 约练</label>
-        </div>
-        <textarea class="wf-text" id="wfText" placeholder="想说点什么？例如：求一位搭子互练综合分析题 / 今晚想约练结构化面试" maxlength="300"></textarea>
-        <div class="wf-extra" id="wfExtra" style="display:none;">
-          <label class="wf-label">约练时间</label>
-          <input class="wf-input" id="wfMeetAt" type="datetime-local">
-          <label class="wf-label">岗位方向</label>
-          <select class="wf-input" id="wfDirection">
-            <option value="">不限定</option>
-            <option value="结构化面试">结构化面试</option>
-            <option value="公安素质测试">公安素质测试</option>
-            <option value="综合分析题">综合分析题</option>
-            <option value="应急应变题">应急应变题</option>
-            <option value="人际沟通题">人际沟通题</option>
-            <option value="体测陪练">体测陪练</option>
-            <option value="其他">其他</option>
-          </select>
-          <input class="wf-input" id="wfContact" placeholder="联系方式（选填，如 VX:xxx）" maxlength="40">
-        </div>
-        <button class="big-btn" id="wfPost">发布到留言墙</button>
-      </div>
-      <div class="wall-note">📌 删除留言口令：<b>rcj9527</b>（可删自己发的；管理员通用，可删全部）</div>
-      <div class="wall-err" id="wallErr" style="display:none;"></div>
+  <section class="card center">
+    <h2>搭子组队功能已迁移到 FaceTalk</h2>
+    <p class="muted" style="margin-top:6px">全国辅警/消防/书记员 统一匹配大厅</p>
+    <div style="margin-top:22px">
+      <a href="https://ms.955827.xyz/?from=fj_pod" target="_self" class="big-btn" style="display:inline-block;text-decoration:none">前往 FaceTalk 组队 →</a>
     </div>
-  </section>
-
-  <section id="matchView" class="card center" style="display:none;">
-    <h2>🔍 正在匹配搭子…</h2>
-    <div class="spinner"></div>
-    <p class="muted" id="matchHint">系统正在为你寻找在线练习伙伴，通常几秒到几十秒。</p>
-    <div class="match-actions">
-      <button class="mini-btn" id="cancelMatchBtn">取消匹配</button>
-      <button class="mini-btn alt" id="retryMatchBtn">重新匹配</button>
-      <button class="mini-btn" id="matchToCreateBtn">创建房间（发给熟人）</button>
-    </div>
-  </section>
-
-  <!-- 房间 -->
-  <section id="room" class="card" style="display:none;">
-    <div class="room-head">
-      <div>
-        <div class="room-label">房间号</div>
-        <div class="room-no" id="roomNo">------</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button class="mini-btn" id="copyBtn">📋 复制链接</button>
-        <button class="mini-btn" id="leaveBtn">⏏ 离开</button>
-      </div>
-    </div>
-
-    <div class="role-row" id="roleRow">
-      <button class="role-btn" data-role="examiner">🎓 我要当考官</button>
-      <button class="role-btn" data-role="candidate">🙋 我要当考生</button>
-    </div>
-    <div class="role-now" id="roleNow" style="display:none;"></div>
-
-    <!-- 考生视图 -->
-    <div id="candPanel" style="display:none;">
-      <div class="block">
-        <div class="block-t">当前题目（考官已发）</div>
-        <div class="q-text" id="candQuestion">等待考官发题…</div>
-      </div>
-      <div class="block timer-block">
-        <div class="block-t">演练倒计时</div>
-        <div class="timer" id="candTimer">--:--</div>
-      </div>
-      <div class="block score-block">
-        <div class="block-t">我的得分（考官实时评分）</div>
-        <div class="score" id="candScore">100</div>
-        <div class="score-deduct" id="candDeduct">暂无扣分</div>
-      </div>
-    </div>
-
-    <!-- 考官视图 -->
-    <div id="examPanel" style="display:none;">
-      <div class="block">
-        <div class="block-t">从题库选一题发给学生</div>
-        <div class="sel-row">
-          <select id="qSelect" class="sel"></select>
-          <button class="mini-btn" id="sendQBtn">📤 发题</button>
-        </div>
-        <div class="exam-ans" id="examAnswer">选择题目后，此处显示参考答案（供你对照评分）</div>
-      </div>
-      <div class="block">
-        <div class="block-t">演练时长（可自定义，不限于 3 分钟）</div>
-        <div class="dur-row" id="durRow">
-          <button class="dur-btn active" data-d="180">3分钟</button>
-          <button class="dur-btn" data-d="300">5分钟</button>
-          <button class="dur-btn" data-d="600">10分钟</button>
-          <span class="dur-custom">自定义<input class="dur-input" id="durInput" type="number" min="0.5" max="180" step="0.5" value="3">分钟</span>
-        </div>
-        <button class="big-btn start-btn" id="startBtn">▶ 开始演练</button>
-        <button class="big-btn stop-btn" id="stopBtn" style="display:none;">■ 结束演练</button>
-      </div>
-      <div class="block">
-        <div class="block-t">实时评分 Checklist（勾选即扣分）</div>
-        <div id="checklist" class="checklist"></div>
-        <button class="mini-btn" id="resetBtn" style="margin-top:10px;">↺ 重置评分</button>
-        <div class="exam-score">考生当前得分：<b id="examScore">100</b></div>
-      </div>
-    </div>
-
-    <!-- 语音 -->
-    <div class="voice-row">
-      <button class="mini-btn" id="micBtn">🎤 开启麦克风</button>
-      <button class="mini-btn" id="recBtn">⏺ 录音</button>
-      <button class="mini-btn" id="dlBtn">📥 下载录音</button>
-      <span class="voice-state" id="voiceState">未开启</span>
-    </div>
-    <audio id="remoteAudio" autoplay></audio>
-    <audio id="localAudio" muted></audio>
-
-    <div class="log" id="log"></div>
-    <p class="hint" id="wxHint"></p>
+    <p class="hint" style="margin-top:16px">浏览器将自动跳转…… 若无响应请点上面的按钮。</p>
   </section>
 </div>
-<div class="toast" id="toast"></div>
-<script src="pod.js?v=20260729p"></script>
+<script>location.replace("https://ms.955827.xyz/?from=fj_pod");</script>
 </body>
 </html>
