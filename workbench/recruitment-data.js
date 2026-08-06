@@ -1,5 +1,5 @@
 window.RCJ_RECRUITMENT = {
-  "updated": "2026-08-04",
+  "updated": "2026-08-06",
   "note": "每日 09:00 自动合并更新",
   "items": [
     {
@@ -75,7 +75,7 @@ window.RCJ_RECRUITMENT = {
       "source": "阜阳市公安局",
       "url": "https://gaj.fy.gov.cn/Content/show/1337421.html",
       "bankStatus": "未建",
-      "note": "明日(8/5)17:00截止；体测占40%权重最高"
+      "note": "已于8/5 17:00截止（1天前）；体测占40%权重最高"
     },
     {
       "category": "辅警",
@@ -90,7 +90,7 @@ window.RCJ_RECRUITMENT = {
       "source": "清远市公安局清城分局",
       "url": "https://www.eoffcn.com/kszx/detail/2167597.html",
       "bankStatus": "未建",
-      "note": "今日开报、明日截止，仅2天窗口；考试初定8/8；可复用 gd/ 广东省统考通用真题库"
+      "note": "已于8/5截止（1天前）；仅2天窗口；可复用 gd/ 广东省统考通用真题库"
     },
     {
       "category": "辅警",
@@ -98,14 +98,14 @@ window.RCJ_RECRUITMENT = {
       "unit": "揭阳市公安局榕城分局",
       "count": 66,
       "publishDate": "2026-07-30",
-      "signupStart": null,
-      "signupEnd": null,
-      "method": "详见榕城分局门户网站公告（报名时间以官方岗位表为准）",
+      "signupStart": "2026-08-03",
+      "signupEnd": "2026-08-09",
+      "method": "网上报名（全国人事考试服务平台 qgsydw.com 报名通道）",
       "threshold": "参照人民警察政审标准；视力单侧裸视≥4.8（可加测矫正视力≥5.0）；聘用后需服务满3年",
       "source": "揭阳市公安局榕城分局 / 揭阳发布",
       "url": "https://new.qq.com/rain/a/20260801A04CKQ00?refer=cp_1009",
       "bankStatus": "未建",
-      "note": "报名时间需查原公告附件；可复用 gd/ 广东省统考通用真题库"
+      "note": "报名 8/3 9:00–8/9 17:30（qgsydw.com）；可复用 gd/ 广东省统考通用真题库"
     },
     {
       "category": "辅警",
@@ -150,7 +150,7 @@ window.RCJ_RECRUITMENT = {
       "source": "连山壮族瑶族自治县人民政府",
       "url": "https://www.gdls.gov.cn/zwgk/rsxx/zpxx/content/post_2171574.html",
       "bankStatus": "未建",
-      "note": "今日开报；征信报告须8/4之后出具；可复用 gd/ 广东省统考通用真题库"
+      "note": "征信报告须8/4之后出具；可复用 gd/ 广东省统考通用真题库"
     },
     {
       "category": "辅警",
@@ -180,7 +180,97 @@ window.RCJ_RECRUITMENT = {
       "source": "海东市公安局平安分局",
       "url": "https://www.jrzp.com/zhaopinhui/6601903B099CD427.shtml",
       "bankStatus": "未建",
-      "note": "今日(8/4)17:00报名截止，最后窗口"
+      "note": "已于8/4 17:00报名截止（2天前）"
+    },
+    {
+      "category": "辅警",
+      "region": "吉林·长春",
+      "unit": "长春市公安局（看护警务辅助人员·第二批次）",
+      "count": 109,
+      "publishDate": "2026-08-04",
+      "signupStart": "2026-08-06",
+      "signupEnd": "2026-08-07",
+      "method": "网上报名（长春公安官网 gaj.changchun.gov.cn 报名通道）",
+      "threshold": "吉林省户籍；18-35周岁；大专及以上；限男性；月薪约3100元",
+      "source": "长春公安官网 / 吉林省人社",
+      "url": "https://new.qq.com/rain/a/20260804A0ED0C00",
+      "bankStatus": "未建",
+      "note": "看护辅警第二批次，窗口极短（8/6 9:00–8/7 14:00），仅2天"
+    },
+    {
+      "category": "辅警",
+      "region": "黑龙江·佳木斯",
+      "unit": "佳木斯市公安局",
+      "count": 60,
+      "publishDate": "2026-08-04",
+      "signupStart": "2026-08-10",
+      "signupEnd": "2026-08-14",
+      "method": "网上报名（佳木斯市人民政府官网报名通道 jms2026fj.ibaoming.net）",
+      "threshold": "佳木斯市区户籍（向阳/前进/郊区/东风）；18-35周岁；大专及以上（退役军人放宽高中/中专）；限男性；6个勤务岗",
+      "source": "佳木斯市人民政府 / 佳木斯公安",
+      "url": "https://hlj.huatu.com/2026/0803/2068317.html",
+      "bankStatus": "未建",
+      "note": "8/10 9:00–8/14 17:00 线上报名；不收费；笔试公共30%+专业(公安基础)70%"
+    },
+    {
+      "category": "辅警",
+      "region": "广东·湛江",
+      "unit": "湛江市公安局麻章分局（第三次）",
+      "count": 5,
+      "publishDate": "2026-08-04",
+      "signupStart": "2026-08-05",
+      "signupEnd": "2026-08-07",
+      "method": "现场报名（麻章区福民东路1号麻章分局大门口出入境自助办证处）",
+      "threshold": "退役军人可高中/中专（入职首合同期内取大专）；详见岗位表；需户口簿+学历证+征信",
+      "source": "湛江市公安局麻章分局",
+      "url": "http://www.zjmazhang.gov.cn/xxgk/gsgg/content/post_2209281.html",
+      "bankStatus": "未建",
+      "note": "8/5–8/7 现场；🔴仅3天窗口，今日(8/6)进入最后两天；可复用 gd/ 广东省统考通用真题库"
+    },
+    {
+      "category": "辅警",
+      "region": "湖南·常德",
+      "unit": "临澧县公安局",
+      "count": 15,
+      "publishDate": "2026-07-29",
+      "signupStart": "2026-08-04",
+      "signupEnd": "2026-08-06",
+      "method": "现场报名（临澧县政务中心一楼东大厅人力资源服务区窗口）",
+      "threshold": "18-38周岁；高中及以上；无文身无色盲；笔试综合知识+结构化面试各50%",
+      "source": "临澧县公安局 / 临澧县人民政府",
+      "url": "https://www.offcn.com/zhaojing/2026/0729/179119.html",
+      "bankStatus": "未建",
+      "note": "🔴报名8/4–8/6，今日(8/6)17:30截止，最后一天"
+    },
+    {
+      "category": "辅警",
+      "region": "四川·德阳",
+      "unit": "中江县公安局（第二次）",
+      "count": 50,
+      "publishDate": "2026-07-30",
+      "signupStart": "2026-08-03",
+      "signupEnd": "2026-08-28",
+      "method": "现场报名（中江县公安局指挥中心大楼515办公室，工作日）",
+      "threshold": "限男性；18-35周岁（急需专业可放宽）；高中以上；主要从事留置看护/治安防控/交管；裸眼4.8或矫正4.9、男≥165cm",
+      "source": "中江县公安局 / 德阳市公安局",
+      "url": "https://sc.huatu.com/2026/0730/2055848.html",
+      "bankStatus": "未建",
+      "note": "8/3–8/28 长窗口现场报名；含留置看护岗"
+    },
+    {
+      "category": "辅警",
+      "region": "湖北·咸宁",
+      "unit": "通城县公安局",
+      "count": 44,
+      "publishDate": "2026-07-28",
+      "signupStart": "2026-07-28",
+      "signupEnd": "2026-08-12",
+      "method": "现场/网络（劳务派遣，详见通城城发隽达文旅公众号）",
+      "threshold": "高中(中专)及以上；男18-45/女18-40；含留置看护6人；驻村警务38人",
+      "source": "通城县公安局",
+      "url": "https://www.fenbi.com/page/fenxiaozhaokaodetail/3/0/467964220690432",
+      "bankStatus": "未建",
+      "note": "报名7/28–8/12；劳务派遣；含留置看护6名"
     },
     {
       "category": "政府专职消防员",
@@ -210,7 +300,7 @@ window.RCJ_RECRUITMENT = {
       "source": "北京市消防救援总队 / 北京日报",
       "url": "https://news.bjd.com.cn/2026/08/03/11898679.shtml",
       "bankStatus": "未建",
-      "note": "昨日新发；修改报名信息仅限1次且须8/11 12:00前提交；入职训练≥3个月"
+      "note": "修改报名信息仅限1次且须8/11 12:00前提交；入职训练≥3个月"
     },
     {
       "category": "政府专职消防员",
@@ -240,7 +330,7 @@ window.RCJ_RECRUITMENT = {
       "source": "双鸭山市人民政府",
       "url": "https://www.syswlwz.gov.cn/News/NewsDetail-20436-3.html",
       "bankStatus": "未建",
-      "note": "明日(8/5)截止，仅3天窗口；年龄卡28岁较严"
+      "note": "已于8/5截止（1天前）；年龄卡28岁较严"
     },
     {
       "category": "政府专职消防员",
@@ -256,6 +346,66 @@ window.RCJ_RECRUITMENT = {
       "url": "https://news.qq.com/rain/a/20260802A0A0SC00?adChannelId=hnxc",
       "bankStatus": "未建",
       "note": "文职辅助岗（非一线灭火救援），适合女性/学历型考生"
+    },
+    {
+      "category": "政府专职消防员",
+      "region": "河南·鹤壁",
+      "unit": "鹤壁市消防救援支队",
+      "count": 20,
+      "publishDate": "2026-08-03",
+      "signupStart": "2026-08-03",
+      "signupEnd": "2026-08-09",
+      "method": "现场报名（淇滨区漓江路7号市消防救援支队东岗亭）",
+      "threshold": "男性；18-28（特殊可放宽）；高中以上；裸视4.5+、身高165cm+；到手4000-7000/月；24h驻勤",
+      "source": "鹤壁市消防救援支队 / 鹤壁发布",
+      "url": "https://zhaojing.huatu.com/news/henan/2026/0803/2869867.html",
+      "bankStatus": "未建",
+      "note": "8/3–8/9 现场；体能1000/3000米+面试"
+    },
+    {
+      "category": "政府专职消防员",
+      "region": "河南·南阳",
+      "unit": "南阳市消防救援支队",
+      "count": 30,
+      "publishDate": "2026-08-04",
+      "signupStart": "2026-08-04",
+      "signupEnd": "2026-08-10",
+      "method": "现场报名（宛城区鼎盛路消防救援站）",
+      "threshold": "男性18-28（退役/专科可放宽30）；高中以上；城区17+社旗乡镇13；24h执勤",
+      "source": "南阳市消防救援支队 / 南阳发布",
+      "url": "https://new.qq.com/rain/a/20260804A0CKHB00?refer=cp_1009",
+      "bankStatus": "未建",
+      "note": "8/4–8/10 现场"
+    },
+    {
+      "category": "政府专职消防员",
+      "region": "河南·南阳",
+      "unit": "西峡县消防救援大队",
+      "count": 10,
+      "publishDate": "2026-08-03",
+      "signupStart": "2026-08-03",
+      "signupEnd": "2026-08-13",
+      "method": "现场报名（创业大道消防救援站报名点）",
+      "threshold": "男性18-28（专科/退役/持证可放宽30）；高中以上；战斗员岗",
+      "source": "西峡县消防救援大队 / 南阳消防",
+      "url": "https://www.topnews.cn/news/145ED4EC43BE4A70",
+      "bankStatus": "未建",
+      "note": "8/3–8/13 现场"
+    },
+    {
+      "category": "政府专职消防员",
+      "region": "云南·楚雄",
+      "unit": "楚雄州消防救援局（第二批）",
+      "count": 59,
+      "publishDate": "2026-08-03",
+      "signupStart": "2026-08-03",
+      "signupEnd": "2026-08-10",
+      "method": "现场/网络（各县市消防救援局，详见岗位表）",
+      "threshold": "政府专职消防员55+消防文员4；按《云南省消防救援队伍政府专职消防员招录办法》；试用期3个月",
+      "source": "楚雄州消防救援局 / 云南楚雄消防",
+      "url": "https://new.qq.com/rain/a/20260804A05ZUG00?refer=cp_1009",
+      "bankStatus": "未建",
+      "note": "8/3–8/10；55战斗员+4文员"
     },
     {
       "category": "企业消防员",
@@ -286,6 +436,21 @@ window.RCJ_RECRUITMENT = {
       "url": "https://www.zhaopin.com/jobdetail/CC875122780J40679042602.htm",
       "bankStatus": "未建",
       "note": "滚动招录；培训期30天2700元，转正税前约4800元；工作60天休20天"
+    },
+    {
+      "category": "企业消防员",
+      "region": "陕西·延安",
+      "unit": "延安南泥湾机场（延安至睿安全生产技术服务有限公司派遣）",
+      "count": 25,
+      "publishDate": "2026-08-04",
+      "signupStart": "2026-08-04",
+      "signupEnd": "2026-12-31",
+      "method": "网上报名（投简历至 2694416494@qq.com）+ 现场（延安至睿公司）",
+      "threshold": "消防战斗员20+监控室值守5；18-30岁；初中以上；持消防设施操作员(监控)中级证优先；劳务派遣；食宿全包+社保",
+      "source": "延安至睿安全技术服务有限公司 / 中公教育",
+      "url": "https://www.offcn.com/zhaojing/2026/0804/179272.html",
+      "bankStatus": "未建",
+      "note": "招满即止（至2026-12-31）；机场消防战斗员+监控值守"
     }
   ],
   "history": [
@@ -309,6 +474,32 @@ window.RCJ_RECRUITMENT = {
         "黑龙江": 1,
         "陕西": 1,
         "广西": 1
+      }
+    },
+    {
+      "date": "2026-08-06",
+      "total": 30,
+      "byCategory": {
+        "辅警": 18,
+        "政府专职消防员": 9,
+        "企业消防员": 3
+      },
+      "byProvince": {
+        "辽宁": 1,
+        "河南": 5,
+        "云南": 4,
+        "浙江": 3,
+        "安徽": 1,
+        "广东": 5,
+        "青海": 1,
+        "北京": 1,
+        "黑龙江": 2,
+        "陕西": 2,
+        "广西": 1,
+        "吉林": 1,
+        "湖南": 1,
+        "四川": 1,
+        "湖北": 1
       }
     }
   ]
